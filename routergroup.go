@@ -1,7 +1,6 @@
 package fox
 
 import (
-	"context"
 	"net/http"
 	"regexp"
 )
@@ -36,17 +35,16 @@ func (group *RouterGroup) Use(middleware ...HandlerFunc) {
 // For example, all the routes that use a common middleware for authorization could be grouped.
 func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *RouterGroup {
 	return &RouterGroup{
-		// Handlers: group.combineHandlers(handlers),
+		Handlers: append(group.Handlers, handlers...),
 		basePath: group.calculateAbsolutePath(relativePath),
 		engine:   group.engine,
 	}
 }
 
-func (group *RouterGroup) handle(method, relativePath string, handle HandlerFunc) {
-
+func (group *RouterGroup) handle(method, relativePath string, handlers HandlersChain) {
 	absolutePath := group.calculateAbsolutePath(relativePath)
-
-	group.engine.addRoute(method, absolutePath, handle)
+	handlers = append(group.Handlers, handlers...)
+	group.engine.addRoute(method, absolutePath, handlers)
 }
 
 // Handle registers a new request handle with the given path and method.
@@ -57,78 +55,55 @@ func (group *RouterGroup) handle(method, relativePath string, handle HandlerFunc
 // This function is intended for bulk loading and to allow the usage of less
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
-func (group *RouterGroup) Handle(method, path string, handle HandlerFunc) {
+func (group *RouterGroup) Handle(method, path string, handlers ...HandlerFunc) {
 	if matched := regEnLetter.MatchString(method); !matched {
 		panic("http method " + method + " is not valid")
 	}
 
-	group.handle(method, path, handle)
+	group.handle(method, path, handlers)
 }
 
 // GET is a shortcut for router.Handle(http.MethodGet, path, handle)
-func (group *RouterGroup) GET(path string, handle HandlerFunc) {
-	group.handle(http.MethodGet, path, handle)
+func (group *RouterGroup) GET(path string, handlers ...HandlerFunc) {
+	group.handle(http.MethodGet, path, handlers)
 }
 
 // HEAD is a shortcut for router.Handle(http.MethodHead, path, handle)
-func (group *RouterGroup) HEAD(path string, handle HandlerFunc) {
-	group.handle(http.MethodHead, path, handle)
+func (group *RouterGroup) HEAD(path string, handlers ...HandlerFunc) {
+	group.handle(http.MethodHead, path, handlers)
 }
 
 // OPTIONS is a shortcut for router.Handle(http.MethodOptions, path, handle)
-func (group *RouterGroup) OPTIONS(path string, handle HandlerFunc) {
-	group.handle(http.MethodOptions, path, handle)
+func (group *RouterGroup) OPTIONS(path string, handlers ...HandlerFunc) {
+	group.handle(http.MethodOptions, path, handlers)
 }
 
 // POST is a shortcut for router.Handle(http.MethodPost, path, handle)
-func (group *RouterGroup) POST(path string, handle HandlerFunc) {
-	group.handle(http.MethodPost, path, handle)
+func (group *RouterGroup) POST(path string, handlers ...HandlerFunc) {
+	group.handle(http.MethodPost, path, handlers)
 }
 
 // PUT is a shortcut for router.Handle(http.MethodPut, path, handle)
-func (group *RouterGroup) PUT(path string, handle HandlerFunc) {
-	group.handle(http.MethodPut, path, handle)
+func (group *RouterGroup) PUT(path string, handlers ...HandlerFunc) {
+	group.handle(http.MethodPut, path, handlers)
 }
 
 // PATCH is a shortcut for router.Handle(http.MethodPatch, path, handle)
-func (group *RouterGroup) PATCH(path string, handle HandlerFunc) {
-	group.handle(http.MethodPatch, path, handle)
+func (group *RouterGroup) PATCH(path string, handlers ...HandlerFunc) {
+	group.handle(http.MethodPatch, path, handlers)
 }
 
 // DELETE is a shortcut for router.Handle(http.MethodDelete, path, handle)
-func (group *RouterGroup) DELETE(path string, handle HandlerFunc) {
-	group.handle(http.MethodDelete, path, handle)
+func (group *RouterGroup) DELETE(path string, handlers ...HandlerFunc) {
+	group.handle(http.MethodDelete, path, handlers)
 }
 
 // Any registers a route that matches all the HTTP methods.
 // GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE.
-func (group *RouterGroup) Any(relativePath string, handle HandlerFunc) {
+func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) {
 	for _, method := range anyMethods {
-		group.handle(method, relativePath, handle)
+		group.handle(method, relativePath, handlers)
 	}
-}
-
-// Handler is an adapter which allows the usage of an http.Handler as a
-// request handle.
-// The Params are available in the request context under ParamsKey.
-func (group *RouterGroup) Handler(method, path string, handler http.Handler) {
-	group.handle(method, path,
-		func(c *Context) {
-			req := c.Request
-			if len(*c.Params) > 0 {
-				ctx := c.Request.Context()
-				ctx = context.WithValue(ctx, ParamsKey, c.Params)
-				req = c.Request.WithContext(ctx)
-			}
-			handler.ServeHTTP(c.Writer, req)
-		},
-	)
-}
-
-// HandlerFunc is an adapter which allows the usage of an http.HandlerFunc as a
-// request handle.
-func (group *RouterGroup) HandlerFunc(method, path string, handler http.HandlerFunc) {
-	group.Handler(method, path, handler)
 }
 
 // ServeFiles serves files from the given file system root.

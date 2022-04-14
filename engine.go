@@ -27,12 +27,6 @@ type Engine struct {
 
 	RouterGroup
 
-	// If enabled, adds the matched route path onto the http.Request context
-	// before invoking the handler.
-	// The matched route path is only added to handlers of routes that were
-	// registered when this option was enabled.
-	SaveMatchedRoutePath bool
-
 	// Enables automatic redirection if the current route can't be matched but a
 	// handler for the path with (without) the trailing slash exists.
 	// For example if /foo/ is requested but a route only exists for /foo, the
@@ -127,22 +121,7 @@ func (engine *Engine) Use(middleware ...HandlerFunc) {
 	engine.RouterGroup.Use(middleware...)
 }
 
-func (engine *Engine) saveMatchedRoutePath(path string, handle HandlerFunc) HandlerFunc {
-	return func(c *Context) {
-		if ps := c.Params; ps == nil {
-			psp := make(Params, 0, engine.maxParams)
-			*ps = (psp)[0:1]
-			(*ps)[0] = Param{Key: MatchedRoutePathParam, Value: path}
-			c.Params = ps
-		} else {
-			*ps = append(*ps, Param{Key: MatchedRoutePathParam, Value: path})
-			c.Params = ps
-		}
-		handle(c)
-	}
-}
-
-func (engine *Engine) addRoute(method, path string, handle HandlerFunc) {
+func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 
 	varsCount := uint16(0)
 
@@ -152,13 +131,10 @@ func (engine *Engine) addRoute(method, path string, handle HandlerFunc) {
 	if len(path) < 1 || path[0] != '/' {
 		panic("path must begin with '/' in path '" + path + "'")
 	}
-	if handle == nil {
-		panic("handle must not be nil")
-	}
-
-	if engine.SaveMatchedRoutePath {
-		varsCount++
-		handle = engine.saveMatchedRoutePath(path, handle)
+	for _, handler := range handlers {
+		if handler == nil {
+			panic("handle must not be nil")
+		}
 	}
 
 	if engine.trees == nil {
@@ -173,7 +149,7 @@ func (engine *Engine) addRoute(method, path string, handle HandlerFunc) {
 		engine.globalAllowed = engine.allowed("*", "")
 	}
 
-	root.addRoute(path, handle)
+	root.addRoute(path, handlers)
 
 	// Update maxParams
 	if paramsCount := countParams(path); paramsCount+varsCount > engine.maxParams {
@@ -280,10 +256,11 @@ func (engine *Engine) handleHTTPRequest(ctx *Context) {
 
 	if root := engine.trees[httpMethod]; root != nil {
 		if handle, ps, tsr := root.getValue(path, ctx.Params); handle != nil {
+			ctx.handlers = handle
 			if ps != nil {
 				ctx.Params = ps
 			}
-			handle(ctx)
+			ctx.Next()
 			return
 		} else if httpMethod != http.MethodConnect && path != "/" {
 			// Moved Permanently, request with GET method

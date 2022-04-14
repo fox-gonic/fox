@@ -51,7 +51,7 @@ func TestRouter(t *testing.T) {
 	routed := false
 	router.Handle(http.MethodGet, "/user/:name", func(c *Context) {
 		routed = true
-		want := Params{Param{"name", "gopher"}}
+		want := &Params{Param{"name", "gopher"}}
 		if !reflect.DeepEqual(c.Params, want) {
 			t.Fatalf("wrong wildcard values: want %v, got %v", want, c.Params)
 		}
@@ -76,9 +76,7 @@ func (h handlerStruct) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func TestRouterAPI(t *testing.T) {
-	var get, head, options, post, put, patch, delete, handler, handlerFunc bool
-
-	httpHandler := handlerStruct{&handler}
+	var get, head, options, post, put, patch, delete bool
 
 	router := New()
 	router.GET("/GET", func(c *Context) {
@@ -101,10 +99,6 @@ func TestRouterAPI(t *testing.T) {
 	})
 	router.DELETE("/DELETE", func(c *Context) {
 		delete = true
-	})
-	router.Handler(http.MethodGet, "/Handler", httpHandler)
-	router.HandlerFunc(http.MethodGet, "/HandlerFunc", func(w http.ResponseWriter, r *http.Request) {
-		handlerFunc = true
 	})
 
 	w := new(mockResponseWriter)
@@ -149,18 +143,6 @@ func TestRouterAPI(t *testing.T) {
 	router.ServeHTTP(w, r)
 	if !delete {
 		t.Error("routing DELETE failed")
-	}
-
-	r, _ = http.NewRequest(http.MethodGet, "/Handler", nil)
-	router.ServeHTTP(w, r)
-	if !handler {
-		t.Error("routing Handler failed")
-	}
-
-	r, _ = http.NewRequest(http.MethodGet, "/HandlerFunc", nil)
-	router.ServeHTTP(w, r)
-	if !handlerFunc {
-		t.Error("routing HandlerFunc failed")
 	}
 }
 
@@ -498,110 +480,6 @@ func TestRouterPanicHandler(t *testing.T) {
 
 	if !panicHandled {
 		t.Fatal("simulating failed")
-	}
-}
-
-func TestRouterParamsFromContext(t *testing.T) {
-	routed := false
-
-	wantParams := Params{Param{"name", "gopher"}}
-	handlerFunc := func(_ http.ResponseWriter, req *http.Request) {
-		// get params from request context
-		params := ParamsFromContext(req.Context())
-
-		if !reflect.DeepEqual(params, wantParams) {
-			t.Fatalf("Wrong parameter values: want %v, got %v", wantParams, params)
-		}
-
-		routed = true
-	}
-
-	var nilParams Params
-	handlerFuncNil := func(_ http.ResponseWriter, req *http.Request) {
-		// get params from request context
-		params := ParamsFromContext(req.Context())
-
-		if !reflect.DeepEqual(params, nilParams) {
-			t.Fatalf("Wrong parameter values: want %v, got %v", nilParams, params)
-		}
-
-		routed = true
-	}
-	router := New()
-	router.HandlerFunc(http.MethodGet, "/user", handlerFuncNil)
-	router.HandlerFunc(http.MethodGet, "/user/:name", handlerFunc)
-
-	w := new(mockResponseWriter)
-	r, _ := http.NewRequest(http.MethodGet, "/user/gopher", nil)
-	router.ServeHTTP(w, r)
-	if !routed {
-		t.Fatal("Routing failed!")
-	}
-
-	routed = false
-	r, _ = http.NewRequest(http.MethodGet, "/user", nil)
-	router.ServeHTTP(w, r)
-	if !routed {
-		t.Fatal("Routing failed!")
-	}
-}
-
-func TestRouterMatchedRoutePath(t *testing.T) {
-	route1 := "/user/:name"
-	routed1 := false
-	handle1 := func(c *Context) {
-		route := c.Params.MatchedRoutePath()
-		if route != route1 {
-			t.Fatalf("Wrong matched route: want %s, got %s", route1, route)
-		}
-		routed1 = true
-	}
-
-	route2 := "/user/:name/details"
-	routed2 := false
-	handle2 := func(c *Context) {
-		route := c.Params.MatchedRoutePath()
-		if route != route2 {
-			t.Fatalf("Wrong matched route: want %s, got %s", route2, route)
-		}
-		routed2 = true
-	}
-
-	route3 := "/"
-	routed3 := false
-	handle3 := func(c *Context) {
-		route := c.Params.MatchedRoutePath()
-		if route != route3 {
-			t.Fatalf("Wrong matched route: want %s, got %s", route3, route)
-		}
-		routed3 = true
-	}
-
-	router := New()
-	router.SaveMatchedRoutePath = true
-	router.Handle(http.MethodGet, route1, handle1)
-	router.Handle(http.MethodGet, route2, handle2)
-	router.Handle(http.MethodGet, route3, handle3)
-
-	w := new(mockResponseWriter)
-	r, _ := http.NewRequest(http.MethodGet, "/user/gopher", nil)
-	router.ServeHTTP(w, r)
-	if !routed1 || routed2 || routed3 {
-		t.Fatal("Routing failed!")
-	}
-
-	w = new(mockResponseWriter)
-	r, _ = http.NewRequest(http.MethodGet, "/user/gopher/details", nil)
-	router.ServeHTTP(w, r)
-	if !routed2 || routed3 {
-		t.Fatal("Routing failed!")
-	}
-
-	w = new(mockResponseWriter)
-	r, _ = http.NewRequest(http.MethodGet, "/", nil)
-	router.ServeHTTP(w, r)
-	if !routed3 {
-		t.Fatal("Routing failed!")
 	}
 }
 

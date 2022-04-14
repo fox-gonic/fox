@@ -25,10 +25,10 @@ import (
 // Used as a workaround since we can't compare functions or their addresses
 var fakeHandlerValue string
 
-func fakeHandler(val string) HandlerFunc {
-	return func(*Context) {
+func fakeHandler(val string) HandlersChain {
+	return HandlersChain{func(*Context) {
 		fakeHandlerValue = val
-	}
+	}}
 }
 
 type testRequests []struct {
@@ -55,7 +55,7 @@ func checkRequests(t *testing.T, tree *node, requests testRequests) {
 		case request.nilHandler:
 			t.Errorf("handle mismatch for route '%s': Expected nil handle", request.path)
 		default:
-			handler(nil)
+			handler[0](nil)
 			if fakeHandlerValue != request.route {
 				t.Errorf("handle mismatch for route '%s': Wrong handle (%s != %s)", request.path, fakeHandlerValue, request.route)
 			}
@@ -78,7 +78,7 @@ func checkPriorities(t *testing.T, n *node) uint32 {
 		prio += checkPriorities(t, n.children[i])
 	}
 
-	if n.handle != nil {
+	if n.handlers != nil {
 		prio++
 	}
 

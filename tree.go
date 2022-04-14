@@ -45,17 +45,6 @@ func ParamsFromContext(ctx context.Context) Params {
 	return p
 }
 
-// MatchedRoutePathParam is the Param name under which the path of the matched
-// route is stored, if Router.SaveMatchedRoutePath is set.
-var MatchedRoutePathParam = "$matchedRoutePath"
-
-// MatchedRoutePath retrieves the path of the matched route.
-// Router.SaveMatchedRoutePath must have been enabled when the respective
-// handler was added, otherwise this function always returns an empty string.
-func (ps Params) MatchedRoutePath() string {
-	return ps.ByName(MatchedRoutePathParam)
-}
-
 func min(a, b int) int {
 	if a <= b {
 		return a
@@ -124,7 +113,7 @@ type node struct {
 	nType     nodeType
 	priority  uint32
 	children  []*node
-	handle    HandlerFunc
+	handlers  HandlersChain
 }
 
 // Increments priority of the given child and reorders if necessary
@@ -152,13 +141,13 @@ func (n *node) incrementChildPrio(pos int) int {
 
 // addRoute adds a node with the given handle to the path.
 // Not concurrency-safe!
-func (n *node) addRoute(path string, handle HandlerFunc) {
+func (n *node) addRoute(path string, handlers HandlersChain) {
 	fullPath := path
 	n.priority++
 
 	// Empty tree
 	if n.path == "" && n.indices == "" {
-		n.insertChild(path, fullPath, handle)
+		n.insertChild(path, fullPath, handlers)
 		n.nType = root
 		return
 	}
@@ -178,7 +167,7 @@ walk:
 				nType:     static,
 				indices:   n.indices,
 				children:  n.children,
-				handle:    n.handle,
+				handlers:  n.handlers,
 				priority:  n.priority - 1,
 			}
 
@@ -186,7 +175,7 @@ walk:
 			// []byte for proper unicode char conversion, see #65
 			n.indices = string([]byte{n.path[i]})
 			n.path = path[:i]
-			n.handle = nil
+			n.handlers = nil
 			n.wildChild = false
 		}
 
@@ -247,20 +236,20 @@ walk:
 				n.incrementChildPrio(len(n.indices) - 1)
 				n = child
 			}
-			n.insertChild(path, fullPath, handle)
+			n.insertChild(path, fullPath, handlers)
 			return
 		}
 
 		// Otherwise add handle to current node
-		if n.handle != nil {
+		if n.handlers != nil {
 			panic("a handle is already registered for path '" + fullPath + "'")
 		}
-		n.handle = handle
+		n.handlers = handlers
 		return
 	}
 }
 
-func (n *node) insertChild(path, fullPath string, handle HandlerFunc) {
+func (n *node) insertChild(path, fullPath string, handlers HandlersChain) {
 	for {
 		// Find prefix until first wildcard
 		wildcard, i, valid := findWildcard(path)
@@ -316,7 +305,7 @@ func (n *node) insertChild(path, fullPath string, handle HandlerFunc) {
 			}
 
 			// Otherwise we're done. Insert the handle in the new leaf
-			n.handle = handle
+			n.handlers = handlers
 			return
 		}
 
@@ -351,7 +340,7 @@ func (n *node) insertChild(path, fullPath string, handle HandlerFunc) {
 		child = &node{
 			path:     path[i:],
 			nType:    catchAll,
-			handle:   handle,
+			handlers: handlers,
 			priority: 1,
 		}
 		n.children = []*node{child}
@@ -361,7 +350,7 @@ func (n *node) insertChild(path, fullPath string, handle HandlerFunc) {
 
 	// If no wildcard was found, simply insert the path and handle
 	n.path = path
-	n.handle = handle
+	n.handlers = handlers
 }
 
 // Returns the handle registered with the given path (key). The values of
@@ -369,7 +358,7 @@ func (n *node) insertChild(path, fullPath string, handle HandlerFunc) {
 // If no handle can be found, a TSR (trailing slash redirect) recommendation is
 // made if a handle exists with an extra (without the) trailing slash for the
 // given path.
-func (n *node) getValue(path string, params *Params) (handle HandlerFunc, ps *Params, tsr bool) {
+func (n *node) getValue(path string, params *Params) (handle HandlersChain, ps *Params, tsr bool) {
 walk: // Outer loop for walking the tree
 	for {
 		prefix := n.path
@@ -392,7 +381,7 @@ walk: // Outer loop for walking the tree
 					// Nothing found.
 					// We can recommend to redirect to the same URL without a
 					// trailing slash if a leaf exists for that path.
-					tsr = (path == "/" && n.handle != nil)
+					tsr = (path == "/" && n.handlers != nil)
 					return
 				}
 
@@ -433,13 +422,13 @@ walk: // Outer loop for walking the tree
 						return
 					}
 
-					if handle = n.handle; handle != nil {
+					if handle = n.handlers; handle != nil {
 						return
 					} else if len(n.children) == 1 {
 						// No handle found. Check if a handle for this path + a
 						// trailing slash exists for TSR recommendation
 						n = n.children[0]
-						tsr = (n.path == "/" && n.handle != nil) || (n.path == "" && n.indices == "/")
+						tsr = (n.path == "/" && n.handlers != nil) || (n.path == "" && n.indices == "/")
 					}
 
 					return
@@ -459,7 +448,7 @@ walk: // Outer loop for walking the tree
 						}
 					}
 
-					handle = n.handle
+					handle = n.handlers
 					return
 
 				default:
@@ -469,7 +458,7 @@ walk: // Outer loop for walking the tree
 		} else if path == prefix {
 			// We should have reached the node containing the handle.
 			// Check if this node has a handle registered.
-			if handle = n.handle; handle != nil {
+			if handle = n.handlers; handle != nil {
 				return
 			}
 
@@ -486,8 +475,8 @@ walk: // Outer loop for walking the tree
 			for i, c := range []byte(n.indices) {
 				if c == '/' {
 					n = n.children[i]
-					tsr = (len(n.path) == 1 && n.handle != nil) ||
-						(n.nType == catchAll && n.children[0].handle != nil)
+					tsr = (len(n.path) == 1 && n.handlers != nil) ||
+						(n.nType == catchAll && n.children[0].handlers != nil)
 					return
 				}
 			}
@@ -498,7 +487,7 @@ walk: // Outer loop for walking the tree
 		// extra trailing slash if a leaf exists for that path
 		tsr = (path == "/") ||
 			(len(prefix) == len(path)+1 && prefix[len(path)] == '/' &&
-				path == prefix[:len(prefix)-1] && n.handle != nil)
+				path == prefix[:len(prefix)-1] && n.handlers != nil)
 		return
 	}
 }
@@ -633,7 +622,7 @@ walk: // Outer loop for walking the tree
 
 				// Nothing found. We can recommend to redirect to the same URL
 				// without a trailing slash if a leaf exists for that path
-				if fixTrailingSlash && path == "/" && n.handle != nil {
+				if fixTrailingSlash && path == "/" && n.handlers != nil {
 					return ciPath
 				}
 				return nil
@@ -668,13 +657,13 @@ walk: // Outer loop for walking the tree
 					return nil
 				}
 
-				if n.handle != nil {
+				if n.handlers != nil {
 					return ciPath
 				} else if fixTrailingSlash && len(n.children) == 1 {
 					// No handle found. Check if a handle for this path + a
 					// trailing slash exists
 					n = n.children[0]
-					if n.path == "/" && n.handle != nil {
+					if n.path == "/" && n.handlers != nil {
 						return append(ciPath, '/')
 					}
 				}
@@ -689,7 +678,7 @@ walk: // Outer loop for walking the tree
 		} else {
 			// We should have reached the node containing the handle.
 			// Check if this node has a handle registered.
-			if n.handle != nil {
+			if n.handlers != nil {
 				return ciPath
 			}
 
@@ -699,8 +688,8 @@ walk: // Outer loop for walking the tree
 				for i, c := range []byte(n.indices) {
 					if c == '/' {
 						n = n.children[i]
-						if (len(n.path) == 1 && n.handle != nil) ||
-							(n.nType == catchAll && n.children[0].handle != nil) {
+						if (len(n.path) == 1 && n.handlers != nil) ||
+							(n.nType == catchAll && n.children[0].handlers != nil) {
 							return append(ciPath, '/')
 						}
 						return nil
@@ -718,7 +707,7 @@ walk: // Outer loop for walking the tree
 			return ciPath
 		}
 		if len(path)+1 == npLen && n.path[len(path)] == '/' &&
-			strings.EqualFold(path[1:], n.path[1:len(path)]) && n.handle != nil {
+			strings.EqualFold(path[1:], n.path[1:len(path)]) && n.handlers != nil {
 			return append(ciPath, n.path...)
 		}
 	}
