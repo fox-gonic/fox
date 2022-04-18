@@ -78,9 +78,9 @@ type Test struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Label         *string             `protobuf:"bytes,1,req,name=label" json:"label,omitempty"`
-	Type          *int32              `protobuf:"varint,2,opt,name=type,def=77" json:"type,omitempty"`
-	Reps          []int64             `protobuf:"varint,3,rep,name=reps" json:"reps,omitempty"`
+	Label         *string             `protobuf:"bytes,1,req,name=label"                            json:"label,omitempty"`
+	Type          *int32              `protobuf:"varint,2,opt,name=type,def=77"                     json:"type,omitempty"`
+	Reps          []int64             `protobuf:"varint,3,rep,name=reps"                            json:"reps,omitempty"`
 	Optionalgroup *Test_OptionalGroup `protobuf:"group,4,opt,name=OptionalGroup,json=optionalgroup" json:"optionalgroup,omitempty"`
 }
 

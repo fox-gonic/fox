@@ -19,13 +19,6 @@ type queryUsersArgs struct {
 	OK     bool     `json:"ok"`
 }
 
-type testCase struct {
-	Query    map[string][]string
-	Path     map[string]string
-	JSONBody map[string]interface{}
-	FormBody map[string][]string
-}
-
 func TestBind(t *testing.T) {
 	queries := url.Values{}
 	queries.Add("ids", "1")

@@ -28,14 +28,14 @@ type RouterGroup struct {
 
 // Use adds middleware to the group, see example code in GitHub.
 func (group *RouterGroup) Use(middleware ...HandlerFunc) {
-	group.Handlers = append(group.Handlers, middleware...)
+	group.Handlers = group.combineHandlers(middleware)
 }
 
 // Group creates a new router group. You should add all the routes that have common middlewares or the same path prefix.
 // For example, all the routes that use a common middleware for authorization could be grouped.
 func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *RouterGroup {
 	return &RouterGroup{
-		Handlers: append(group.Handlers, handlers...),
+		Handlers: group.combineHandlers(handlers),
 		basePath: group.calculateAbsolutePath(relativePath),
 		engine:   group.engine,
 	}
@@ -43,7 +43,7 @@ func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *R
 
 func (group *RouterGroup) handle(method, relativePath string, handlers HandlersChain) {
 	absolutePath := group.calculateAbsolutePath(relativePath)
-	handlers = append(group.Handlers, handlers...)
+	handlers = group.combineHandlers(handlers)
 	group.engine.addRoute(method, absolutePath, handlers)
 }
 
@@ -127,6 +127,14 @@ func (group *RouterGroup) ServeFiles(path string, root http.FileSystem) {
 		c.Request.URL.Path = c.Params.ByName("filepath")
 		fileServer.ServeHTTP(c.Writer, c.Request)
 	})
+}
+
+func (group *RouterGroup) combineHandlers(handlers HandlersChain) HandlersChain {
+	finalSize := len(group.Handlers) + len(handlers)
+	mergedHandlers := make(HandlersChain, finalSize)
+	copy(mergedHandlers, group.Handlers)
+	copy(mergedHandlers[len(group.Handlers):], handlers)
+	return mergedHandlers
 }
 
 func (group *RouterGroup) calculateAbsolutePath(relativePath string) string {

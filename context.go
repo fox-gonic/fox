@@ -58,7 +58,8 @@ func (c *Context) Next() {
 // renderError ...
 func (c *Context) renderError(err error) {
 	c.Writer.WriteHeader(http.StatusInternalServerError)
-	c.Writer.Write([]byte(err.Error()))
+	// TODO(m) custom error render
+	c.Writer.Write([]byte(err.Error())) // nolint: errcheck
 }
 
 // render writes the response headers and calls render.render to render data.
@@ -124,6 +125,11 @@ func (c *Context) MustGet(key string) any {
 		return value
 	}
 	panic("Key \"" + key + "\" does not exist")
+}
+
+// Engine return the engine that was used to create this context.
+func (c *Context) Engine() *Engine {
+	return c.engine
 }
 
 /************************************/

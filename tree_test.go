@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // func printChildren(n *node, prefix string) {
@@ -55,8 +57,7 @@ func checkRequests(t *testing.T, tree *node, requests testRequests) {
 		case request.nilHandler:
 			t.Errorf("handle mismatch for route '%s': Expected nil handle", request.path)
 		default:
-			// handler[0](nil)
-			// TODO(m) call handler
+			call(nil, handler[0]) // nolint: errcheck
 			if fakeHandlerValue != request.route {
 				t.Errorf("handle mismatch for route '%s': Wrong handle (%s != %s)", request.path, fakeHandlerValue, request.route)
 			}
@@ -219,6 +220,20 @@ func testRoutes(t *testing.T, routes []testRoute) {
 	}
 
 	// printChildren(tree, "")
+}
+
+func TestTreeParams(t *testing.T) {
+	ps := Params{
+		Param{"param1", "value1"},
+		Param{"param2", "value2"},
+		Param{"param3", "value3"},
+	}
+	for i := range ps {
+		val := ps.ByName(ps[i].Key)
+		assert.Equal(t, val, ps[i].Value)
+	}
+	val := ps.ByName("noKey")
+	assert.Empty(t, val)
 }
 
 func TestTreeWildcardConflict(t *testing.T) {

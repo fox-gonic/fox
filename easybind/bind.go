@@ -154,7 +154,7 @@ func (e *easyReq) bindField(field reflect.Value, fieldType reflect.StructField, 
 		values = e.req.Header.Values(name)
 	case inTagForm:
 		e.once.Do(func() {
-			e.req.ParseForm()
+			e.req.ParseForm() // nolint: errcheck
 		})
 
 		values = e.req.PostForm[name]

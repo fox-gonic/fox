@@ -16,7 +16,7 @@ func call(ctx *Context, handler HandlerFunc) (any, int, error) {
 
 	// TODO(m) check handler type when route registering
 	if funcValue.Kind() != reflect.Func {
-		panic(fmt.Sprintf("%v is not a function", handler))
+		panic(fmt.Sprintf("%#v is not a function", handler))
 	}
 
 	var (
@@ -28,7 +28,7 @@ func call(ctx *Context, handler HandlerFunc) (any, int, error) {
 		panic("only support handler func returns max is three")
 	}
 
-	values := make([]reflect.Value, 0, numOut)
+	var values []reflect.Value
 
 	switch numIn {
 	case 0:

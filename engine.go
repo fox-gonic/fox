@@ -80,14 +80,16 @@ type Engine struct {
 
 	// Configurable http.Handler which is called when no matching route is
 	// found. If it is not set, http.NotFound is used.
-	notFoundHandlers HandlersChain
+	noRoute    HandlersChain
+	allNoRoute HandlersChain
 
 	// Configurable http.Handler which is called when a request
 	// cannot be routed and HandleMethodNotAllowed is true.
 	// If it is not set, http.Error with http.StatusMethodNotAllowed is used.
 	// The "Allow" header with allowed request methods is set before the handler
 	// is called.
-	methodNotAllowedHandlers HandlersChain
+	noMethod    HandlersChain
+	allNoMethod HandlersChain
 
 	// Function to handle panics recovered from http handlers.
 	// It should be used to generate a error page and return the http error code
@@ -95,6 +97,9 @@ type Engine struct {
 	// The handler can be used to keep your server from crashing because of
 	// unrecovered panics.
 	PanicHandler func(http.ResponseWriter, *http.Request, interface{})
+
+	// cache is a key/value pair global for the engine.
+	cache sync.Map
 }
 
 // Make sure the Router conforms with the http.Handler interface
@@ -126,22 +131,45 @@ func (engine *Engine) allocateContext() *Context {
 	return &Context{engine: engine, Params: &params}
 }
 
+// Store sets the value for a key.
+func (engine *Engine) Store(key string, value any) {
+	engine.cache.Store(key, value)
+}
+
+// Load returns the value stored in the map for a key, or nil if no value is present.
+// The ok result indicates whether value was found in the map.
+func (engine *Engine) Load(key string) (value any, exists bool) {
+	return engine.cache.Load(key)
+}
+
+// MustLoad returns the value for the given key if it exists, otherwise it panics.
+func (engine *Engine) MustLoad(key string) any {
+	if value, exists := engine.cache.Load(key); exists {
+		return value
+	}
+	panic("Key \"" + key + "\" does not exist")
+}
+
 // Use attaches a global middleware to the router. i.e. the middleware attached through Use() will be
 // included in the handlers chain for every single request. Even 404, 405, static files...
 // For example, this is the right place for a logger or error management middleware.
 func (engine *Engine) Use(middleware ...HandlerFunc) {
 	engine.RouterGroup.Use(middleware...)
+	engine.allNoRoute = engine.combineHandlers(engine.noRoute)
+	engine.allNoMethod = engine.combineHandlers(engine.noMethod)
 }
 
 // NotFound configurable http.Handler which is called when no matching route is
 // found. If it is not set, http.NotFound is used.
 func (engine *Engine) NotFound(handlers ...HandlerFunc) {
-	engine.notFoundHandlers = handlers
+	engine.noRoute = handlers
+	engine.allNoRoute = engine.combineHandlers(engine.noRoute)
 }
 
 // NoMethod sets the handlers called when Engine.HandleMethodNotAllowed = true.
 func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
-	engine.methodNotAllowedHandlers = handlers
+	engine.noMethod = handlers
+	engine.allNoMethod = engine.combineHandlers(engine.noMethod)
 }
 
 func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
@@ -315,14 +343,14 @@ func (engine *Engine) handleHTTPRequest(ctx *Context) {
 	if engine.HandleMethodNotAllowed {
 		if allow := engine.allowed(path, httpMethod); allow != "" {
 			ctx.Writer.Header().Set("Allow", allow)
-			ctx.handlers = engine.methodNotAllowedHandlers
+			ctx.handlers = engine.allNoMethod
 			serveError(ctx, http.StatusMethodNotAllowed, default405Body)
 			return
 		}
 	}
 
 	// Handle 404
-	ctx.handlers = ctx.engine.notFoundHandlers
+	ctx.handlers = ctx.engine.allNoRoute
 	serveError(ctx, http.StatusNotFound, default404Body)
 }
 
@@ -377,7 +405,7 @@ func redirectRequest(ctx *Context) {
 
 	code := http.StatusMovedPermanently // Permanent redirect, request with GET method
 	if req.Method != http.MethodGet {
-		code = http.StatusTemporaryRedirect
+		code = http.StatusPermanentRedirect
 	}
 	// debugPrint("redirecting request %d: %s --> %s", code, rPath, rURL)
 	http.Redirect(ctx.Writer, req, rURL, code)
