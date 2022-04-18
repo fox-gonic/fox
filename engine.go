@@ -3,14 +3,26 @@ package fox
 import (
 	"fmt"
 	"net/http"
+	"path"
 	"strings"
 	"sync"
+)
+
+var (
+	default404Body = []byte("404 page not found")
+	default405Body = []byte("405 method not allowed")
 )
 
 // HandlerFunc is a function that can be registered to a route to handle HTTP
 // requests. Like http.HandlerFunc, but has a third parameter for the values of
 // wildcards (path variables).
-type HandlerFunc func(*Context)
+// func(){}
+// func(ctx *Context) any { ... }
+// func(ctx *Context) (any, err) { ... }
+// func(ctx *Context, args *AutoBindingArgType) (any, err) { ... }
+// func(ctx *Context, args *AutoBindingArgType) (any, code, err) { ... }
+// func(ctx *Context, args *AutoBindingArgType) (any, code) { ... }
+type HandlerFunc interface{}
 
 // HandlersChain defines a HandlerFunc slice.
 type HandlersChain []HandlerFunc
@@ -68,14 +80,14 @@ type Engine struct {
 
 	// Configurable http.Handler which is called when no matching route is
 	// found. If it is not set, http.NotFound is used.
-	NotFound http.Handler
+	notFoundHandlers HandlersChain
 
 	// Configurable http.Handler which is called when a request
 	// cannot be routed and HandleMethodNotAllowed is true.
 	// If it is not set, http.Error with http.StatusMethodNotAllowed is used.
 	// The "Allow" header with allowed request methods is set before the handler
 	// is called.
-	MethodNotAllowed http.Handler
+	methodNotAllowedHandlers HandlersChain
 
 	// Function to handle panics recovered from http handlers.
 	// It should be used to generate a error page and return the http error code
@@ -119,6 +131,17 @@ func (engine *Engine) allocateContext() *Context {
 // For example, this is the right place for a logger or error management middleware.
 func (engine *Engine) Use(middleware ...HandlerFunc) {
 	engine.RouterGroup.Use(middleware...)
+}
+
+// NotFound configurable http.Handler which is called when no matching route is
+// found. If it is not set, http.NotFound is used.
+func (engine *Engine) NotFound(handlers ...HandlerFunc) {
+	engine.notFoundHandlers = handlers
+}
+
+// NoMethod sets the handlers called when Engine.HandleMethodNotAllowed = true.
+func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
+	engine.methodNotAllowedHandlers = handlers
 }
 
 func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
@@ -239,9 +262,7 @@ func (engine *Engine) Run(addr string) (err error) {
 // ServeHTTP makes the router implement the http.Handler interface.
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	ctx := engine.pool.Get().(*Context)
-	ctx.Writer = w
-	ctx.Request = req
-	ctx.reset()
+	ctx.reset(w, req)
 	engine.handleHTTPRequest(ctx)
 	engine.pool.Put(ctx)
 }
@@ -255,45 +276,32 @@ func (engine *Engine) handleHTTPRequest(ctx *Context) {
 	path := ctx.Request.URL.Path
 
 	if root := engine.trees[httpMethod]; root != nil {
-		if handle, ps, tsr := root.getValue(path, ctx.Params); handle != nil {
-			ctx.handlers = handle
+		handlers, ps, tsr := root.getValue(path, ctx.Params)
+
+		if handlers != nil {
+			ctx.handlers = handlers
 			if ps != nil {
 				ctx.Params = ps
 			}
 			ctx.Next()
+			ctx.Writer.WriteHeaderNow()
 			return
-		} else if httpMethod != http.MethodConnect && path != "/" {
-			// Moved Permanently, request with GET method
-			code := http.StatusMovedPermanently
-			if httpMethod != http.MethodGet {
-				// Permanent Redirect, request with same method
-				code = http.StatusPermanentRedirect
-			}
+		}
 
+		if httpMethod != http.MethodConnect && path != "/" {
 			if tsr && engine.RedirectTrailingSlash {
-				if len(path) > 1 && path[len(path)-1] == '/' {
-					ctx.Request.URL.Path = path[:len(path)-1]
-				} else {
-					ctx.Request.URL.Path = path + "/"
-				}
-				http.Redirect(ctx.Writer, ctx.Request, ctx.Request.URL.String(), code)
+				redirectTrailingSlash(ctx)
 				return
 			}
-
 			// Try to fix the request path
-			if engine.RedirectFixedPath {
-				fixedPath, found := root.findCaseInsensitivePath(CleanPath(path), engine.RedirectTrailingSlash)
-				if found {
-					ctx.Request.URL.Path = fixedPath
-					http.Redirect(ctx.Writer, ctx.Request, ctx.Request.URL.String(), code)
-					return
-				}
+			if engine.RedirectFixedPath && redirectFixedPath(ctx, root, engine.RedirectFixedPath) {
+				return
 			}
 		}
 	}
 
+	// Handle OPTIONS requests
 	if httpMethod == http.MethodOptions && engine.HandleOPTIONS {
-		// Handle OPTIONS requests
 		if allow := engine.allowed(path, http.MethodOptions); allow != "" {
 			ctx.Writer.Header().Set("Allow", allow)
 			if engine.GlobalOPTIONS != nil {
@@ -301,22 +309,77 @@ func (engine *Engine) handleHTTPRequest(ctx *Context) {
 			}
 			return
 		}
-	} else if engine.HandleMethodNotAllowed { // Handle 405
+	}
+
+	// Handle 405
+	if engine.HandleMethodNotAllowed {
 		if allow := engine.allowed(path, httpMethod); allow != "" {
 			ctx.Writer.Header().Set("Allow", allow)
-			if engine.MethodNotAllowed != nil {
-				engine.MethodNotAllowed.ServeHTTP(ctx.Writer, ctx.Request)
-			} else {
-				http.Error(ctx.Writer, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-			}
+			ctx.handlers = engine.methodNotAllowedHandlers
+			serveError(ctx, http.StatusMethodNotAllowed, default405Body)
 			return
 		}
 	}
 
 	// Handle 404
-	if engine.NotFound != nil {
-		engine.NotFound.ServeHTTP(ctx.Writer, ctx.Request)
-	} else {
-		http.NotFound(ctx.Writer, ctx.Request)
+	ctx.handlers = ctx.engine.notFoundHandlers
+	serveError(ctx, http.StatusNotFound, default404Body)
+}
+
+var mimePlain = []string{"text/plain"}
+
+func serveError(c *Context, code int, defaultMessage []byte) {
+	c.Writer.status = code
+	c.Next()
+	if c.Writer.Written() {
+		return
 	}
+	if c.Writer.Status() == code {
+		c.Writer.Header()["Content-Type"] = mimePlain
+		_, err := c.Writer.Write(defaultMessage)
+		if err != nil {
+			// debugPrint("cannot write message to writer during serve error: %v", err)
+		}
+		return
+	}
+	c.Writer.WriteHeaderNow()
+}
+
+func redirectTrailingSlash(ctx *Context) {
+	req := ctx.Request
+	p := req.URL.Path
+	if prefix := path.Clean(ctx.Request.Header.Get("X-Forwarded-Prefix")); prefix != "." {
+		p = prefix + "/" + req.URL.Path
+	}
+	req.URL.Path = p + "/"
+	if length := len(p); length > 1 && p[length-1] == '/' {
+		req.URL.Path = p[:length-1]
+	}
+	redirectRequest(ctx)
+}
+
+func redirectFixedPath(ctx *Context, root *node, trailingSlash bool) bool {
+	req := ctx.Request
+	rPath := req.URL.Path
+
+	if fixedPath, ok := root.findCaseInsensitivePath(CleanPath(rPath), trailingSlash); ok {
+		req.URL.Path = fixedPath
+		redirectRequest(ctx)
+		return true
+	}
+	return false
+}
+
+func redirectRequest(ctx *Context) {
+	req := ctx.Request
+	// rPath := req.URL.Path
+	rURL := req.URL.String()
+
+	code := http.StatusMovedPermanently // Permanent redirect, request with GET method
+	if req.Method != http.MethodGet {
+		code = http.StatusTemporaryRedirect
+	}
+	// debugPrint("redirecting request %d: %s --> %s", code, rPath, rURL)
+	http.Redirect(ctx.Writer, req, rURL, code)
+	ctx.Writer.WriteHeaderNow()
 }

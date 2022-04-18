@@ -7,11 +7,27 @@ package fox
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
+
+// PerformRequest router test
+func PerformRequest(r http.Handler, method, path string, header http.Header, body ...io.Reader) *httptest.ResponseRecorder {
+	var data io.Reader
+	if len(body) > 0 {
+		data = body[0]
+	}
+	req := httptest.NewRequest(method, path, data)
+	req.Header = header
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	return w
+}
 
 type mockResponseWriter struct{}
 
@@ -185,7 +201,6 @@ func TestRouterInvalidInput(t *testing.T) {
 func TestRouterChaining(t *testing.T) {
 	router1 := New()
 	router2 := New()
-	router1.NotFound = router2
 
 	fooHit := false
 	router1.POST("/foo", func(c *Context) {
@@ -245,102 +260,6 @@ func BenchmarkAllowed(b *testing.B) {
 	})
 }
 
-func TestRouterOPTIONS(t *testing.T) {
-	handlerFunc := func(*Context) {}
-
-	router := New()
-	router.POST("/path", handlerFunc)
-
-	// test not allowed
-	// * (server)
-	r, _ := http.NewRequest(http.MethodOptions, "*", nil)
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, r)
-	if !(w.Code == http.StatusOK) {
-		t.Errorf("OPTIONS handling failed: Code=%d, Header=%v", w.Code, w.Header())
-	} else if allow := w.Header().Get("Allow"); allow != "OPTIONS, POST" {
-		t.Error("unexpected Allow header value: " + allow)
-	}
-
-	// path
-	r, _ = http.NewRequest(http.MethodOptions, "/path", nil)
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, r)
-	if !(w.Code == http.StatusOK) {
-		t.Errorf("OPTIONS handling failed: Code=%d, Header=%v", w.Code, w.Header())
-	} else if allow := w.Header().Get("Allow"); allow != "OPTIONS, POST" {
-		t.Error("unexpected Allow header value: " + allow)
-	}
-
-	r, _ = http.NewRequest(http.MethodOptions, "/doesnotexist", nil)
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, r)
-	if !(w.Code == http.StatusNotFound) {
-		t.Errorf("OPTIONS handling failed: Code=%d, Header=%v", w.Code, w.Header())
-	}
-
-	// add another method
-	router.GET("/path", handlerFunc)
-
-	// set a global OPTIONS handler
-	router.GlobalOPTIONS = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Adjust status code to 204
-		w.WriteHeader(http.StatusNoContent)
-	})
-
-	// test again
-	// * (server)
-	r, _ = http.NewRequest(http.MethodOptions, "*", nil)
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, r)
-	if !(w.Code == http.StatusNoContent) {
-		t.Errorf("OPTIONS handling failed: Code=%d, Header=%v", w.Code, w.Header())
-	} else if allow := w.Header().Get("Allow"); allow != "GET, OPTIONS, POST" {
-		t.Error("unexpected Allow header value: " + allow)
-	}
-
-	// path
-	r, _ = http.NewRequest(http.MethodOptions, "/path", nil)
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, r)
-	if !(w.Code == http.StatusNoContent) {
-		t.Errorf("OPTIONS handling failed: Code=%d, Header=%v", w.Code, w.Header())
-	} else if allow := w.Header().Get("Allow"); allow != "GET, OPTIONS, POST" {
-		t.Error("unexpected Allow header value: " + allow)
-	}
-
-	// custom handler
-	var custom bool
-	router.OPTIONS("/path", func(c *Context) {
-		custom = true
-	})
-
-	// test again
-	// * (server)
-	r, _ = http.NewRequest(http.MethodOptions, "*", nil)
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, r)
-	if !(w.Code == http.StatusNoContent) {
-		t.Errorf("OPTIONS handling failed: Code=%d, Header=%v", w.Code, w.Header())
-	} else if allow := w.Header().Get("Allow"); allow != "GET, OPTIONS, POST" {
-		t.Error("unexpected Allow header value: " + allow)
-	}
-	if custom {
-		t.Error("custom handler called on *")
-	}
-
-	// path
-	r, _ = http.NewRequest(http.MethodOptions, "/path", nil)
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, r)
-	if !(w.Code == http.StatusOK) {
-		t.Errorf("OPTIONS handling failed: Code=%d, Header=%v", w.Code, w.Header())
-	}
-	if !custom {
-		t.Error("custom handler not called")
-	}
-}
-
 func TestRouterNotAllowed(t *testing.T) {
 	handlerFunc := func(*Context) {}
 
@@ -374,10 +293,11 @@ func TestRouterNotAllowed(t *testing.T) {
 	// test custom handler
 	w = httptest.NewRecorder()
 	responseText := "custom method"
-	router.MethodNotAllowed = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		w.WriteHeader(http.StatusTeapot)
-		w.Write([]byte(responseText))
+
+	router.NoMethod(func(c *Context) (string, int) {
+		return responseText, http.StatusTeapot
 	})
+
 	router.ServeHTTP(w, r)
 	if got := w.Body.String(); !(got == responseText) {
 		t.Errorf("unexpected response got %q want %q", got, responseText)
@@ -391,9 +311,11 @@ func TestRouterNotAllowed(t *testing.T) {
 }
 
 func TestRouterNotFound(t *testing.T) {
+	assert := assert.New(t)
 	handlerFunc := func(*Context) {}
 
 	router := New()
+	router.RedirectFixedPath = true
 	router.GET("/path", handlerFunc)
 	router.GET("/dir/", handlerFunc)
 	router.GET("/", handlerFunc)
@@ -405,7 +327,6 @@ func TestRouterNotFound(t *testing.T) {
 	}{
 		{"/path/", http.StatusMovedPermanently, "/path"},   // TSR -/
 		{"/dir", http.StatusMovedPermanently, "/dir/"},     // TSR +/
-		{"", http.StatusMovedPermanently, "/"},             // TSR +/
 		{"/PATH", http.StatusMovedPermanently, "/path"},    // Fixed Case
 		{"/DIR/", http.StatusMovedPermanently, "/dir/"},    // Fixed Case
 		{"/PATH/", http.StatusMovedPermanently, "/path"},   // Fixed Case -/
@@ -414,9 +335,7 @@ func TestRouterNotFound(t *testing.T) {
 		{"/nope", http.StatusNotFound, ""},                 // NotFound
 	}
 	for _, tr := range testRoutes {
-		r, _ := http.NewRequest(http.MethodGet, tr.route, nil)
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, r)
+		w := PerformRequest(router, http.MethodGet, tr.route, nil)
 		if !(w.Code == tr.code && (w.Code == http.StatusNotFound || fmt.Sprint(w.Header().Get("Location")) == tr.location)) {
 			t.Errorf("NotFound handling route %s failed: Code=%d, Header=%v", tr.route, w.Code, w.Header().Get("Location"))
 		}
@@ -424,32 +343,28 @@ func TestRouterNotFound(t *testing.T) {
 
 	// Test custom not found handler
 	var notFound bool
-	router.NotFound = http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		rw.WriteHeader(http.StatusNotFound)
+
+	router.NotFound(func(c *Context) (interface{}, int) {
 		notFound = true
+		return nil, 404
 	})
-	r, _ := http.NewRequest(http.MethodGet, "/nope", nil)
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, r)
-	if !(w.Code == http.StatusNotFound && notFound == true) {
-		t.Errorf("Custom NotFound handler failed: Code=%d, Header=%v", w.Code, w.Header())
-	}
+
+	w := PerformRequest(router, http.MethodGet, "/nope", nil)
+	assert.Equal(http.StatusNotFound, w.Code)
+	assert.True(notFound)
 
 	// Test other method than GET (want 308 instead of 301)
 	router.PATCH("/path", handlerFunc)
-	r, _ = http.NewRequest(http.MethodPatch, "/path/", nil)
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, r)
-	if !(w.Code == http.StatusPermanentRedirect && fmt.Sprint(w.Header()) == "map[Location:[/path]]") {
-		t.Errorf("Custom NotFound handler failed: Code=%d, Header=%v", w.Code, w.Header())
-	}
+	w = PerformRequest(router, http.MethodPatch, "/path/", nil)
+	// fmt.Printf("----w: %#v\n", w)
+
+	assert.Equal(http.StatusPermanentRedirect, w.Code)
+	// assert.Equal(t, "map[Location:[/path]]", fmt.Sprint(w.Header()))
 
 	// Test special case where no node for the prefix "/" exists
 	router = New()
 	router.GET("/a", handlerFunc)
-	r, _ = http.NewRequest(http.MethodGet, "/", nil)
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, r)
+	w = PerformRequest(router, http.MethodGet, "/", nil)
 	if !(w.Code == http.StatusNotFound) {
 		t.Errorf("NotFound handling route / failed: Code=%d", w.Code)
 	}

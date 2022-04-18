@@ -4,13 +4,15 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/miclle/fox/render"
 )
 
 // Context allows us to pass variables between middleware,
 // manage the flow, using logger with context
 type Context struct {
 	Request *http.Request
-	Writer  http.ResponseWriter
+	Writer  *ResponseWriter
 	Params  *Params
 
 	engine   *Engine
@@ -24,11 +26,16 @@ type Context struct {
 	Keys map[string]any
 }
 
-func (c *Context) reset() {
+func (c *Context) reset(w http.ResponseWriter, req *http.Request) {
+	c.Writer = &ResponseWriter{
+		ResponseWriter: w,
+		size:           noWritten,
+		status:         defaultStatus,
+	}
+	c.Request = req
 	*c.Params = (*c.Params)[:0]
 	c.handlers = nil
 	c.index = -1
-
 	c.Keys = nil
 }
 
@@ -36,9 +43,51 @@ func (c *Context) reset() {
 func (c *Context) Next() {
 	c.index++
 	for c.index < len(c.handlers) {
-		// TODO(m) automatically bind the handler arguments
-		c.handlers[c.index](c)
+		res, code, err := call(c, c.handlers[c.index])
+		if err != nil {
+			c.renderError(err)
+			return
+		}
+		if res != nil || code != 0 {
+			c.render(code, res)
+		}
 		c.index++
+	}
+}
+
+// renderError ...
+func (c *Context) renderError(err error) {
+	c.Writer.WriteHeader(http.StatusInternalServerError)
+	c.Writer.Write([]byte(err.Error()))
+}
+
+// render writes the response headers and calls render.render to render data.
+func (c *Context) render(code int, res any) {
+
+	if code > 0 {
+		c.Writer.WriteHeader(code)
+	}
+
+	var r render.Render
+	switch v := res.(type) {
+	case error:
+		c.renderError(v)
+		return
+	case string:
+		r = render.String{Format: v}
+	case render.Redirect:
+		r = v
+		c.Writer.WriteHeader(-1)
+	case render.JSON, render.IndentedJSON, render.JsonpJSON, render.XML, render.Data,
+		render.HTML, render.YAML, render.Reader, render.ASCIIJSON, render.ProtoBuf:
+		r = v.(render.Render)
+	default:
+		r = render.JSON{Data: res}
+	}
+
+	r.WriteContentType(c.Writer)
+	if err := r.Render(c.Writer); err != nil {
+		panic(err)
 	}
 }
 

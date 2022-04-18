@@ -24,8 +24,8 @@ type Params []Param
 
 // ByName returns the value of the first Param which key matches the given name.
 // If no matching Param is found, an empty string is returned.
-func (ps Params) ByName(name string) string {
-	for _, p := range ps {
+func (ps *Params) ByName(name string) string {
+	for _, p := range *ps {
 		if p.Key == name {
 			return p.Value
 		}

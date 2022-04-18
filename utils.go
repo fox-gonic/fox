@@ -1,6 +1,10 @@
 package fox
 
-import "path"
+import (
+	"path"
+	"reflect"
+	"runtime"
+)
 
 func lastChar(str string) uint8 {
 	if str == "" {
@@ -19,4 +23,8 @@ func joinPaths(absolutePath, relativePath string) string {
 		return finalPath + "/"
 	}
 	return finalPath
+}
+
+func getFunctionName(i interface{}) string {
+	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
 }
