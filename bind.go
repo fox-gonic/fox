@@ -1,4 +1,6 @@
-package easybind
+// https://github.com/momaek/easybind/blob/master/LICENSE
+
+package fox
 
 import (
 	"context"
@@ -39,8 +41,8 @@ type Example struct {
 	Name string `json:"name" pos:"query:name,required"` // query specified that get
 }
 */
-func Bind(req *http.Request, params interface{}, pathQueryier ...interface{}) (err error) {
-	paramsVal := reflect.ValueOf(params)
+func Bind(req *http.Request, parameter interface{}, pathQueryier *Params) (err error) {
+	paramsVal := reflect.ValueOf(parameter)
 	if paramsVal.Kind() != reflect.Ptr {
 		err = errors.New("can't bind to nonpointer value")
 		return
@@ -64,10 +66,10 @@ func Bind(req *http.Request, params interface{}, pathQueryier ...interface{}) (e
 		wg          = sync.WaitGroup{}
 		ctx, cancel = context.WithCancel(context.Background())
 		easy        = &easyReq{
-			ctx:          ctx,
-			req:          req,
-			once:         &sync.Once{},
-			pathQueryier: pathQueryier,
+			ctx:    ctx,
+			req:    req,
+			once:   &sync.Once{},
+			params: pathQueryier,
 		}
 	)
 
@@ -89,18 +91,18 @@ func Bind(req *http.Request, params interface{}, pathQueryier ...interface{}) (e
 	wg.Wait()
 
 	if easy.hasJSONBody {
-		err = json.NewDecoder(req.Body).Decode(params)
+		err = json.NewDecoder(req.Body).Decode(parameter)
 	}
 
 	return
 }
 
 type easyReq struct {
-	ctx          context.Context
-	once         *sync.Once
-	pathQueryier []interface{}
-	req          *http.Request
-	hasJSONBody  bool
+	ctx         context.Context
+	once        *sync.Once
+	params      *Params
+	req         *http.Request
+	hasJSONBody bool
 }
 
 func (e *easyReq) bindFieldWithCtx(field reflect.Value, fieldType reflect.StructField) (err error) {
@@ -127,7 +129,7 @@ func (e *easyReq) bindFieldWithCtx(field reflect.Value, fieldType reflect.Struct
 func (e *easyReq) bindField(field reflect.Value, fieldType reflect.StructField, errCh chan error) {
 	if fieldType.Anonymous {
 		r := reflect.New(field.Type())
-		err := Bind(e.req, r.Interface(), e.pathQueryier...)
+		err := Bind(e.req, r.Interface(), e.params)
 		if err != nil {
 			errCh <- err
 			return
@@ -146,7 +148,7 @@ func (e *easyReq) bindField(field reflect.Value, fieldType reflect.StructField, 
 
 	switch loc {
 	case inTagPath:
-		pathVal := getValueFromPath(name, e.pathQueryier...)
+		pathVal := e.params.ByName(name)
 		values = append(values, pathVal)
 	case inTagQuery:
 		values = e.req.URL.Query()[name]
@@ -202,29 +204,4 @@ func getInTagLocAndName(fieldType reflect.StructField) (loc, name string) {
 	name = locs[1]
 
 	return
-}
-
-type giner interface {
-	Param(string) string
-}
-
-type httprouter interface {
-	ByName(string) string
-}
-
-func getValueFromPath(name string, pathQueryier ...interface{}) string {
-
-	if len(pathQueryier) == 0 {
-		return ""
-	}
-
-	if g, ok := pathQueryier[0].(giner); ok {
-		return g.Param(name)
-	}
-
-	if h, ok := pathQueryier[0].(httprouter); ok {
-		return h.ByName(name)
-	}
-
-	return ""
 }

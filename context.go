@@ -15,9 +15,12 @@ type Context struct {
 	Writer  *ResponseWriter
 	Params  *Params
 
-	engine   *Engine
+	engine       *Engine
+	skippedNodes *[]skippedNode
+
 	handlers HandlersChain
 	index    int
+	fullPath string
 
 	// This mutex protects Keys map.
 	mu sync.RWMutex
@@ -36,7 +39,9 @@ func (c *Context) reset(w http.ResponseWriter, req *http.Request) {
 	*c.Params = (*c.Params)[:0]
 	c.handlers = nil
 	c.index = -1
+	c.fullPath = ""
 	c.Keys = nil
+	*c.skippedNodes = (*c.skippedNodes)[:0]
 }
 
 // Next should be used only inside middleware.
@@ -79,8 +84,8 @@ func (c *Context) render(code int, res any) {
 	case render.Redirect:
 		r = v
 		c.Writer.WriteHeader(-1)
-	case render.JSON, render.IndentedJSON, render.JsonpJSON, render.XML, render.Data,
-		render.HTML, render.YAML, render.Reader, render.ASCIIJSON, render.ProtoBuf:
+	case render.String, render.JSON, render.IndentedJSON, render.JsonpJSON, render.XML,
+		render.Data, render.HTML, render.YAML, render.Reader, render.ASCIIJSON, render.ProtoBuf:
 		r = v.(render.Render)
 	default:
 		r = render.JSON{Data: res}

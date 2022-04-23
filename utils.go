@@ -22,3 +22,9 @@ func joinPaths(absolutePath, relativePath string) string {
 	}
 	return finalPath
 }
+
+func assert1(guard bool, text string) {
+	if !guard {
+		panic(text)
+	}
+}

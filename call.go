@@ -3,8 +3,6 @@ package fox
 import (
 	"fmt"
 	"reflect"
-
-	"github.com/miclle/fox/easybind"
 )
 
 func call(ctx *Context, handler HandlerFunc) (any, int, error) {
@@ -39,12 +37,13 @@ func call(ctx *Context, handler HandlerFunc) (any, int, error) {
 		in := make([]reflect.Value, 0, numIn)
 		in = append(in, ctxValue)
 		for i := 1; i < numIn; i++ {
-			args := reflect.New(funcType.In(i)).Interface()
-			if err := easybind.Bind(ctx.Request, args, ctx.Params); err != nil {
+			// Bind handler params
+			parameter := reflect.New(funcType.In(i)).Interface()
+			if err := Bind(ctx.Request, parameter, ctx.Params); err != nil {
 				// TODO(m) err maybe 413 Payload Too Large
 				return nil, 400, err
 			}
-			in = append(in, reflect.ValueOf(args).Elem())
+			in = append(in, reflect.ValueOf(parameter).Elem())
 		}
 		values = funcValue.Call(in)
 	}

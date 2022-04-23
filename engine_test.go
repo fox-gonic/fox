@@ -1,7 +1,6 @@
 package fox
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -60,14 +59,14 @@ func TestEngineAddRoute(t *testing.T) {
 	router.addRoute("GET", "/", HandlersChain{func() {}})
 
 	assert.Len(t, router.trees, 1)
-	assert.NotNil(t, router.trees["GET"])
-	assert.Nil(t, router.trees["POST"])
+	assert.NotNil(t, router.trees.get("GET"))
+	assert.Nil(t, router.trees.get("POST"))
 
 	router.addRoute("POST", "/", HandlersChain{func() {}})
 
 	assert.Len(t, router.trees, 2)
-	assert.NotNil(t, router.trees["GET"])
-	assert.NotNil(t, router.trees["POST"])
+	assert.NotNil(t, router.trees.get("GET"))
+	assert.NotNil(t, router.trees.get("POST"))
 
 	router.addRoute("POST", "/post", HandlersChain{func() {}})
 	assert.Len(t, router.trees, 2)
@@ -313,30 +312,46 @@ func TestEngineRESTful(t *testing.T) {
 	}
 }
 
+// mixed static and wildcard
+func TestRouterStatic(t *testing.T) {
+	router := New()
+
+	router.GET("/articles", func(c *Context) (string, error) {
+		return "articles", nil
+	})
+
+	type Args struct {
+		ID int `pos:"path:id"`
+	}
+	router.GET("/articles/:id", func(c *Context, args *Args) (string, error) {
+		return fmt.Sprintf("articles/%d", args.ID), nil
+	})
+
+	router.GET("/articles/popular", func(c *Context) (string, error) {
+		return "articles/popular", nil
+	})
+
+	w := PerformRequest(router, http.MethodGet, "/articles", nil)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "articles", w.Body.String())
+
+	w = PerformRequest(router, http.MethodGet, "/articles/123", nil)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "articles/123", w.Body.String())
+
+	w = PerformRequest(router, http.MethodGet, "/articles/popular", nil)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "articles/popular", w.Body.String())
+}
+
 func TestRouterInvalidInput(t *testing.T) {
 	router := New()
 	router.basePath = ""
 	handle := func(*Context) {}
-
-	recv := catchPanic(func() {
-		router.Handle("", "/", handle)
-	})
-	assert.NotNil(t, recv, "registering empty method did not panic")
-
-	recv = catchPanic(func() {
-		router.GET("", handle)
-	})
-	assert.NotNil(t, recv, "registering empty path did not panic")
-
-	recv = catchPanic(func() {
-		router.GET("noSlashRoot", handle)
-	})
-	assert.NotNil(t, recv, "registering path not beginning with '/' did not panic")
-
-	recv = catchPanic(func() {
-		router.GET("/", nil)
-	})
-	assert.NotNil(t, recv, "registering nil handler did not panic")
+	assert.Panics(t, func() { router.Handle("", "/", handle) }, "registering empty method did not panic")
+	assert.Panics(t, func() { router.GET("", handle) }, "registering empty path did not panic")
+	assert.Panics(t, func() { router.GET("noSlashRoot", handle) }, "registering path not beginning with '/' did not panic")
+	assert.Panics(t, func() { router.GET("/", nil) }, "registering nil handler did not panic")
 }
 
 func TestRouteRedirectTrailingSlash(t *testing.T) {
@@ -391,64 +406,57 @@ func TestRouteRedirectTrailingSlash(t *testing.T) {
 
 	w = PerformRequest(router, http.MethodGet, "/path/", nil)
 	assert.Equal(t, http.StatusNotFound, w.Code)
+
 	w = PerformRequest(router, http.MethodGet, "/path2", nil)
 	assert.Equal(t, http.StatusNotFound, w.Code)
+
 	w = PerformRequest(router, http.MethodPost, "/path3/", nil)
 	assert.Equal(t, http.StatusNotFound, w.Code)
+
 	w = PerformRequest(router, http.MethodPut, "/path4", nil)
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
-func BenchmarkAllowed(b *testing.B) {
-	handlerFunc := func(*Context) {}
-
+func TestRouteNotAllowedEnabled(t *testing.T) {
 	router := New()
-	router.POST("/path", handlerFunc)
-	router.GET("/path", handlerFunc)
+	router.POST("/path", func(c *Context) {})
 
-	b.Run("Global", func(b *testing.B) {
-		b.ReportAllocs()
-		for i := 0; i < b.N; i++ {
-			router.allowed("*", http.MethodOptions) // nolint: errcheck
-		}
-	})
-	b.Run("Path", func(b *testing.B) {
-		b.ReportAllocs()
-		for i := 0; i < b.N; i++ {
-			router.allowed("/path", http.MethodOptions) // nolint: errcheck
-		}
-	})
-}
-
-func TestRouterNotAllowed(t *testing.T) {
-	handlerFunc := func(*Context) {}
-
-	router := New()
-	router.POST("/path", handlerFunc)
-
-	// test not allowed
 	w := PerformRequest(router, http.MethodGet, "/path", nil)
 	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
-	assert.Equal(t, "OPTIONS, POST", w.Header().Get("Allow"))
 
-	// add another method
-	router.DELETE("/path", handlerFunc)
-	router.OPTIONS("/path", handlerFunc) // must be ignored
-
-	// test again
-	w = PerformRequest(router, http.MethodGet, "/path", nil)
-	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
-	assert.Equal(t, "DELETE, OPTIONS, POST", w.Header().Get("Allow"))
-
-	// test custom handler
-	router.NoMethod(func(c *Context) (string, int) {
-		return "custom method", http.StatusTeapot
+	router.NoMethod(func(c *Context) (interface{}, int) {
+		return "responseText", http.StatusTeapot
 	})
 
 	w = PerformRequest(router, http.MethodGet, "/path", nil)
+	assert.Equal(t, "responseText", w.Body.String())
 	assert.Equal(t, http.StatusTeapot, w.Code)
-	assert.Equal(t, "custom method", w.Body.String())
-	assert.Equal(t, "DELETE, OPTIONS, POST", w.Header().Get("Allow"))
+}
+
+func TestRouteNotAllowedEnabled2(t *testing.T) {
+	router := New()
+
+	router.GET("/path2", func(c *Context) {})
+
+	w := PerformRequest(router, http.MethodPost, "/path2", nil)
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
+func TestRouteNotAllowedDisabled(t *testing.T) {
+	router := New()
+	router.HandleMethodNotAllowed = false
+	router.POST("/path", func(c *Context) {})
+
+	w := PerformRequest(router, http.MethodGet, "/path", nil)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	router.NoMethod(func(c *Context) (interface{}, int) {
+		return "responseText", http.StatusTeapot
+	})
+
+	w = PerformRequest(router, http.MethodGet, "/path", nil)
+	assert.Equal(t, "404 page not found", w.Body.String())
+	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestRouterNotFound(t *testing.T) {

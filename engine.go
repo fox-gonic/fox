@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"net/http"
 	"path"
-	"strings"
 	"sync"
+
+	"github.com/miclle/fox/internal/bytesconv"
 )
 
 var (
@@ -30,13 +31,6 @@ type HandlersChain []HandlerFunc
 // Engine is a http.Handler which can be used to dispatch requests to different
 // handler functions via configurable routes
 type Engine struct {
-	trees map[string]*node
-
-	paramsPool sync.Pool
-
-	pool      sync.Pool // pool of contexts that are used in a request
-	maxParams uint16
-
 	RouterGroup
 
 	// Enables automatic redirection if the current route can't be matched but a
@@ -75,8 +69,13 @@ type Engine struct {
 	// The "Allowed" header is set before calling the handler.
 	GlobalOPTIONS http.Handler
 
-	// Cached value of global (*) allowed methods
-	globalAllowed string
+	trees methodTrees
+
+	paramsPool sync.Pool
+
+	pool        sync.Pool // pool of contexts that are used in a request
+	maxParams   uint16
+	maxSections uint16
 
 	// Configurable http.Handler which is called when no matching route is
 	// found. If it is not set, http.NotFound is used.
@@ -128,7 +127,8 @@ func New() *Engine {
 
 func (engine *Engine) allocateContext() *Context {
 	params := make(Params, 0, engine.maxParams)
-	return &Context{engine: engine, Params: &params}
+	skippedNodes := make([]skippedNode, 0, engine.maxSections)
+	return &Context{engine: engine, Params: &params, skippedNodes: &skippedNodes}
 }
 
 // Store sets the value for a key.
@@ -173,46 +173,31 @@ func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
 }
 
 func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
+	assert1(path[0] == '/', "path must begin with '/'")
+	assert1(method != "", "HTTP method can not be empty")
+	assert1(len(handlers) > 0, "there must be at least one handler")
 
-	varsCount := uint16(0)
-
-	if method == "" {
-		panic("method must not be empty")
-	}
-	if len(path) < 1 || path[0] != '/' {
-		panic("path must begin with '/' in path '" + path + "'")
-	}
 	for _, handler := range handlers {
 		if handler == nil {
-			panic("handle must not be nil")
+			panic("handler can not be nil")
 		}
 	}
 
-	if engine.trees == nil {
-		engine.trees = make(map[string]*node)
-	}
-
-	root := engine.trees[method]
+	root := engine.trees.get(method)
 	if root == nil {
 		root = new(node)
-		engine.trees[method] = root
-
-		engine.globalAllowed = engine.allowed("*", "")
+		root.fullPath = "/"
+		engine.trees = append(engine.trees, methodTree{method: method, root: root})
 	}
-
 	root.addRoute(path, handlers)
 
 	// Update maxParams
-	if paramsCount := countParams(path); paramsCount+varsCount > engine.maxParams {
-		engine.maxParams = paramsCount + varsCount
+	if paramsCount := countParams(path); paramsCount > engine.maxParams {
+		engine.maxParams = paramsCount
 	}
 
-	// Lazy-init paramsPool alloc func
-	if engine.paramsPool.New == nil && engine.maxParams > 0 {
-		engine.paramsPool.New = func() interface{} {
-			ps := make(Params, 0, engine.maxParams)
-			return &ps
-		}
+	if sectionsCount := countSections(path); sectionsCount > engine.maxSections {
+		engine.maxSections = sectionsCount
 	}
 }
 
@@ -220,57 +205,6 @@ func (engine *Engine) recv(w http.ResponseWriter, req *http.Request) {
 	if rcv := recover(); rcv != nil {
 		engine.PanicHandler(w, req, rcv)
 	}
-}
-
-func (engine *Engine) allowed(path, reqMethod string) (allow string) {
-	allowed := make([]string, 0, 9)
-
-	if path == "*" { // server-wide
-		// empty method is used for internal calls to refresh the cache
-		if reqMethod == "" {
-			for method := range engine.trees {
-				if method == http.MethodOptions {
-					continue
-				}
-				// Add request method to list of allowed methods
-				allowed = append(allowed, method)
-			}
-		} else {
-			return engine.globalAllowed
-		}
-	} else { // specific path
-		for method := range engine.trees {
-			// Skip the requested method - we already tried this one
-			if method == reqMethod || method == http.MethodOptions {
-				continue
-			}
-
-			handle, _, _ := engine.trees[method].getValue(path, nil)
-			if handle != nil {
-				// Add request method to list of allowed methods
-				allowed = append(allowed, method)
-			}
-		}
-	}
-
-	if len(allowed) > 0 {
-		// Add request method to list of allowed methods
-		allowed = append(allowed, http.MethodOptions)
-
-		// Sort allowed methods.
-		// sort.Strings(allowed) unfortunately causes unnecessary allocations
-		// due to allowed being moved to the heap and interface conversion
-		for i, l := 1, len(allowed); i < l; i++ {
-			for j := i; j > 0 && allowed[j] < allowed[j-1]; j-- {
-				allowed[j], allowed[j-1] = allowed[j-1], allowed[j]
-			}
-		}
-
-		// return as comma separated list
-		return strings.Join(allowed, ", ")
-	}
-
-	return allow
 }
 
 // Run attaches the router to a http.Server and starts listening and serving HTTP requests.
@@ -302,55 +236,53 @@ func (engine *Engine) handleHTTPRequest(ctx *Context) {
 
 	httpMethod := ctx.Request.Method
 	path := ctx.Request.URL.Path
+	unescape := false
 
-	if root := engine.trees[httpMethod]; root != nil {
-		handlers, ps, tsr := root.getValue(path, ctx.Params)
-
-		if handlers != nil {
-			ctx.handlers = handlers
-			if ps != nil {
-				ctx.Params = ps
-			}
+	// Find root of the tree for the given HTTP method
+	t := engine.trees
+	for i, tl := 0, len(t); i < tl; i++ {
+		if t[i].method != httpMethod {
+			continue
+		}
+		root := t[i].root
+		// Find route in tree
+		value := root.getValue(path, ctx.Params, ctx.skippedNodes, unescape)
+		if value.params != nil {
+			ctx.Params = value.params
+		}
+		if value.handlers != nil {
+			ctx.handlers = value.handlers
+			ctx.fullPath = value.fullPath
 			ctx.Next()
 			ctx.Writer.WriteHeaderNow()
 			return
 		}
-
 		if httpMethod != http.MethodConnect && path != "/" {
-			if tsr && engine.RedirectTrailingSlash {
+			if value.tsr && engine.RedirectTrailingSlash {
 				redirectTrailingSlash(ctx)
 				return
 			}
-			// Try to fix the request path
 			if engine.RedirectFixedPath && redirectFixedPath(ctx, root, engine.RedirectFixedPath) {
 				return
 			}
 		}
-	}
-
-	// Handle OPTIONS requests
-	if httpMethod == http.MethodOptions && engine.HandleOPTIONS {
-		if allow := engine.allowed(path, http.MethodOptions); allow != "" {
-			ctx.Writer.Header().Set("Allow", allow)
-			if engine.GlobalOPTIONS != nil {
-				engine.GlobalOPTIONS.ServeHTTP(ctx.Writer, ctx.Request)
-			}
-			return
-		}
+		break
 	}
 
 	// Handle 405
 	if engine.HandleMethodNotAllowed {
-		if allow := engine.allowed(path, httpMethod); allow != "" {
-			ctx.Writer.Header().Set("Allow", allow)
-			ctx.handlers = engine.allNoMethod
-			serveError(ctx, http.StatusMethodNotAllowed, default405Body)
-			return
+		for _, tree := range engine.trees {
+			if tree.method == httpMethod {
+				continue
+			}
+			if value := tree.root.getValue(path, nil, ctx.skippedNodes, unescape); value.handlers != nil {
+				ctx.handlers = engine.allNoMethod
+				serveError(ctx, http.StatusMethodNotAllowed, default405Body)
+				return
+			}
 		}
 	}
-
-	// Handle 404
-	ctx.handlers = ctx.engine.allNoRoute
+	ctx.handlers = engine.allNoRoute
 	serveError(ctx, http.StatusNotFound, default404Body)
 }
 
@@ -391,7 +323,7 @@ func redirectFixedPath(ctx *Context, root *node, trailingSlash bool) bool {
 	rPath := req.URL.Path
 
 	if fixedPath, ok := root.findCaseInsensitivePath(CleanPath(rPath), trailingSlash); ok {
-		req.URL.Path = fixedPath
+		req.URL.Path = bytesconv.BytesToString(fixedPath)
 		redirectRequest(ctx)
 		return true
 	}

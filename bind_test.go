@@ -1,4 +1,6 @@
-package easybind
+// https://github.com/momaek/easybind/blob/master/LICENSE
+
+package fox
 
 import (
 	"fmt"
@@ -32,11 +34,10 @@ func TestBind(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("https://hello.world/users?%s", queries.Encode()), strings.NewReader(body))
 
 	args := queryUsersArgs{}
-	err := Bind(req, &args)
+	err := Bind(req, &args, &Params{})
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(args.IDs))
 	assert.Equal(t, Status("active"), *args.Status)
 	assert.Equal(t, 20, args.Age)
 	assert.Equal(t, true, args.OK)
-	fmt.Printf("===== %#v \n", args)
 }
