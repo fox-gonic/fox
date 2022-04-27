@@ -12,13 +12,17 @@ import (
 
 // YAML contains the given interface object.
 type YAML struct {
-	Data any
+	Status  int
+	Headers map[string]string
+	Data    any
 }
 
 var yamlContentType = []string{"application/x-yaml; charset=utf-8"}
 
 // Render (YAML) marshals the given interface object and writes data with custom ContentType.
 func (r YAML) Render(w http.ResponseWriter) error {
+	writeHeaderCode(w, r.Status)
+	writeHeaders(w, r.Headers)
 	r.WriteContentType(w)
 
 	bytes, err := yaml.Marshal(r.Data)

@@ -19,28 +19,38 @@ var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 // JSON contains the given interface object.
 type JSON struct {
-	Data any
+	Status  int
+	Headers map[string]string
+	Data    any
 }
 
 // IndentedJSON contains the given interface object.
 type IndentedJSON struct {
-	Data any
+	Status  int
+	Headers map[string]string
+	Data    any
 }
 
 // JsonpJSON contains the given interface object its callback.
 type JsonpJSON struct {
+	Status   int
+	Headers  map[string]string
 	Callback string
 	Data     any
 }
 
 // ASCIIJSON contains the given interface object.
 type ASCIIJSON struct {
-	Data any
+	Status  int
+	Headers map[string]string
+	Data    any
 }
 
 // PureJSON contains the given interface object.
 type PureJSON struct {
-	Data any
+	Status  int
+	Headers map[string]string
+	Data    any
 }
 
 var (
@@ -51,6 +61,8 @@ var (
 
 // Render (JSON) writes data with custom ContentType.
 func (r JSON) Render(w http.ResponseWriter) (err error) {
+	writeHeaderCode(w, r.Status)
+	writeHeaders(w, r.Headers)
 	if err = WriteJSON(w, r.Data); err != nil {
 		panic(err)
 	}
@@ -75,6 +87,8 @@ func WriteJSON(w http.ResponseWriter, obj any) error {
 
 // Render (IndentedJSON) marshals the given interface object and writes it with custom ContentType.
 func (r IndentedJSON) Render(w http.ResponseWriter) error {
+	writeHeaderCode(w, r.Status)
+	writeHeaders(w, r.Headers)
 	r.WriteContentType(w)
 	jsonBytes, err := json.MarshalIndent(r.Data, "", "    ")
 	if err != nil {
@@ -91,6 +105,8 @@ func (r IndentedJSON) WriteContentType(w http.ResponseWriter) {
 
 // Render (JsonpJSON) marshals the given interface object and writes it and its callback with custom ContentType.
 func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
+	writeHeaderCode(w, r.Status)
+	writeHeaders(w, r.Headers)
 	r.WriteContentType(w)
 	ret, err := json.Marshal(r.Data)
 	if err != nil {
@@ -129,6 +145,8 @@ func (r JsonpJSON) WriteContentType(w http.ResponseWriter) {
 
 // Render (AsciiJSON) marshals the given interface object and writes it with custom ContentType.
 func (r ASCIIJSON) Render(w http.ResponseWriter) (err error) {
+	writeHeaderCode(w, r.Status)
+	writeHeaders(w, r.Headers)
 	r.WriteContentType(w)
 	ret, err := json.Marshal(r.Data)
 	if err != nil {
@@ -155,6 +173,8 @@ func (r ASCIIJSON) WriteContentType(w http.ResponseWriter) {
 
 // Render (PureJSON) writes custom ContentType and encodes the given interface object.
 func (r PureJSON) Render(w http.ResponseWriter) error {
+	writeHeaderCode(w, r.Status)
+	writeHeaders(w, r.Headers)
 	r.WriteContentType(w)
 	encoder := json.NewEncoder(w)
 	encoder.SetEscapeHTML(false)

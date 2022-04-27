@@ -39,6 +39,8 @@ type HTMLDebug struct {
 
 // HTML contains template reference and its name with given interface object.
 type HTML struct {
+	Status   int
+	Headers  map[string]string
 	Template *template.Template
 	Name     string
 	Data     any
@@ -78,6 +80,8 @@ func (r HTMLDebug) loadTemplate() *template.Template {
 
 // Render (HTML) executes template and writes its result with custom ContentType for response.
 func (r HTML) Render(w http.ResponseWriter) error {
+	writeHeaderCode(w, r.Status)
+	writeHeaders(w, r.Headers)
 	r.WriteContentType(w)
 
 	if r.Name == "" {

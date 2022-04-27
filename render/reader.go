@@ -12,6 +12,7 @@ import (
 
 // Reader contains the IO reader and its length, and custom ContentType and other headers.
 type Reader struct {
+	Status        int
 	ContentType   string
 	ContentLength int64
 	Reader        io.Reader
@@ -20,6 +21,7 @@ type Reader struct {
 
 // Render (Reader) writes data with custom ContentType and headers.
 func (r Reader) Render(w http.ResponseWriter) (err error) {
+	writeHeaderCode(w, r.Status)
 	r.WriteContentType(w)
 	if r.ContentLength >= 0 {
 		if r.Headers == nil {

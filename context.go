@@ -82,6 +82,7 @@ func (c *Context) render(code int, res any) {
 	case string:
 		r = render.String{Format: v}
 	case render.Redirect:
+		v.Request = c.Request
 		r = v
 		c.Writer.WriteHeader(-1)
 	case render.String, render.JSON, render.IndentedJSON, render.JsonpJSON, render.XML,

@@ -13,14 +13,18 @@ import (
 
 // String contains the given interface object slice and its format.
 type String struct {
-	Format string
-	Data   []any
+	Status  int
+	Headers map[string]string
+	Format  string
+	Data    []any
 }
 
 var plainContentType = []string{"text/plain; charset=utf-8"}
 
 // Render (String) writes data with custom ContentType.
 func (r String) Render(w http.ResponseWriter) error {
+	writeHeaderCode(w, r.Status)
+	writeHeaders(w, r.Headers)
 	return WriteString(w, r.Format, r.Data)
 }
 

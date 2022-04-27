@@ -12,13 +12,17 @@ import (
 
 // ProtoBuf contains the given interface object.
 type ProtoBuf struct {
-	Data any
+	Status  int
+	Headers map[string]string
+	Data    any
 }
 
 var protobufContentType = []string{"application/x-protobuf"}
 
 // Render (ProtoBuf) marshals the given interface object and writes data with custom ContentType.
 func (r ProtoBuf) Render(w http.ResponseWriter) error {
+	writeHeaderCode(w, r.Status)
+	writeHeaders(w, r.Headers)
 	r.WriteContentType(w)
 
 	bytes, err := proto.Marshal(r.Data.(proto.Message))
