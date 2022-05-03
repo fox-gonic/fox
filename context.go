@@ -1,6 +1,7 @@
 package fox
 
 import (
+	"errors"
 	"net/http"
 	"sync"
 	"time"
@@ -48,13 +49,13 @@ func (c *Context) reset(w http.ResponseWriter, req *http.Request) {
 func (c *Context) Next() {
 	c.index++
 	for c.index < len(c.handlers) {
-		res, code, err := call(c, c.handlers[c.index])
+		res, err := call(c, c.handlers[c.index])
 		if err != nil {
 			c.renderError(err)
 			return
 		}
-		if res != nil || code != 0 {
-			c.render(code, res)
+		if res != nil {
+			c.render(res)
 		}
 		c.index++
 	}
@@ -62,19 +63,38 @@ func (c *Context) Next() {
 
 // renderError ...
 func (c *Context) renderError(err error) {
-	c.Writer.WriteHeader(http.StatusInternalServerError)
-	// TODO(m) custom error render
-	c.Writer.Write([]byte(err.Error())) // nolint: errcheck
+	var parsedError *Error
+	if errors.As(err, &parsedError) {
+		if parsedError.ContentType == "" {
+			if accepts := c.Accepts(); len(accepts) > 0 {
+				parsedError.ContentType = accepts[0]
+			}
+		}
+		if e := parsedError.Render(c.Writer); e != nil {
+			panic(e)
+		}
+		return
+	}
+
+	if v, ok := err.(WriteHeader); ok {
+		c.Writer.WriteHeader(v.StatusCode())
+	} else {
+		c.Writer.WriteHeader(http.StatusInternalServerError)
+	}
+
+	if r, ok := err.(Render); ok {
+		if e := r.Render(c.Writer); e != nil {
+			panic(e)
+		}
+	} else {
+		c.Writer.Write([]byte(err.Error())) // nolint: errcheck
+	}
 }
 
 // render writes the response headers and calls render.render to render data.
-func (c *Context) render(code int, res any) {
+func (c *Context) render(res any) {
 
-	if code > 0 {
-		c.Writer.WriteHeader(code)
-	}
-
-	var r render.Render
+	var r Render
 	switch v := res.(type) {
 	case error:
 		c.renderError(v)
@@ -87,7 +107,7 @@ func (c *Context) render(code int, res any) {
 		c.Writer.WriteHeader(-1)
 	case render.String, render.JSON, render.IndentedJSON, render.JsonpJSON, render.XML,
 		render.Data, render.HTML, render.YAML, render.Reader, render.ASCIIJSON, render.ProtoBuf:
-		r = v.(render.Render)
+		r = v.(Render)
 	default:
 		r = render.JSON{Data: res}
 	}
@@ -136,6 +156,20 @@ func (c *Context) MustGet(key string) any {
 // Engine return the engine that was used to create this context.
 func (c *Context) Engine() *Engine {
 	return c.engine
+}
+
+// ContentType returns the Content-Type header of the request.
+func (c *Context) ContentType() string {
+	return filterFlags(c.requestHeader("Content-Type"))
+}
+
+// Accepts returns the Accept header of the request.
+func (c *Context) Accepts() []string {
+	return parseAccept(c.requestHeader("Accept"))
+}
+
+func (c *Context) requestHeader(key string) string {
+	return c.Request.Header.Get(key)
 }
 
 /************************************/

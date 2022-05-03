@@ -2,10 +2,11 @@ package fox
 
 import (
 	"fmt"
+	"net/http"
 	"reflect"
 )
 
-func call(ctx *Context, handler HandlerFunc) (any, int, error) {
+func call(ctx *Context, handler HandlerFunc) (any, error) {
 	var (
 		funcValue = reflect.ValueOf(handler)
 		funcType  = funcValue.Type()
@@ -22,8 +23,8 @@ func call(ctx *Context, handler HandlerFunc) (any, int, error) {
 		numOut = funcType.NumOut()
 	)
 
-	if numOut > 3 {
-		panic("only support handler func returns max is three")
+	if numOut > 2 {
+		panic("only support handler func returns max is two values")
 	}
 
 	var values []reflect.Value
@@ -41,40 +42,32 @@ func call(ctx *Context, handler HandlerFunc) (any, int, error) {
 			parameter := reflect.New(funcType.In(i)).Interface()
 			if err := Bind(ctx.Request, parameter, ctx.Params); err != nil {
 				// TODO(m) err maybe 413 Payload Too Large
-				return nil, 400, err
+				msg := &Error{
+					Status: http.StatusBadRequest,
+					Err:    err,
+				}
+				return nil, msg
 			}
 			in = append(in, reflect.ValueOf(parameter).Elem())
 		}
 		values = funcValue.Call(in)
 	}
 
-	if numOut == 0 {
-		return nil, 0, nil
-	}
-
 	switch numOut {
+	case 0:
+		return nil, nil
 	case 1:
 		res := values[0].Interface()
 		if err, ok := res.(error); ok {
-			return nil, 0, err
+			return nil, err
 		}
-		return res, 0, nil
+		return res, nil
 
-	case 2:
-		var res, status = values[0].Interface(), values[1].Interface()
-		if code, ok := status.(int); ok {
-			return res, code, nil
+	default: // 2
+		res, err := values[0].Interface(), values[1].Interface()
+		if err, ok := err.(error); ok {
+			return res, err
 		}
-		if status == nil {
-			return res, 200, nil
-		}
-		return res, 200, status.(error)
-
-	default:
-		var res, code, err = values[0].Interface(), values[1].Interface(), values[2].Interface()
-		if err == nil {
-			return res, code.(int), nil
-		}
-		return res, code.(int), err.(error)
+		return res, nil
 	}
 }

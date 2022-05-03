@@ -161,9 +161,12 @@ func TestMiddlewareNoMethodDisabled(t *testing.T) {
 func TestMiddlewareFailHandlersChain(t *testing.T) {
 	signature := ""
 	router := New()
-	router.Use(func(c *Context) (interface{}, int, error) {
+	router.Use(func(c *Context) (interface{}, error) {
 		signature += "A"
-		return nil, http.StatusInternalServerError, errors.New("foo")
+		return nil, &Error{
+			Status: http.StatusInternalServerError,
+			Err:    errors.New("foo"),
+		}
 	})
 	router.Use(func(c *Context) {
 		signature += "B"
@@ -177,26 +180,36 @@ func TestMiddlewareFailHandlersChain(t *testing.T) {
 
 func TestMiddlewareWrite(t *testing.T) {
 	router := New()
-	router.Use(func(c *Context) (string, int) {
-		return "hola\n", http.StatusBadRequest
+	router.Use(func(c *Context) (string, error) {
+		return "hola\n", nil
 	})
-	router.Use(func(c *Context) (interface{}, int) {
+	router.Use(func(c *Context) (interface{}, error) {
 		data := struct {
 			XMLName xml.Name `xml:"map"`
 			Foo     string   `xml:"foo"`
 		}{Foo: "bar"}
-		return render.XML{Data: data}, http.StatusBadRequest
+		return render.XML{Data: data}, nil
 	})
-	router.Use(func(c *Context) (interface{}, int) {
+	router.Use(func(c *Context) (interface{}, error) {
 		data := map[string]any{"foo": "bar"}
-		return render.JSON{Data: data}, http.StatusBadRequest
+		return render.JSON{Data: data}, nil
 	})
-	router.GET("/", func(c *Context) (interface{}, int) {
+	router.GET("/", func(c *Context) (interface{}, error) {
 		data := map[string]any{"foo": "bar"}
-		return render.JSON{Data: data}, http.StatusBadRequest
+		return render.JSON{Data: data}, nil
 	})
 
 	w := PerformRequest(router, "GET", "/", nil)
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "hola\n<map><foo>bar</foo></map>{\"foo\":\"bar\"}{\"foo\":\"bar\"}", w.Body.String())
+
+	router = New()
+	router.Use(func(c *Context) (string, error) {
+		return "hola\n", &Error{
+			Status: http.StatusBadRequest,
+		}
+	})
+	w = PerformRequest(router, "GET", "/", nil)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusText(http.StatusBadRequest), w.Body.String())
 }

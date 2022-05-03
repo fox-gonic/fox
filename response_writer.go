@@ -17,6 +17,11 @@ const (
 	defaultStatus = http.StatusOK
 )
 
+// WriteHeader sends an HTTP response header with the provided status code.
+type WriteHeader interface {
+	StatusCode() int
+}
+
 // ResponseWriter with a http.ResponseWriter wrapper
 type ResponseWriter struct {
 	http.ResponseWriter

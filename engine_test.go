@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/miclle/fox/render"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -216,28 +217,35 @@ func TestEngineRESTful(t *testing.T) {
 		Name string `json:"name"`
 		Desc string `json:"desc"`
 	}
-	var create = func(c *Context, args *CreateProductArgs) (*Product, int, error) {
+	var create = func(c *Context, args *CreateProductArgs) (interface{}, error) {
 		product := &Product{
 			ID:   1,
 			Name: args.Name,
 			Desc: args.Desc,
 		}
-		return product, 201, nil
+
+		return render.JSON{
+			Status: 201,
+			Data:   product,
+		}, nil
 	}
 
 	type GetProductArgs struct {
 		ID int `pos:"path:id"`
 	}
-	var show = func(c *Context, args *GetProductArgs) (*Product, int, error) {
+	var show = func(c *Context, args *GetProductArgs) (*Product, error) {
 		if args.ID == 0 {
-			return nil, 404, nil
+			return nil, &Error{
+				Status: 404,
+				Err:    errors.New("not found"),
+			}
 		}
 		product := &Product{
 			ID:   args.ID,
 			Name: "Product Name",
 			Desc: "Product Desc",
 		}
-		return product, 200, nil
+		return product, nil
 	}
 
 	type UpdateProductArgs struct {
@@ -257,11 +265,14 @@ func TestEngineRESTful(t *testing.T) {
 	type DestroyProductArgs struct {
 		ID int `pos:"path:id"`
 	}
-	var destroy = func(c *Context, args *DestroyProductArgs) (*Product, int, error) {
+	var destroy = func(c *Context, args *DestroyProductArgs) (*Product, error) {
 		if args.ID == 0 {
-			return nil, 404, nil
+			return nil, &Error{
+				Status: 404,
+				Err:    errors.New("not found"),
+			}
 		}
-		return nil, 200, nil
+		return nil, nil
 	}
 
 	router.GET("/products", index)
@@ -424,12 +435,12 @@ func TestRouteNotAllowedEnabled(t *testing.T) {
 	w := PerformRequest(router, http.MethodGet, "/path", nil)
 	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
 
-	router.NoMethod(func(c *Context) (interface{}, int) {
-		return "responseText", http.StatusTeapot
+	router.NoMethod(func(c *Context) (interface{}, error) {
+		return "responseText", &Error{Status: http.StatusTeapot}
 	})
 
 	w = PerformRequest(router, http.MethodGet, "/path", nil)
-	assert.Equal(t, "responseText", w.Body.String())
+	assert.Equal(t, http.StatusText(http.StatusTeapot), w.Body.String())
 	assert.Equal(t, http.StatusTeapot, w.Code)
 }
 

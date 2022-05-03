@@ -2,7 +2,37 @@ package fox
 
 import (
 	"path"
+	"strings"
 )
+
+func assert1(guard bool, text string) {
+	if !guard {
+		panic(text)
+	}
+}
+
+func filterFlags(content string) string {
+	for i, char := range content {
+		if char == ' ' || char == ';' {
+			return content[:i]
+		}
+	}
+	return content
+}
+
+func parseAccept(acceptHeader string) []string {
+	parts := strings.Split(acceptHeader, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if i := strings.IndexByte(part, ';'); i > 0 {
+			part = part[:i]
+		}
+		if part = strings.TrimSpace(part); part != "" {
+			out = append(out, part)
+		}
+	}
+	return out
+}
 
 func lastChar(str string) uint8 {
 	if str == "" {
@@ -21,10 +51,4 @@ func joinPaths(absolutePath, relativePath string) string {
 		return finalPath + "/"
 	}
 	return finalPath
-}
-
-func assert1(guard bool, text string) {
-	if !guard {
-		panic(text)
-	}
 }

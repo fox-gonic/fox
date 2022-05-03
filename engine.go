@@ -286,7 +286,7 @@ func (engine *Engine) handleHTTPRequest(ctx *Context) {
 	serveError(ctx, http.StatusNotFound, default404Body)
 }
 
-var mimePlain = []string{"text/plain"}
+var mimePlain = []string{MIMEPlain}
 
 func serveError(c *Context, code int, defaultMessage []byte) {
 	c.Writer.status = code
