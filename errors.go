@@ -7,6 +7,8 @@ import (
 	"github.com/miclle/fox/render"
 )
 
+var errorType = reflect.ValueOf(Error{}).Type()
+
 // Error represents a error's specification.
 type Error struct {
 	Err         error
@@ -19,7 +21,7 @@ type Error struct {
 var _ error = &Error{}
 
 // Error implements the error interface.
-func (msg Error) Error() string {
+func (msg *Error) Error() string {
 
 	if msg.Err == nil {
 		return http.StatusText(msg.Status)
@@ -34,7 +36,7 @@ func (msg *Error) Unwrap() error { return msg.Err }
 // Format creates a properly formatted message
 func (msg *Error) Format() any {
 
-	jsonData := map[string]any{}
+	data := map[string]any{}
 
 	if msg.Message != nil {
 		value := reflect.ValueOf(msg.Message)
@@ -43,18 +45,18 @@ func (msg *Error) Format() any {
 			return msg.Message
 		case reflect.Map:
 			for _, key := range value.MapKeys() {
-				jsonData[key.String()] = value.MapIndex(key).Interface()
+				data[key.String()] = value.MapIndex(key).Interface()
 			}
 		default:
-			jsonData["message"] = msg.Message
+			data["message"] = msg.Message
 		}
 	}
 
-	if _, exists := jsonData["error"]; !exists {
-		jsonData["error"] = msg.Error()
+	if _, exists := data["error"]; !exists {
+		data["error"] = msg.Error()
 	}
 
-	return jsonData
+	return data
 }
 
 // MarshalJSON implements the json.Marshaller interface.
@@ -63,7 +65,7 @@ func (msg *Error) MarshalJSON() ([]byte, error) {
 }
 
 // Render (Error) writes data with request accept ContentType.
-func (msg *Error) Render(w http.ResponseWriter) error {
+func (msg Error) Render(w http.ResponseWriter, accepts ...string) error {
 
 	if msg.Status >= 100 && msg.Status <= 999 {
 		w.WriteHeader(msg.Status)
@@ -72,6 +74,15 @@ func (msg *Error) Render(w http.ResponseWriter) error {
 	header := w.Header()
 	for k, v := range msg.Headers {
 		header.Set(k, v)
+	}
+
+	if msg.ContentType == "" {
+		for _, v := range accepts {
+			if len(v) > 0 {
+				msg.ContentType = v
+				break
+			}
+		}
 	}
 
 	var r Render

@@ -204,6 +204,7 @@ func TestMiddlewareWrite(t *testing.T) {
 	assert.Equal(t, "hola\n<map><foo>bar</foo></map>{\"foo\":\"bar\"}{\"foo\":\"bar\"}", w.Body.String())
 
 	router = New()
+	router.DefaultContentType = MIMEPlain
 	router.Use(func(c *Context) (string, error) {
 		return "hola\n", &Error{
 			Status: http.StatusBadRequest,

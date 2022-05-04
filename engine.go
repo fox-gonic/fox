@@ -20,9 +20,8 @@ var (
 // func(){}
 // func(ctx *Context) any { ... }
 // func(ctx *Context) (any, err) { ... }
+// func(ctx *Context, args *AutoBindingArgType) (any) { ... }
 // func(ctx *Context, args *AutoBindingArgType) (any, err) { ... }
-// func(ctx *Context, args *AutoBindingArgType) (any, code, err) { ... }
-// func(ctx *Context, args *AutoBindingArgType) (any, code) { ... }
 type HandlerFunc interface{}
 
 // HandlersChain defines a HandlerFunc slice.
@@ -68,6 +67,8 @@ type Engine struct {
 	// handler for the specific path was set.
 	// The "Allowed" header is set before calling the handler.
 	GlobalOPTIONS http.Handler
+
+	DefaultContentType string
 
 	trees methodTrees
 
@@ -117,6 +118,7 @@ func New() *Engine {
 		RedirectFixedPath:      true,
 		HandleMethodNotAllowed: true,
 		HandleOPTIONS:          true,
+		DefaultContentType:     MIMEJSON,
 	}
 	engine.RouterGroup.engine = engine
 	engine.pool.New = func() any {

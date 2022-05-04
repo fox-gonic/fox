@@ -430,6 +430,7 @@ func TestRouteRedirectTrailingSlash(t *testing.T) {
 
 func TestRouteNotAllowedEnabled(t *testing.T) {
 	router := New()
+	router.DefaultContentType = MIMEPlain
 	router.POST("/path", func(c *Context) {})
 
 	w := PerformRequest(router, http.MethodGet, "/path", nil)

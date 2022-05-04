@@ -21,9 +21,6 @@ import (
 	testdata "github.com/miclle/fox/testdata/protoexample"
 )
 
-// TODO unit tests
-// test errors
-
 func TestRenderJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := map[string]any{

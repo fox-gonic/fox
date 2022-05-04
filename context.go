@@ -63,14 +63,12 @@ func (c *Context) Next() {
 
 // renderError ...
 func (c *Context) renderError(err error) {
+
 	var parsedError *Error
 	if errors.As(err, &parsedError) {
-		if parsedError.ContentType == "" {
-			if accepts := c.Accepts(); len(accepts) > 0 {
-				parsedError.ContentType = accepts[0]
-			}
-		}
-		if e := parsedError.Render(c.Writer); e != nil {
+		var accepts = []string{c.engine.DefaultContentType}
+		accepts = append(accepts, c.Accepts()...)
+		if e := parsedError.Render(c.Writer, accepts...); e != nil {
 			panic(e)
 		}
 		return
@@ -91,7 +89,7 @@ func (c *Context) renderError(err error) {
 	}
 }
 
-// render writes the response headers and calls render.render to render data.
+// render writes the response headers and calls render.Render to render data.
 func (c *Context) render(res any) {
 
 	var r Render
@@ -109,7 +107,26 @@ func (c *Context) render(res any) {
 		render.Data, render.HTML, render.YAML, render.Reader, render.ASCIIJSON, render.ProtoBuf:
 		r = v.(Render)
 	default:
-		r = render.JSON{Data: res}
+		if crender, ok := res.(Render); ok {
+			r = crender
+			break
+		}
+		switch c.engine.DefaultContentType {
+		case MIMEJSON:
+			r = render.JSON{Data: res}
+
+		case MIMEXML, MIMEXML2:
+			r = render.XML{Data: res}
+
+		case MIMEPROTOBUF:
+			r = render.ProtoBuf{Data: res}
+
+		case MIMEYAML:
+			r = render.YAML{Data: res}
+
+		default: // MIMEJSON
+			r = render.JSON{Data: res}
+		}
 	}
 
 	r.WriteContentType(c.Writer)
