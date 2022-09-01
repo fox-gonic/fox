@@ -1,6 +1,7 @@
 package fox
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"sync"
@@ -193,28 +194,26 @@ func (c *Context) requestHeader(key string) string {
 /**** HTTPS://PKG.GO.DEV/CONTEXT ****/
 /************************************/
 
+func (c *Context) getRequestContext() context.Context {
+	if c.Request == nil || c.Request.Context() == nil {
+		return context.Background()
+	}
+	return c.Request.Context()
+}
+
 // Deadline returns that there is no deadline (ok==false) when c.Request has no Context.
 func (c *Context) Deadline() (deadline time.Time, ok bool) {
-	if c.Request == nil || c.Request.Context() == nil {
-		return
-	}
-	return c.Request.Context().Deadline()
+	return c.getRequestContext().Deadline()
 }
 
 // Done returns nil (chan which will wait forever) when c.Request has no Context.
 func (c *Context) Done() <-chan struct{} {
-	if c.Request == nil || c.Request.Context() == nil {
-		return nil
-	}
-	return c.Request.Context().Done()
+	return c.getRequestContext().Done()
 }
 
 // Err returns nil when c.Request has no Context.
 func (c *Context) Err() error {
-	if c.Request == nil || c.Request.Context() == nil {
-		return nil
-	}
-	return c.Request.Context().Err()
+	return c.getRequestContext().Err()
 }
 
 // Value returns the value associated with this context for key, or nil
@@ -229,8 +228,5 @@ func (c *Context) Value(key any) any {
 			return val
 		}
 	}
-	if c.Request == nil || c.Request.Context() == nil {
-		return nil
-	}
-	return c.Request.Context().Value(key)
+	return c.getRequestContext().Value(key)
 }
