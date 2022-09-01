@@ -29,6 +29,5 @@ func SetMode(value string) {
 		engineMode = value
 	default:
 		engineMode = DebugMode
-		// panic("gin mode unknown: " + value + " (available mode: debug release test)")
 	}
 }
