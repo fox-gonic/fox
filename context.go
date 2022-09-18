@@ -3,7 +3,9 @@ package fox
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -16,6 +18,8 @@ type Context struct {
 	Request *http.Request
 	Writer  *ResponseWriter
 	Params  *Params
+
+	Logger Logger
 
 	engine       *Engine
 	skippedNodes *[]skippedNode
@@ -140,8 +144,6 @@ func (c *Context) render(res any) {
 /******** METADATA MANAGEMENT********/
 /************************************/
 
-// TODO(m) Using Generics
-
 // Set is used to store a new key/value pair exclusively for this context.
 // It also lazy initializes  c.Keys if it was not used previously.
 func (c *Context) Set(key string, value any) {
@@ -174,6 +176,49 @@ func (c *Context) MustGet(key string) any {
 // Engine return the engine that was used to create this context.
 func (c *Context) Engine() *Engine {
 	return c.engine
+}
+
+// ClientIP implements one best effort algorithm to return the real client IP.
+// It calls c.RemoteIP() under the hood, to check if the remote IP is a trusted proxy or not.
+// If it is it will then try to parse the headers defined in Engine.RemoteIPHeaders (defaulting to [X-Forwarded-For, X-Real-Ip]).
+// If the headers are not syntactically valid OR the remote IP does not correspond to a trusted proxy,
+// the remote IP (coming from Request.RemoteAddr) is returned.
+func (c *Context) ClientIP() string {
+	// Check if we're running on a trusted platform, continue running backwards if error
+	if c.engine.TrustedPlatform != "" {
+		// Developers can define their own header of Trusted Platform or use predefined constants
+		if addr := c.requestHeader(c.engine.TrustedPlatform); addr != "" {
+			return addr
+		}
+	}
+
+	// It also checks if the remoteIP is a trusted proxy or not.
+	// In order to perform this validation, it will see if the IP is contained within at least one of the CIDR blocks
+	// defined by Engine.SetTrustedProxies()
+	remoteIP := net.ParseIP(c.RemoteIP())
+	if remoteIP == nil {
+		return ""
+	}
+	trusted := c.engine.isTrustedProxy(remoteIP)
+
+	if trusted && c.engine.ForwardedByClientIP && c.engine.RemoteIPHeaders != nil {
+		for _, headerName := range c.engine.RemoteIPHeaders {
+			ip, valid := c.engine.validateHeader(c.requestHeader(headerName))
+			if valid {
+				return ip
+			}
+		}
+	}
+	return remoteIP.String()
+}
+
+// RemoteIP parses the IP from Request.RemoteAddr, normalizes and returns the IP (without the port).
+func (c *Context) RemoteIP() string {
+	ip, _, err := net.SplitHostPort(strings.TrimSpace(c.Request.RemoteAddr))
+	if err != nil {
+		return ""
+	}
+	return ip
 }
 
 // ContentType returns the Content-Type header of the request.

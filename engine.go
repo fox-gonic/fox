@@ -2,8 +2,10 @@ package fox
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"path"
+	"strings"
 	"sync"
 
 	"github.com/miclle/fox/internal/bytesconv"
@@ -13,6 +15,19 @@ var (
 	default404Body = []byte("404 page not found")
 	default405Body = []byte("405 method not allowed")
 )
+
+var defaultPlatform string
+
+var defaultTrustedCIDRs = []*net.IPNet{
+	{ // 0.0.0.0/0 (IPv4)
+		IP:   net.IP{0x0, 0x0, 0x0, 0x0},
+		Mask: net.IPMask{0x0, 0x0, 0x0, 0x0},
+	},
+	{ // ::/0 (IPv6)
+		IP:   net.IP{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+		Mask: net.IPMask{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+	},
+}
 
 // HandlerFunc is a function that can be registered to a route to handle HTTP
 // requests. Like http.HandlerFunc, but has a third parameter for the values of
@@ -68,6 +83,22 @@ type Engine struct {
 	// The "Allowed" header is set before calling the handler.
 	GlobalOPTIONS http.Handler
 
+	// ForwardedByClientIP if enabled, client IP will be parsed from the request's headers that
+	// match those stored at `(*gin.Engine).RemoteIPHeaders`. If no IP was
+	// fetched, it falls back to the IP obtained from
+	// `(*gin.Context).Request.RemoteAddr`.
+	ForwardedByClientIP bool
+
+	// RemoteIPHeaders list of headers used to obtain the client IP when
+	// `(*gin.Engine).ForwardedByClientIP` is `true` and
+	// `(*gin.Context).Request.RemoteAddr` is matched by at least one of the
+	// network origins of list defined by `(*gin.Engine).SetTrustedProxies()`.
+	RemoteIPHeaders []string
+
+	// TrustedPlatform if set to a constant of value gin.Platform*, trusts the headers set by
+	// that platform, for example to determine the client IP
+	TrustedPlatform string
+
 	DefaultContentType string
 
 	trees methodTrees
@@ -100,6 +131,8 @@ type Engine struct {
 
 	// cache is a key/value pair global for the engine.
 	cache sync.Map
+
+	trustedCIDRs []*net.IPNet
 }
 
 // Make sure the Router conforms with the http.Handler interface
@@ -118,7 +151,13 @@ func New() *Engine {
 		RedirectFixedPath:      true,
 		HandleMethodNotAllowed: true,
 		HandleOPTIONS:          true,
-		DefaultContentType:     MIMEJSON,
+
+		ForwardedByClientIP: true,
+		RemoteIPHeaders:     []string{"X-Forwarded-For", "X-Real-IP"},
+		TrustedPlatform:     defaultPlatform,
+		trustedCIDRs:        defaultTrustedCIDRs,
+
+		DefaultContentType: MIMEJSON,
 	}
 	engine.RouterGroup.engine = engine
 	engine.pool.New = func() any {
@@ -207,6 +246,41 @@ func (engine *Engine) recv(w http.ResponseWriter, req *http.Request) {
 	if rcv := recover(); rcv != nil {
 		engine.PanicHandler(w, req, rcv)
 	}
+}
+
+// isTrustedProxy will check whether the IP address is included in the trusted list according to Engine.trustedCIDRs
+func (engine *Engine) isTrustedProxy(ip net.IP) bool {
+	if engine.trustedCIDRs == nil {
+		return false
+	}
+	for _, cidr := range engine.trustedCIDRs {
+		if cidr.Contains(ip) {
+			return true
+		}
+	}
+	return false
+}
+
+// validateHeader will parse X-Forwarded-For header and return the trusted client IP address
+func (engine *Engine) validateHeader(header string) (clientIP string, valid bool) {
+	if header == "" {
+		return "", false
+	}
+	items := strings.Split(header, ",")
+	for i := len(items) - 1; i >= 0; i-- {
+		ipStr := strings.TrimSpace(items[i])
+		ip := net.ParseIP(ipStr)
+		if ip == nil {
+			break
+		}
+
+		// X-Forwarded-For is appended by proxy
+		// Check IPs in reverse order and stop when find untrusted proxy
+		if (i == 0) || (!engine.isTrustedProxy(ip)) {
+			return ipStr, true
+		}
+	}
+	return "", false
 }
 
 // Run attaches the router to a http.Server and starts listening and serving HTTP requests.
