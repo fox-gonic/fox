@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"path"
+	"reflect"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -35,6 +37,10 @@ func parseAccept(acceptHeader string) []string {
 		}
 	}
 	return out
+}
+
+func nameOfFunction(f any) string {
+	return runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
 }
 
 func lastChar(str string) uint8 {
