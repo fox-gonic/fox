@@ -19,7 +19,8 @@ type Context struct {
 	Writer  *ResponseWriter
 	Params  *Params
 
-	Logger Logger
+	requestID string
+	Logger    Logger
 
 	engine       *Engine
 	skippedNodes *[]skippedNode
@@ -43,6 +44,18 @@ func (c *Context) reset(w http.ResponseWriter, req *http.Request) {
 	}
 	c.Request = req
 	*c.Params = (*c.Params)[:0]
+
+	c.requestID = c.GetHeader(requestIDKey)
+	if c.requestID == "" {
+		c.requestID = genRequestID()
+		c.Header(requestIDKey, c.requestID)
+		c.Set(requestIDKey, c.requestID)
+	}
+
+	if NewLogger != nil {
+		c.Logger = NewLogger(c.requestID)
+	}
+
 	c.handlers = nil
 	c.index = -1
 	c.fullPath = ""
@@ -229,6 +242,22 @@ func (c *Context) ContentType() string {
 // Accepts returns the Accept header of the request.
 func (c *Context) Accepts() []string {
 	return parseAccept(c.requestHeader("Accept"))
+}
+
+// Header is a intelligent shortcut for c.Writer.Header().Set(key, value).
+// It writes a header in the response.
+// If value == "", this method removes the header `c.Writer.Header().Del(key)`
+func (c *Context) Header(key, value string) {
+	if value == "" {
+		c.Writer.Header().Del(key)
+		return
+	}
+	c.Writer.Header().Set(key, value)
+}
+
+// GetHeader returns value from request headers.
+func (c *Context) GetHeader(key string) string {
+	return c.requestHeader(key)
 }
 
 func (c *Context) requestHeader(key string) string {
