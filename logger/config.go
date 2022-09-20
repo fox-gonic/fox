@@ -44,12 +44,13 @@ var config = &Config{
 }
 
 // SetConfig set logger config
-func SetConfig(cfg *Config) {
+func SetConfig(cfg Config) {
 
-	config = cfg
+	config = &cfg
+
+	DefaultLogLevel = Level(cfg.LogLevel)
 
 	if config.FileLoggingEnabled {
-
 		if config.Filename == "" {
 			name := filepath.Base(os.Args[0]) + "-fox.log"
 			config.Filename = filepath.Join(os.TempDir(), name)
