@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/json-iterator/go v1.1.12
+	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/rs/zerolog v1.28.0
 	github.com/stretchr/testify v1.7.1
 	google.golang.org/protobuf v1.28.0
@@ -13,6 +14,7 @@ require (
 )
 
 require (
+	github.com/BurntSushi/toml v1.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
@@ -23,4 +25,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
+	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

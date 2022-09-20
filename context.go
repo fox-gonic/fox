@@ -53,8 +53,8 @@ func (c *Context) reset(w http.ResponseWriter, req *http.Request) {
 		c.Set(logger.RequestIDKey, c.requestID)
 	}
 
-	if logger.NewLogger != nil {
-		c.Logger = logger.NewLogger(c.requestID)
+	if logger.New != nil {
+		c.Logger = logger.New(c.requestID)
 	}
 
 	c.handlers = nil

@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -86,13 +87,32 @@ type Logger interface {
 	TraceID() string
 }
 
-// NewLogger return logger
-var NewLogger func(traceID string) Logger = newLogger
+// New return logger
+var New func(traceID string) Logger = newLogger
 
 func newLogger(traceID string) Logger {
 
-	w := zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: DefaultLogTimeFormat}
-	l := zerolog.New(w).
+	var writers []io.Writer
+
+	if config.ConsoleLoggingEnabled {
+		if config.EncodeLogsAsJSON {
+			writers = append(writers, os.Stderr)
+		} else {
+			writers = append(writers, zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: DefaultLogTimeFormat})
+		}
+	}
+
+	if config.FileLoggingEnabled {
+		if config.EncodeLogsAsJSON {
+			writers = append(writers, config.rollingWrite)
+		} else {
+			writers = append(writers, zerolog.ConsoleWriter{Out: config.rollingWrite, TimeFormat: DefaultLogTimeFormat})
+		}
+	}
+
+	mw := io.MultiWriter(writers...)
+
+	l := zerolog.New(mw).
 		With().
 		Str(RequestIDKey, traceID).
 		Timestamp().
@@ -104,6 +124,8 @@ func newLogger(traceID string) Logger {
 
 	return log
 }
+
+var std = newLogger("Std").Caller(4)
 
 // Log implement Logger
 type Log struct {
@@ -219,4 +241,79 @@ func (l *Log) Caller(frame int) Logger {
 // TraceID trace id
 func (l *Log) TraceID() string {
 	return l.traceID
+}
+
+// Debug debug level
+func Debug(arguments ...interface{}) {
+	std.Debug(arguments)
+}
+
+// Info info level
+func Info(arguments ...interface{}) {
+	std.Info(arguments)
+}
+
+// Warn warn level
+func Warn(arguments ...interface{}) {
+	std.Warn(arguments)
+}
+
+// Error error level
+func Error(arguments ...interface{}) {
+	std.Error(arguments)
+}
+
+// Fatal fatal level
+func Fatal(arguments ...interface{}) {
+	std.Fatal(arguments)
+}
+
+// Panic panic level
+func Panic(arguments ...interface{}) {
+	std.Panic(arguments)
+}
+
+// Debugf debug format
+func Debugf(format string, arguments ...interface{}) {
+	std.Debug(format, arguments)
+}
+
+// Infof info format
+func Infof(format string, arguments ...interface{}) {
+	std.Info(format, arguments)
+}
+
+// Warnf warn format
+func Warnf(format string, arguments ...interface{}) {
+	std.Warn(format, arguments)
+}
+
+// Errorf error format
+func Errorf(format string, arguments ...interface{}) {
+	std.Error(format, arguments)
+}
+
+// Fatalf fatal format
+func Fatalf(format string, arguments ...interface{}) {
+	std.Fatal(format, arguments)
+}
+
+// Panicf panic format
+func Panicf(format string, arguments ...interface{}) {
+	std.Panic(format, arguments)
+}
+
+// WithField add new field
+func WithField(key string, value interface{}) Logger {
+	return std.WithField(key, value)
+}
+
+// WithFields add new fields
+func WithFields(fields map[string]interface{}) Logger {
+	return std.WithFields(fields)
+}
+
+// WithError adds the field "error" with serialized err to the logger context.
+func WithError(err error) Logger {
+	return std.WithError(err)
 }
