@@ -6,7 +6,7 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/fox-gonic/fox/logger"
+	log "github.com/fox-gonic/fox/logger"
 )
 
 // Database instance type
@@ -47,6 +47,10 @@ func NewWithDialector(dialector gorm.Dialector, config *gorm.Config) (database *
 
 	if config.NowFunc == nil {
 		config.NowFunc = NowFunc
+	}
+
+	if config.Logger == nil {
+		config.Logger = NewLogger(50)
 	}
 
 	db, err := gorm.Open(dialector, config)
@@ -115,12 +119,13 @@ func (database *Database) Get(requestID ...string) *gorm.DB {
 	if len(requestID) > 0 {
 		traceID = requestID[0]
 	} else {
-		traceID = logger.DefaultGenRequestID()
+		traceID = log.DefaultGenRequestID()
 	}
 
 	// create new database session
 	db := database.Session(&gorm.Session{
-		Logger: newLog(0, traceID),
+		Logger: NewLogger(0, traceID),
 	})
+
 	return db
 }

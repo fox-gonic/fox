@@ -46,11 +46,11 @@ func (c *Context) reset(w http.ResponseWriter, req *http.Request) {
 	c.Request = req
 	*c.Params = (*c.Params)[:0]
 
-	c.requestID = c.GetHeader(logger.RequestIDKey)
+	c.requestID = c.GetHeader(logger.TraceIDKey)
 	if c.requestID == "" {
 		c.requestID = logger.DefaultGenRequestID()
-		c.Header(logger.RequestIDKey, c.requestID)
-		c.Set(logger.RequestIDKey, c.requestID)
+		c.Header(logger.TraceIDKey, c.requestID)
+		c.Set(logger.TraceIDKey, c.requestID)
 	}
 
 	if logger.New != nil {

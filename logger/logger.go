@@ -13,8 +13,8 @@ import (
 
 var pid = uint32(time.Now().UnixNano() % 4294967291)
 
-// RequestIDKey is the key for the x-request-id header.
-var RequestIDKey = "x-request-id"
+// TraceIDKey is the key for the x-request-id header.
+var TraceIDKey = "x-request-id"
 
 // DefaultGenRequestID default generate request id
 var DefaultGenRequestID func() string = func() string {
@@ -88,9 +88,15 @@ type Logger interface {
 }
 
 // New return logger
-var New func(traceID string) Logger = newLogger
+var New func(traceID ...string) Logger = newLogger
 
-func newLogger(traceID string) Logger {
+// newLogger return Logger
+func newLogger(traceID ...string) Logger {
+
+	var trace string
+	if len(traceID) > 0 {
+		trace = traceID[0]
+	}
 
 	var writers []io.Writer
 
@@ -112,20 +118,24 @@ func newLogger(traceID string) Logger {
 
 	mw := io.MultiWriter(writers...)
 
-	l := zerolog.New(mw).
+	c := zerolog.New(mw).
 		With().
-		Str(RequestIDKey, traceID).
 		Timestamp().
-		CallerWithSkipFrameCount(3).
-		Logger().
+		CallerWithSkipFrameCount(3)
+
+	if trace != "" {
+		c.Str(TraceIDKey, trace)
+	}
+
+	l := c.Logger().
 		Level(zerolog.Level(DefaultLogLevel))
 
-	log := &Log{log: &l, traceID: traceID}
+	log := &Log{log: &l, traceID: trace}
 
 	return log
 }
 
-var std = newLogger("Std").Caller(4)
+var std = New("Std").Caller(4)
 
 // Log implement Logger
 type Log struct {
