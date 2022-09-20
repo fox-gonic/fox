@@ -6,10 +6,9 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/fox-gonic/fox/logger"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-
-	"github.com/fox-gonic/fox"
 )
 
 // Dialector return dialector with config
@@ -103,7 +102,7 @@ func (database *Database) Get(requestID ...string) *gorm.DB {
 	if len(requestID) > 0 {
 		traceID = requestID[0]
 	} else {
-		traceID = fox.DefaultGenRequestID()
+		traceID = logger.DefaultGenRequestID()
 	}
 
 	// create new database session

@@ -115,7 +115,8 @@ func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) {
 // of the Router's NotFound handler.
 // To use the operating system's file system implementation,
 // use http.Dir:
-//     router.ServeFiles("/src/*filepath", http.Dir("/var/www"))
+//
+//	er.ServeFiles("/src/*filepath", http.Dir("/var/www"))
 func (group *RouterGroup) ServeFiles(path string, root http.FileSystem) {
 	if len(path) < 10 || path[len(path)-10:] != "/*filepath" {
 		panic("path must end with /*filepath in path '" + path + "'")

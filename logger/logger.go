@@ -1,17 +1,27 @@
-package fox
+package logger
 
 import (
+	"encoding/base64"
+	"encoding/binary"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/rs/zerolog"
 )
 
-// requestIDKey is the key for the x-request-id header.
-var requestIDKey = "x-request-id"
+var pid = uint32(time.Now().UnixNano() % 4294967291)
+
+// RequestIDKey is the key for the x-request-id header.
+var RequestIDKey = "x-request-id"
 
 // DefaultGenRequestID default generate request id
-var DefaultGenRequestID func() string = genRequestID
+var DefaultGenRequestID func() string = func() string {
+	var b [12]byte
+	binary.LittleEndian.PutUint32(b[:], pid)
+	binary.LittleEndian.PutUint64(b[4:], uint64(time.Now().UnixNano()))
+	return base64.URLEncoding.EncodeToString(b[:])
+}
 
 // Level type
 type Level int8
@@ -84,7 +94,7 @@ func newLogger(traceID string) Logger {
 	w := zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: DefaultLogTimeFormat}
 	l := zerolog.New(w).
 		With().
-		Str(requestIDKey, traceID).
+		Str(RequestIDKey, traceID).
 		Timestamp().
 		CallerWithSkipFrameCount(3).
 		Logger().
@@ -171,8 +181,8 @@ func (l *Log) WithField(key string, value interface{}) Logger {
 }
 
 // WithFields add new fields
-func (l *Log) WithFields(field map[string]interface{}) Logger {
-	log := l.log.With().Fields(field).Logger()
+func (l *Log) WithFields(fields map[string]interface{}) Logger {
+	log := l.log.With().Fields(fields).Logger()
 	return &Log{
 		log:     &log,
 		traceID: l.traceID,

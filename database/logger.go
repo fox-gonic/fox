@@ -6,29 +6,29 @@ import (
 
 	"gorm.io/gorm/logger"
 
-	"github.com/fox-gonic/fox"
+	log "github.com/fox-gonic/fox/logger"
 )
 
 // Log implement gorm logger
 type Log struct {
-	fox.Logger
+	log.Logger
 	slowThreshold time.Duration
 }
 
 var defaultSlowThreshold = 50 * time.Millisecond
 
-func toLoggerLevel(lvl logger.LogLevel) fox.Level {
+func toLoggerLevel(lvl logger.LogLevel) log.Level {
 	switch lvl {
 	case logger.Error:
-		return fox.ErrorLevel
+		return log.ErrorLevel
 	case logger.Info:
-		return fox.InfoLevel
+		return log.InfoLevel
 	case logger.Silent:
-		return fox.NoLevel
+		return log.NoLevel
 	case logger.Warn:
-		return fox.WarnLevel
+		return log.WarnLevel
 	default:
-		return fox.TraceLevel
+		return log.TraceLevel
 	}
 }
 
@@ -77,7 +77,7 @@ func (l *Log) Trace(ctx context.Context, begin time.Time, fc func() (string, int
 // newLog
 func newLog(slow int64, xReqID string) *Log {
 
-	log := fox.NewLogger(xReqID).Caller(6).WithFields(map[string]interface{}{"type": "DATABASE"})
+	log := log.NewLogger(xReqID).Caller(6).WithFields(map[string]interface{}{"type": "DATABASE"})
 
 	threshold := defaultSlowThreshold
 	if slow > 0 {
