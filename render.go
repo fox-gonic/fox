@@ -3,7 +3,7 @@ package fox
 import (
 	"net/http"
 
-	"github.com/miclle/fox/render"
+	"github.com/fox-gonic/fox/render"
 )
 
 // Render interface is to be implemented by JSON, XML, HTML, YAML and so on.

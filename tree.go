@@ -11,7 +11,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/miclle/fox/internal/bytesconv"
+	"github.com/fox-gonic/fox/internal/bytesconv"
 )
 
 var (

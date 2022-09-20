@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/miclle/fox/render"
+	"github.com/fox-gonic/fox/render"
 )
 
 // Context allows us to pass variables between middleware,

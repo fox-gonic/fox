@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/miclle/fox/internal/bytesconv"
+	"github.com/fox-gonic/fox/internal/bytesconv"
 )
 
 // String contains the given interface object slice and its format.

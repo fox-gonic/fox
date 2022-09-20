@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/miclle/fox/render"
+	"github.com/fox-gonic/fox/render"
 	"github.com/stretchr/testify/assert"
 )
 

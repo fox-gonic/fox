@@ -18,7 +18,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v3"
 
-	testdata "github.com/miclle/fox/testdata/protoexample"
+	testdata "github.com/fox-gonic/fox/testdata/protoexample"
 )
 
 func TestRenderJSON(t *testing.T) {

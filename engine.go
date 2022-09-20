@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/miclle/fox/internal/bytesconv"
+	"github.com/fox-gonic/fox/internal/bytesconv"
 )
 
 var (

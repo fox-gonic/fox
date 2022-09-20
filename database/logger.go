@@ -6,29 +6,29 @@ import (
 
 	"gorm.io/gorm/logger"
 
-	log "great-dev.com/common/logger"
+	"github.com/fox-gonic/fox"
 )
 
 // Log implement gorm logger
 type Log struct {
-	log.Logger
+	fox.Logger
 	slowThreshold time.Duration
 }
 
 var defaultSlowThreshold = 50 * time.Millisecond
 
-func toLoggerLevel(lvl logger.LogLevel) log.Level {
+func toLoggerLevel(lvl logger.LogLevel) fox.Level {
 	switch lvl {
 	case logger.Error:
-		return log.ErrorLevel
+		return fox.ErrorLevel
 	case logger.Info:
-		return log.InfoLevel
+		return fox.InfoLevel
 	case logger.Silent:
-		return ""
+		return fox.NoLevel
 	case logger.Warn:
-		return log.WarnLevel
+		return fox.WarnLevel
 	default:
-		return log.TraceLevel
+		return fox.TraceLevel
 	}
 }
 
@@ -65,18 +65,19 @@ func (l *Log) Trace(ctx context.Context, begin time.Time, fc func() (string, int
 
 	switch {
 	case err != nil:
-		l.Logger.WithField(field).Errorf("%v", err)
+		l.Logger.WithFields(field).Errorf("%v", err)
 	case elapsed > l.slowThreshold:
 		field["slow_query"] = true
-		l.Logger.WithField(field).Warnf("Elapsed %s exceeded, Max %s", elapsed.String(), l.slowThreshold.String())
+		l.Logger.WithFields(field).Warnf("Elapsed %s exceeded, Max %s", elapsed.String(), l.slowThreshold.String())
 	default:
-		l.Logger.WithField(field).Info()
+		l.Logger.WithFields(field).Info()
 	}
 }
 
 // newLog
 func newLog(slow int64, xReqID string) *Log {
-	log := log.NewWithoutCaller(xReqID).Caller(6).WithField(map[string]interface{}{"type": "DATABASE"})
+
+	log := fox.NewLogger(xReqID).Caller(6).WithFields(map[string]interface{}{"type": "DATABASE"})
 
 	threshold := defaultSlowThreshold
 	if slow > 0 {

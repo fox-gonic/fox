@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"reflect"
 
-	"github.com/miclle/fox/render"
+	"github.com/fox-gonic/fox/render"
 )
 
 var errorType = reflect.ValueOf(Error{}).Type()

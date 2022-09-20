@@ -12,7 +12,7 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 
-	"github.com/miclle/fox/internal/bytesconv"
+	"github.com/fox-gonic/fox/internal/bytesconv"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
