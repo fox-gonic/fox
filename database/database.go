@@ -2,29 +2,12 @@
 package database
 
 import (
-	"fmt"
-	"net/url"
 	"time"
 
-	"github.com/fox-gonic/fox/logger"
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+
+	"github.com/fox-gonic/fox/logger"
 )
-
-// Dialector return dialector with config
-func (config *Config) Dialector() gorm.Dialector {
-
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&loc=%s&parseTime=true",
-		config.Username,
-		config.Password,
-		config.Host,
-		config.Port,
-		config.Database,
-		url.QueryEscape("Local"),
-	)
-
-	return mysql.Open(dsn)
-}
 
 // Database instance type
 type Database struct {
@@ -37,15 +20,36 @@ var NowFunc = func() time.Time {
 	return time.Now().UTC()
 }
 
-// NewDatabase database with configuration
-func NewDatabase(config *Config) (database *Database, err error) {
+// New database with configuration
+func New(config *Config) (database *Database, err error) {
 
 	var dialector = config.Dialector()
 
-	db, err := gorm.Open(dialector, &gorm.Config{
-		NowFunc:                                  NowFunc,
-		DisableForeignKeyConstraintWhenMigrating: true,
-	})
+	database, err = NewWithDialector(dialector, &config.Config)
+	if err != nil {
+		return nil, err
+	}
+
+	if config.ConnPool != nil {
+		err = database.SetConnPool(*config.ConnPool)
+	}
+	return
+}
+
+// NewWithDialector database with dialector
+func NewWithDialector(dialector gorm.Dialector, config *gorm.Config) (database *Database, err error) {
+
+	if config == nil {
+		config = &gorm.Config{}
+	}
+
+	config.DisableForeignKeyConstraintWhenMigrating = true
+
+	if config.NowFunc == nil {
+		config.NowFunc = NowFunc
+	}
+
+	db, err := gorm.Open(dialector, config)
 	if err != nil {
 		return nil, err
 	}
@@ -59,43 +63,52 @@ func NewDatabase(config *Config) (database *Database, err error) {
 		return nil, err
 	}
 
-	// * set connection pool
-	// ******************************************************************
-
-	if config.MaxOpenConns > 0 {
-		if config.MaxOpenConns > maxOpenConns {
-			config.MaxOpenConns = maxOpenConns
-		}
-
-		// SetMaxOpenConns sets the maximum number of open connections to the database.
-		sqlDB.SetMaxOpenConns(config.MaxOpenConns)
-	}
-
-	if config.MaxIdleConns > 0 {
-		if config.MaxIdleConns > config.MaxOpenConns {
-			config.MaxIdleConns = config.MaxOpenConns
-		}
-
-		// SetMaxIdleConns sets the maximum number of connections in the idle connection pool.
-		sqlDB.SetMaxIdleConns(config.MaxIdleConns)
-	}
-
-	// set op response timeout
-	if config.ConnMaxLifeTime == 0 {
-		config.ConnMaxLifeTime = connMaxLifeTime
-	}
-
-	// SetConnMaxLifetime sets the maximum amount of time a connection may be reused.
-	sqlDB.SetConnMaxLifetime(time.Duration(config.ConnMaxLifeTime) * time.Second)
-
 	database = &Database{
 		DB: db,
 	}
-
 	return
 }
 
-// Get gorm.DB instance with xReqID
+// SetConnPool set connection pool
+func (database *Database) SetConnPool(pool ConnPool) error {
+	sqlDB, err := database.DB.DB()
+	if err != nil {
+		return err
+	}
+
+	if pool.MaxOpenConns > 0 {
+		if pool.MaxOpenConns > maxOpenConns {
+			pool.MaxOpenConns = maxOpenConns
+		}
+
+		// SetMaxOpenConns sets the maximum number of open connections to the database.
+		sqlDB.SetMaxOpenConns(pool.MaxOpenConns)
+	}
+
+	if pool.MaxIdleConns > 0 {
+		if pool.MaxIdleConns > pool.MaxOpenConns {
+			pool.MaxIdleConns = pool.MaxOpenConns
+		}
+
+		// SetMaxIdleConns sets the maximum number of connections in the idle connection pool.
+		sqlDB.SetMaxIdleConns(pool.MaxIdleConns)
+	}
+
+	// set op response timeout
+	if pool.ConnMaxLifeTime == 0 {
+		pool.ConnMaxLifeTime = connMaxLifeTime
+	}
+
+	// SetConnMaxLifetime sets the maximum amount of time a connection may be reused.
+	sqlDB.SetConnMaxLifetime(time.Duration(pool.ConnMaxLifeTime) * time.Second)
+
+	// SetConnMaxIdleTime sets the maximum amount of time a connection may be idle.
+	sqlDB.SetConnMaxIdleTime(time.Duration(pool.ConnMaxIdleTime) * time.Second)
+
+	return nil
+}
+
+// Get gorm.DB instance with request id
 func (database *Database) Get(requestID ...string) *gorm.DB {
 
 	var traceID string
@@ -109,6 +122,5 @@ func (database *Database) Get(requestID ...string) *gorm.DB {
 	db := database.Session(&gorm.Session{
 		Logger: newLog(0, traceID),
 	})
-
 	return db
 }
