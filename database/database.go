@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"gorm.io/gorm"
-
-	log "github.com/fox-gonic/fox/logger"
 )
 
 // Database instance type
@@ -112,20 +110,10 @@ func (database *Database) SetConnPool(pool ConnPool) error {
 	return nil
 }
 
-// Get gorm.DB instance with request id
-func (database *Database) Get(requestID ...string) *gorm.DB {
-
-	var traceID string
-	if len(requestID) > 0 {
-		traceID = requestID[0]
-	} else {
-		traceID = log.DefaultGenRequestID()
-	}
-
-	// create new database session
+// WithTrace gorm.DB instance with trace id
+func (database *Database) WithTrace(traceID string) *gorm.DB {
 	db := database.Session(&gorm.Session{
 		Logger: NewLogger(0, traceID),
 	})
-
 	return db
 }
