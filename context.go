@@ -20,8 +20,8 @@ type Context struct {
 	Writer  *ResponseWriter
 	Params  *Params
 
-	requestID string
-	Logger    logger.Logger
+	traceID string
+	Logger  logger.Logger
 
 	engine       *Engine
 	skippedNodes *[]skippedNode
@@ -46,15 +46,15 @@ func (c *Context) reset(w http.ResponseWriter, req *http.Request) {
 	c.Request = req
 	*c.Params = (*c.Params)[:0]
 
-	c.requestID = c.GetHeader(logger.TraceIDKey)
-	if c.requestID == "" {
-		c.requestID = logger.DefaultGenRequestID()
-		c.Header(logger.TraceIDKey, c.requestID)
-		c.Set(logger.TraceIDKey, c.requestID)
+	c.traceID = c.GetHeader(logger.TraceIDKey)
+	if c.traceID == "" {
+		c.traceID = logger.DefaultGenRequestID()
+		c.Header(logger.TraceIDKey, c.traceID)
+		c.Set(logger.TraceIDKey, c.traceID)
 	}
 
 	if logger.New != nil {
-		c.Logger = logger.New(c.requestID)
+		c.Logger = logger.New(c.traceID)
 	}
 
 	c.handlers = nil
