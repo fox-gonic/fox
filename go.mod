@@ -9,6 +9,7 @@ require (
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/rs/zerolog v1.28.0
 	github.com/stretchr/testify v1.8.0
+	github.com/wader/gormstore/v2 v2.0.1
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/clickhouse v0.4.2

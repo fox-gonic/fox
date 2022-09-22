@@ -15,6 +15,25 @@ const sessionName = "mysession"
 
 const ok = "ok"
 
+func testID(t *testing.T, newStore storeFactory) {
+	r := fox.New()
+	r.Use(New(sessionName, newStore(t)))
+
+	r.GET("/id", func(c *fox.Context) string {
+		session := Default(c)
+		session.Set("key", ok)
+		_ = session.Save()
+		if session.ID() == "" {
+			t.Error("Session id is empty")
+		}
+		return ok
+	})
+
+	res1 := httptest.NewRecorder()
+	req1, _ := http.NewRequest("GET", "/id", nil)
+	r.ServeHTTP(res1, req1)
+}
+
 func testGetSet(t *testing.T, newStore storeFactory) {
 	r := fox.New()
 	r.Use(New(sessionName, newStore(t)))
@@ -87,7 +106,7 @@ func testDeleteKey(t *testing.T, newStore storeFactory) {
 	r.ServeHTTP(res3, req3)
 }
 
-func test(t *testing.T, newStore storeFactory) {
+func testFlashes(t *testing.T, newStore storeFactory) {
 	r := fox.New()
 	store := newStore(t)
 	r.Use(New(sessionName, store))

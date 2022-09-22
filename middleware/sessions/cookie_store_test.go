@@ -18,7 +18,7 @@ func TestCookie_SessionDeleteKey(t *testing.T) {
 }
 
 func TestCookie_SessionFlashes(t *testing.T) {
-	test(t, testCookieStore)
+	testFlashes(t, testCookieStore)
 }
 
 func TestCookie_SessionClear(t *testing.T) {

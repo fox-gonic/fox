@@ -17,5 +17,8 @@
 # misc
 .DS_Store
 
+# middleware/sessions GormStore test
+middleware/sessions/test.db
+
 coverage.txt
 coverage.html
