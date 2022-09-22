@@ -20,17 +20,6 @@ const (
 // Fields are a subset of http.Cookie fields.
 type Options = sessions.Options
 
-// func (options Options) toGorillaOptions() *sessions.Options {
-// 	return &sessions.Options{
-// 		Path:     options.Path,
-// 		Domain:   options.Domain,
-// 		MaxAge:   options.MaxAge,
-// 		Secure:   options.Secure,
-// 		HttpOnly: options.HttpOnly,
-// 		SameSite: options.SameSite,
-// 	}
-// }
-
 // Store session store interface
 type Store interface {
 	sessions.Store
