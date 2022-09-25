@@ -11,7 +11,7 @@ import (
 // Config for logging
 type Config struct {
 	// log level
-	LogLevel int `mapstructure:"log_level"`
+	LogLevel Level `mapstructure:"log_level"`
 
 	// Enable console logging
 	ConsoleLoggingEnabled bool `mapstructure:"console_logging_enabled"`
@@ -44,11 +44,11 @@ var config = &Config{
 }
 
 // SetConfig set logger config
-func SetConfig(cfg Config) {
+func SetConfig(cfg *Config) {
 
-	config = &cfg
+	config = cfg
 
-	DefaultLogLevel = Level(cfg.LogLevel)
+	DefaultLogLevel = cfg.LogLevel
 
 	if config.FileLoggingEnabled {
 		if config.Filename == "" {
