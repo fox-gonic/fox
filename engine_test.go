@@ -27,7 +27,7 @@ func PerformRequest(r http.Handler, method, path string, header http.Header, bod
 }
 
 func TestEngineStore(t *testing.T) {
-	router := New()
+	router := Default()
 	router.Store("name", "value")
 
 	router.GET("/", func(c *Context) interface{} {
@@ -56,7 +56,7 @@ func TestEngineStore(t *testing.T) {
 }
 
 func TestEngineAddRoute(t *testing.T) {
-	router := New()
+	router := Default()
 	router.addRoute("GET", "/", HandlersChain{func() {}})
 
 	assert.Len(t, router.trees, 1)
@@ -75,7 +75,7 @@ func TestEngineAddRoute(t *testing.T) {
 
 func TestEngineRegisterRoute(t *testing.T) {
 	assert := assert.New(t)
-	router := New()
+	router := Default()
 
 	var index = func(c *Context) string { return "home page" }
 	var ping = func() string { return "pong" }
@@ -146,7 +146,7 @@ func TestEngineRegisterRoute(t *testing.T) {
 func TestRouter(t *testing.T) {
 	assert := assert.New(t)
 
-	router := New()
+	router := Default()
 	router.GET("/GET", func(c *Context) (string, int) { return "get", 200 })
 	router.HEAD("/GET", func(c *Context) (string, int) { return "head", 200 })
 	router.OPTIONS("/GET", func(c *Context) (string, int) { return "options", 200 })
@@ -196,7 +196,7 @@ func TestRouter(t *testing.T) {
 
 func TestEngineRESTful(t *testing.T) {
 	assert := assert.New(t)
-	router := New()
+	router := Default()
 
 	type Product struct {
 		ID   int    `json:"id"`
@@ -325,7 +325,7 @@ func TestEngineRESTful(t *testing.T) {
 
 // mixed static and wildcard
 func TestRouterStatic(t *testing.T) {
-	router := New()
+	router := Default()
 
 	router.GET("/articles", func(c *Context) (string, error) {
 		return "articles", nil
@@ -356,7 +356,7 @@ func TestRouterStatic(t *testing.T) {
 }
 
 func TestRouterInvalidInput(t *testing.T) {
-	router := New()
+	router := Default()
 	router.basePath = ""
 	handle := func(*Context) {}
 	assert.Panics(t, func() { router.Handle("", "/", handle) }, "registering empty method did not panic")
@@ -366,7 +366,7 @@ func TestRouterInvalidInput(t *testing.T) {
 }
 
 func TestRouteRedirectTrailingSlash(t *testing.T) {
-	router := New()
+	router := Default()
 	router.RedirectFixedPath = false
 	router.RedirectTrailingSlash = true
 	router.GET("/path", func(c *Context) {})
@@ -429,7 +429,7 @@ func TestRouteRedirectTrailingSlash(t *testing.T) {
 }
 
 func TestRouteNotAllowedEnabled(t *testing.T) {
-	router := New()
+	router := Default()
 	router.DefaultContentType = MIMEPlain
 	router.POST("/path", func(c *Context) {})
 
@@ -446,7 +446,7 @@ func TestRouteNotAllowedEnabled(t *testing.T) {
 }
 
 func TestRouteNotAllowedEnabled2(t *testing.T) {
-	router := New()
+	router := Default()
 
 	router.GET("/path2", func(c *Context) {})
 
@@ -455,7 +455,7 @@ func TestRouteNotAllowedEnabled2(t *testing.T) {
 }
 
 func TestRouteNotAllowedDisabled(t *testing.T) {
-	router := New()
+	router := Default()
 	router.HandleMethodNotAllowed = false
 	router.POST("/path", func(c *Context) {})
 
@@ -475,7 +475,7 @@ func TestRouterNotFound(t *testing.T) {
 	assert := assert.New(t)
 	handlerFunc := func(*Context) {}
 
-	router := New()
+	router := Default()
 	router.RedirectFixedPath = true
 	router.GET("/path", handlerFunc)
 	router.GET("/dir/", handlerFunc)
@@ -522,14 +522,14 @@ func TestRouterNotFound(t *testing.T) {
 	assert.Equal("map[Location:[/path]]", fmt.Sprint(w.Header()))
 
 	// Test special case where no node for the prefix "/" exists
-	router = New()
+	router = Default()
 	router.GET("/a", handlerFunc)
 	w = PerformRequest(router, http.MethodGet, "/", nil)
 	assert.Equal(http.StatusNotFound, w.Code)
 }
 
 func TestRouterPanicHandler(t *testing.T) {
-	router := New()
+	router := Default()
 	panicHandled := false
 
 	router.PanicHandler = func(rw http.ResponseWriter, r *http.Request, p interface{}) {
@@ -560,7 +560,7 @@ func (mfs *mockFileSystem) Open(name string) (http.File, error) {
 }
 
 func TestRouterServeFiles(t *testing.T) {
-	router := New()
+	router := Default()
 	mfs := &mockFileSystem{}
 
 	recv := catchPanic(func() {

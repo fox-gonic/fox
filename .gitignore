@@ -19,6 +19,7 @@
 
 # middleware/sessions GormStore test
 middleware/sessions/test.db
+test.db
 
 coverage.txt
 coverage.html

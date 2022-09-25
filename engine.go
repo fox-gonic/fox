@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"path"
 	"strings"
 	"sync"
 
+	"github.com/spf13/viper"
+
+	"github.com/fox-gonic/fox/database"
 	"github.com/fox-gonic/fox/internal/bytesconv"
+	"github.com/fox-gonic/fox/logger"
 )
 
 var (
@@ -53,61 +58,13 @@ func (c HandlersChain) Last() HandlerFunc {
 // Engine is a http.Handler which can be used to dispatch requests to different
 // handler functions via configurable routes
 type Engine struct {
+	Configurations *viper.Viper
+
+	Database *database.Database
+
 	RouterGroup
 
-	// Enables automatic redirection if the current route can't be matched but a
-	// handler for the path with (without) the trailing slash exists.
-	// For example if /foo/ is requested but a route only exists for /foo, the
-	// client is redirected to /foo with http status code 301 for GET requests
-	// and 308 for all other request methods.
-	RedirectTrailingSlash bool
-
-	// If enabled, the router tries to fix the current request path, if no
-	// handle is registered for it.
-	// First superfluous path elements like ../ or // are removed.
-	// Afterwards the router does a case-insensitive lookup of the cleaned path.
-	// If a handle can be found for this route, the router makes a redirection
-	// to the corrected path with status code 301 for GET requests and 308 for
-	// all other request methods.
-	// For example /FOO and /..//Foo could be redirected to /foo.
-	// RedirectTrailingSlash is independent of this option.
-	RedirectFixedPath bool
-
-	// If enabled, the router checks if another method is allowed for the
-	// current route, if the current request can not be routed.
-	// If this is the case, the request is answered with 'Method Not Allowed'
-	// and HTTP status code 405.
-	// If no other Method is allowed, the request is delegated to the NotFound
-	// handler.
-	HandleMethodNotAllowed bool
-
-	// If enabled, the router automatically replies to OPTIONS requests.
-	// Custom OPTIONS handlers take priority over automatic replies.
-	HandleOPTIONS bool
-
-	// An optional http.Handler that is called on automatic OPTIONS requests.
-	// The handler is only called if HandleOPTIONS is true and no OPTIONS
-	// handler for the specific path was set.
-	// The "Allowed" header is set before calling the handler.
-	GlobalOPTIONS http.Handler
-
-	// ForwardedByClientIP if enabled, client IP will be parsed from the request's headers that
-	// match those stored at `(*gin.Engine).RemoteIPHeaders`. If no IP was
-	// fetched, it falls back to the IP obtained from
-	// `(*gin.Context).Request.RemoteAddr`.
-	ForwardedByClientIP bool
-
-	// RemoteIPHeaders list of headers used to obtain the client IP when
-	// `(*gin.Engine).ForwardedByClientIP` is `true` and
-	// `(*gin.Context).Request.RemoteAddr` is matched by at least one of the
-	// network origins of list defined by `(*gin.Engine).SetTrustedProxies()`.
-	RemoteIPHeaders []string
-
-	// TrustedPlatform if set to a constant of value gin.Platform*, trusts the headers set by
-	// that platform, for example to determine the client IP
-	TrustedPlatform string
-
-	DefaultContentType string
+	*Options
 
 	trees methodTrees
 
@@ -139,22 +96,101 @@ type Engine struct {
 
 	// cache is a key/value pair global for the engine.
 	cache sync.Map
-
-	trustedCIDRs []*net.IPNet
 }
 
 // Make sure the Router conforms with the http.Handler interface
-var _ http.Handler = New()
+var _ http.Handler = New(defaultEngineOptions)
 
 // New returns a new initialized Router.
 // Path auto-correction, including trailing slashes, is enabled by default.
-func New() *Engine {
+func New(opts *Options) *Engine {
 	engine := &Engine{
+		Configurations: viper.New(),
+
 		RouterGroup: RouterGroup{
 			Handlers: nil,
 			basePath: "/",
 			root:     true,
 		},
+
+		Options: opts,
+	}
+
+	engine.trustedCIDRs = defaultTrustedCIDRs
+	engine.RouterGroup.engine = engine
+
+	engine.pool.New = func() any {
+		return engine.allocateContext()
+	}
+	return engine
+}
+
+// Default return engine with default options
+func Default() *Engine {
+	return New(defaultEngineOptions)
+}
+
+// NewWithConfig return new engine with config file
+func NewWithConfig(path string) (*Engine, error) {
+
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	defer file.Close()
+
+	configurations := viper.New()
+	configurations.SetConfigType("yaml")
+	if err = configurations.ReadConfig(file); err != nil {
+		return nil, err
+	}
+
+	{ // set default configurations
+		configurations.SetDefault("addr", "127.0.0.1:9000")
+		configurations.SetDefault("env", DevelopmentMode)
+
+		configurations.SetDefault("logger", logger.Config{
+			LogLevel:              logger.DebugLevel,
+			ConsoleLoggingEnabled: true,
+			EncodeLogsAsJSON:      false,
+			FileLoggingEnabled:    false,
+		})
+	}
+
+	engine := &Engine{
+		Configurations: configurations,
+	}
+
+	// init database
+	var databaseConfig *database.Config
+	if err := engine.Configurations.UnmarshalKey("database", &databaseConfig); err != nil {
+		return nil, err
+	}
+	if databaseConfig != nil {
+		if engine.Database, err = database.New(databaseConfig); err != nil {
+			return nil, err
+		}
+	}
+
+	// set logger config
+	var loggerConfig *logger.Config
+	if err := configurations.UnmarshalKey("logger", &loggerConfig); err != nil {
+		return nil, err
+	}
+	logger.SetConfig(loggerConfig)
+
+	engine.RouterGroup = RouterGroup{
+		Handlers: nil,
+		basePath: "/",
+		root:     true,
+	}
+
+	engine.Options = &Options{
+		Addr:   engine.Configurations.GetString("addr"),
+		Secret: engine.Configurations.GetString("secret"),
+		Env:    engine.Configurations.GetString("env"),
+
 		RedirectTrailingSlash:  true,
 		RedirectFixedPath:      true,
 		HandleMethodNotAllowed: true,
@@ -167,11 +203,22 @@ func New() *Engine {
 
 		DefaultContentType: MIMEJSON,
 	}
+
+	engine.trustedCIDRs = defaultTrustedCIDRs
 	engine.RouterGroup.engine = engine
+
 	engine.pool.New = func() any {
 		return engine.allocateContext()
 	}
-	return engine
+
+	engine.InitSessionMiddleware()
+
+	return engine, nil
+}
+
+// SetOptions set engine options
+func (engine *Engine) SetOptions(opts *Options) {
+	engine.Options = opts
 }
 
 func (engine *Engine) allocateContext() *Context {

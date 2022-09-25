@@ -16,7 +16,7 @@ import (
 
 func TestMiddlewareGeneralCase(t *testing.T) {
 	signature := ""
-	router := New()
+	router := Default()
 	router.Use(func(c *Context) {
 		signature += "A"
 		c.Next()
@@ -52,7 +52,7 @@ func TestMiddlewareGeneralCase(t *testing.T) {
 
 func TestMiddlewareNotFound(t *testing.T) {
 	signature := ""
-	router := New()
+	router := Default()
 	router.Use(func(c *Context) {
 		signature += "A"
 		c.Next()
@@ -86,7 +86,7 @@ func TestMiddlewareNotFound(t *testing.T) {
 
 func TestMiddlewareNoMethodEnabled(t *testing.T) {
 	signature := ""
-	router := New()
+	router := Default()
 	router.HandleMethodNotAllowed = true
 	router.Use(func(c *Context) {
 		signature += "A"
@@ -120,7 +120,7 @@ func TestMiddlewareNoMethodEnabled(t *testing.T) {
 
 func TestMiddlewareNoMethodDisabled(t *testing.T) {
 	signature := ""
-	router := New()
+	router := Default()
 
 	// NoMethod disabled
 	router.HandleMethodNotAllowed = false
@@ -160,7 +160,7 @@ func TestMiddlewareNoMethodDisabled(t *testing.T) {
 // as well as Abort
 func TestMiddlewareFailHandlersChain(t *testing.T) {
 	signature := ""
-	router := New()
+	router := Default()
 	router.Use(func(c *Context) (interface{}, error) {
 		signature += "A"
 		return nil, &Error{
@@ -179,7 +179,7 @@ func TestMiddlewareFailHandlersChain(t *testing.T) {
 }
 
 func TestMiddlewareWrite(t *testing.T) {
-	router := New()
+	router := Default()
 	router.Use(func(c *Context) (string, error) {
 		return "hola\n", nil
 	})
@@ -203,7 +203,7 @@ func TestMiddlewareWrite(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "hola\n<map><foo>bar</foo></map>{\"foo\":\"bar\"}{\"foo\":\"bar\"}", w.Body.String())
 
-	router = New()
+	router = Default()
 	router.DefaultContentType = MIMEPlain
 	router.Use(func(c *Context) (string, error) {
 		return "hola\n", &Error{
