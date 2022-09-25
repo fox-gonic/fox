@@ -38,7 +38,3 @@ func TestGorm_SessionClear(t *testing.T) {
 func TestGorm_SessionOptions(t *testing.T) {
 	testOptions(t, testGormStore)
 }
-
-func TestGorm_SessionMany(t *testing.T) {
-	testMany(t, testGormStore)
-}

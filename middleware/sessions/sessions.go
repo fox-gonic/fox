@@ -4,10 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
-
-	"github.com/fox-gonic/fox"
 )
 
 const (
@@ -54,26 +51,15 @@ type Session interface {
 	Save() error
 }
 
-// NewSessionHandler returns a session middleware
-func NewSessionHandler(name string, store Store) fox.HandlerFunc {
-	return func(c *fox.Context) {
-		s := &session{name, c.Request, store, nil, false, c.Writer}
-		c.Set(DefaultKey, s)
-		defer context.Clear(c.Request)
-		c.Next()
-	}
-}
-
-// ManySessionHandler returns multiple sessions middleware
-func ManySessionHandler(names []string, store Store) fox.HandlerFunc {
-	return func(c *fox.Context) {
-		sessions := make(map[string]Session, len(names))
-		for _, name := range names {
-			sessions[name] = &session{name, c.Request, store, nil, false, c.Writer}
-		}
-		c.Set(DefaultKey, sessions)
-		defer context.Clear(c.Request)
-		c.Next()
+// New return default implement session
+func New(name string, store Store, w http.ResponseWriter, r *http.Request) Session {
+	return &session{
+		name:    name,
+		request: r,
+		store:   store,
+		session: nil,
+		written: false,
+		writer:  w,
 	}
 }
 
@@ -149,14 +135,4 @@ func (s *session) Session() *sessions.Session {
 
 func (s *session) Written() bool {
 	return s.written
-}
-
-// Default shortcut to get session
-func Default(c *fox.Context) Session {
-	return c.MustGet(DefaultKey).(Session)
-}
-
-// DefaultMany shortcut to get session with given name
-func DefaultMany(c *fox.Context, name string) Session {
-	return c.MustGet(DefaultKey).(map[string]Session)[name]
 }
