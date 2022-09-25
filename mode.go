@@ -6,28 +6,28 @@ import (
 )
 
 const (
-	// DebugMode indicates fox mode is debug.
-	DebugMode = "debug"
-	// ReleaseMode indicates fox mode is release.
-	ReleaseMode = "release"
+	// DevelopmentMode indicates fox mode is development.
+	DevelopmentMode = "development"
+	// ProductionMode indicates fox mode is production.
+	ProductionMode = "production"
 	// TestMode indicates fox mode is test.
 	TestMode = "test"
 )
 
-// DefaultWriter is the default io.Writer used by Fox for debug output.
+// DefaultWriter is the default io.Writer used by Fox for development output.
 var DefaultWriter io.Writer = os.Stdout
 
-// DefaultErrorWriter is the default io.Writer used by Fox to debug errors
+// DefaultErrorWriter is the default io.Writer used by Fox to development errors
 var DefaultErrorWriter io.Writer = os.Stderr
 
-var engineMode = DebugMode
+var engineMode = DevelopmentMode
 
 // SetMode sets engine mode according to input string.
 func SetMode(value string) {
 	switch value {
-	case DebugMode, ReleaseMode, TestMode:
+	case DevelopmentMode, ProductionMode, TestMode:
 		engineMode = value
 	default:
-		engineMode = DebugMode
+		engineMode = DevelopmentMode
 	}
 }

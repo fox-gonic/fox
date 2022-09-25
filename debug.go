@@ -8,7 +8,7 @@ import (
 // IsDebugging returns true if the framework is running in debug mode.
 // Use SetMode(fox.ReleaseMode) to disable debug mode.
 func IsDebugging() bool {
-	return engineMode == DebugMode
+	return engineMode == DevelopmentMode
 }
 
 // DebugPrintRouteFunc indicates debug log output format.
