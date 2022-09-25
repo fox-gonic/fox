@@ -54,8 +54,8 @@ type Session interface {
 	Save() error
 }
 
-// New returns a session middleware
-func New(name string, store Store) fox.HandlerFunc {
+// NewSessionHandler returns a session middleware
+func NewSessionHandler(name string, store Store) fox.HandlerFunc {
 	return func(c *fox.Context) {
 		s := &session{name, c.Request, store, nil, false, c.Writer}
 		c.Set(DefaultKey, s)
@@ -64,8 +64,8 @@ func New(name string, store Store) fox.HandlerFunc {
 	}
 }
 
-// Many returns multiple sessions middleware
-func Many(names []string, store Store) fox.HandlerFunc {
+// ManySessionHandler returns multiple sessions middleware
+func ManySessionHandler(names []string, store Store) fox.HandlerFunc {
 	return func(c *fox.Context) {
 		sessions := make(map[string]Session, len(names))
 		for _, name := range names {
