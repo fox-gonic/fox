@@ -11,6 +11,7 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/fox-gonic/fox/database"
 	"github.com/fox-gonic/fox/logger"
 	"github.com/fox-gonic/fox/middleware/sessions"
 	"github.com/fox-gonic/fox/render"
@@ -49,22 +50,20 @@ func (c *Context) reset(w http.ResponseWriter, req *http.Request) {
 	c.Request = req
 	*c.Params = (*c.Params)[:0]
 
-	c.traceID = c.GetHeader(logger.TraceIDKey)
-	if c.traceID == "" {
-		c.traceID = logger.DefaultGenRequestID()
-		c.Header(logger.TraceIDKey, c.traceID)
-		c.Set(logger.TraceIDKey, c.traceID)
-	}
-
-	if logger.New != nil {
-		c.Logger = logger.New(c.traceID)
-	}
-
 	c.handlers = nil
 	c.index = -1
 	c.fullPath = ""
 	c.Keys = nil
 	*c.skippedNodes = (*c.skippedNodes)[:0]
+
+	// set context logger, traceID and x-request-id header
+	c.traceID = c.GetHeader(logger.TraceIDKey)
+	if c.traceID == "" {
+		c.traceID = logger.DefaultGenRequestID()
+	}
+	c.Logger = logger.New(c.traceID)
+	c.Set(logger.TraceIDKey, c.traceID)
+	c.Header(logger.TraceIDKey, c.traceID)
 }
 
 // Next should be used only inside middleware.
@@ -280,6 +279,9 @@ func (c *Context) Database(config ...*gorm.Session) *gorm.DB {
 	}
 	if session.Context == nil {
 		session.Context = c
+	}
+	if session.Logger == nil {
+		session.Logger = database.NewLogger(0)
 	}
 	return c.engine.Database.Session(session)
 }
