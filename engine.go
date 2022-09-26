@@ -14,6 +14,7 @@ import (
 	"github.com/fox-gonic/fox/database"
 	"github.com/fox-gonic/fox/internal/bytesconv"
 	"github.com/fox-gonic/fox/logger"
+	"github.com/fox-gonic/fox/middleware/sessions"
 )
 
 var (
@@ -59,8 +60,9 @@ func (c HandlersChain) Last() HandlerFunc {
 // handler functions via configurable routes
 type Engine struct {
 	Configurations *viper.Viper
-
-	Database *database.Database
+	Database       *database.Database
+	SessionName    string
+	SessionStore   sessions.Store
 
 	RouterGroup
 
@@ -187,9 +189,8 @@ func NewWithConfig(path string) (*Engine, error) {
 	}
 
 	engine.Options = &Options{
-		Addr:   engine.Configurations.GetString("addr"),
-		Secret: engine.Configurations.GetString("secret"),
-		Env:    engine.Configurations.GetString("env"),
+		Addr: engine.Configurations.GetString("addr"),
+		Env:  engine.Configurations.GetString("env"),
 
 		RedirectTrailingSlash:  true,
 		RedirectFixedPath:      true,
@@ -211,7 +212,15 @@ func NewWithConfig(path string) (*Engine, error) {
 		return engine.allocateContext()
 	}
 
-	engine.InitSessionMiddleware()
+	err = engine.InitSessionStore()
+	if err != nil {
+		return nil, err
+	}
+
+	err = engine.InitSessionMiddleware()
+	if err != nil {
+		return nil, err
+	}
 
 	return engine, nil
 }

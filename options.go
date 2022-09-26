@@ -14,9 +14,6 @@ type Options struct {
 	// Can be set using ENV vars "ADDR" and "PORT".
 	Addr string `mapstructure:"addr"`
 
-	// website cookie key pair
-	Secret string `mapstructure:"secret"`
-
 	// Env is the "environment" in which the application engine is running. Default is "development".
 	Env string `mapstructure:"env"`
 
