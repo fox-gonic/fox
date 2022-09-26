@@ -9,7 +9,10 @@ import (
 	"sync"
 	"time"
 
+	"gorm.io/gorm"
+
 	"github.com/fox-gonic/fox/logger"
+	"github.com/fox-gonic/fox/middleware/sessions"
 	"github.com/fox-gonic/fox/render"
 )
 
@@ -263,6 +266,20 @@ func (c *Context) GetHeader(key string) string {
 
 func (c *Context) requestHeader(key string) string {
 	return c.Request.Header.Get(key)
+}
+
+/************************************/
+/************* EXTENDS **************/
+/************************************/
+
+// Database returns database
+func (c *Context) Database() *gorm.DB {
+	return c.engine.Database.WithContext(c)
+}
+
+// Session returns session
+func (c *Context) Session() sessions.Session {
+	return c.MustGet(sessions.DefaultKey).(sessions.Session)
 }
 
 /************************************/
