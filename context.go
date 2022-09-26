@@ -272,9 +272,16 @@ func (c *Context) requestHeader(key string) string {
 /************* EXTENDS **************/
 /************************************/
 
-// Database returns database
-func (c *Context) Database() *gorm.DB {
-	return c.engine.Database.WithContext(c)
+// Database returns database with context & config
+func (c *Context) Database(config ...*gorm.Session) *gorm.DB {
+	var session = &gorm.Session{}
+	if len(config) > 0 {
+		session = config[0]
+	}
+	if session.Context == nil {
+		session.Context = c
+	}
+	return c.engine.Database.Session(session)
 }
 
 // Session returns session
