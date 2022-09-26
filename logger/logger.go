@@ -118,17 +118,13 @@ func newLogger(traceID ...string) Logger {
 
 	mw := io.MultiWriter(writers...)
 
-	c := zerolog.New(mw).
-		With().
-		Timestamp().
-		CallerWithSkipFrameCount(3)
+	c := zerolog.New(mw).With().Timestamp().CallerWithSkipFrameCount(3)
 
 	if trace != "" {
-		c.Str(TraceIDKey, trace)
+		c = c.Str(TraceIDKey, trace)
 	}
 
-	l := c.Logger().
-		Level(zerolog.Level(DefaultLogLevel))
+	l := c.Logger().Level(zerolog.Level(DefaultLogLevel))
 
 	log := &Log{log: &l, traceID: trace}
 
