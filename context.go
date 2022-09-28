@@ -70,15 +70,31 @@ func (c *Context) reset(w http.ResponseWriter, req *http.Request) {
 func (c *Context) Next() {
 	c.index++
 	for c.index < len(c.handlers) {
-		res, err := call(c, c.handlers[c.index])
+		var (
+			start      = time.Now()
+			handler    = c.handlers[c.index]
+			handleName = nameOfFunction(handler)
+		)
+
+		res, err := call(c, handler)
+
+		fields := map[string]interface{}{
+			"type":    "HANDLER",
+			"latency": time.Now().Sub(start).String(),
+		}
+
 		if err != nil {
 			c.renderError(err)
+			c.Logger.WithFields(fields).Error(handleName)
 			return
 		}
+
 		if res != nil {
 			c.render(res)
 		}
 		c.index++
+
+		c.Logger.WithFields(fields).Info(handleName)
 	}
 }
 

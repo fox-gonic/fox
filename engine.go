@@ -8,6 +8,7 @@ import (
 	"path"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/spf13/viper"
 
@@ -365,10 +366,31 @@ func (engine *Engine) Run(addr string) (err error) {
 
 // ServeHTTP makes the router implement the http.Handler interface.
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+
+	startTime := time.Now()
+
 	ctx := engine.pool.Get().(*Context)
 	ctx.reset(w, req)
+
+	ctx.Logger.WithFields(map[string]interface{}{
+		"method":    ctx.Request.Method,
+		"path":      ctx.Request.URL.Path,
+		"client_ip": ctx.ClientIP(),
+		"type":      "REQUEST",
+		"action":    "Start",
+	}).Info("[Started]")
+
 	engine.handleHTTPRequest(ctx)
 	engine.pool.Put(ctx)
+
+	ctx.Logger.WithFields(map[string]interface{}{
+		"method":  ctx.Request.Method,
+		"path":    ctx.Request.URL.Path,
+		"status":  ctx.Writer.Status(),
+		"latency": time.Since(startTime).String(),
+		"type":    "REQUEST",
+		"action":  "Finished",
+	}).Info("[Completed]")
 }
 
 func (engine *Engine) handleHTTPRequest(ctx *Context) {
