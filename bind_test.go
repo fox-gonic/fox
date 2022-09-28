@@ -41,3 +41,19 @@ func TestBind(t *testing.T) {
 	assert.Equal(t, 20, args.Age)
 	assert.Equal(t, true, args.OK)
 }
+
+func TestBindGet(t *testing.T) {
+	queries := url.Values{}
+	queries.Add("ids", "1")
+	queries.Add("ids", "3")
+	queries.Add("ids", "10086")
+	queries.Set("status", "active")
+
+	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("https://hello.world/users?%s", queries.Encode()), nil)
+
+	args := queryUsersArgs{}
+	err := Bind(req, &args, &Params{})
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(args.IDs))
+	assert.Equal(t, Status("active"), *args.Status)
+}

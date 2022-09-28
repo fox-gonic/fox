@@ -105,7 +105,7 @@ func Bind(req *http.Request, parameter interface{}, pathQueryier *Params) (err e
 
 	wg.Wait()
 
-	if easy.hasJSONBody {
+	if req.ContentLength > 0 && easy.hasJSONBody {
 		err = json.NewDecoder(req.Body).Decode(parameter)
 	}
 
