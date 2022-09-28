@@ -9,10 +9,10 @@ import (
 // It may be embedded into your model or you may build your own model without it
 //
 //	type User struct {
-//	  gorm.Model
+//	  database.Model
 //	}
 type Model struct {
-	ID        uint                  `json:"id"         gorm:"primarykey"`
+	ID        int64                 `json:"id"         gorm:"primarykey"`
 	CreatedAt int64                 `json:"created_at"`
 	UpdatedAt int64                 `json:"updated_at"`
 	DeletedAt soft_delete.DeletedAt `json:"deleted_at" gorm:"index"`
@@ -28,8 +28,8 @@ const (
 
 // Pagination model
 type Pagination[T any] struct {
-	Page     int   `json:"page"      form:"page"      pos:"query:page"`
-	PageSize int   `json:"page_size" form:"page_size" pos:"query:page_size"`
+	Page     int   `json:"page"      pos:"query:page"`
+	PageSize int   `json:"page_size" pos:"query:page_size"`
 	Total    int64 `json:"total"`
 	Items    []T   `json:"items"`
 }
