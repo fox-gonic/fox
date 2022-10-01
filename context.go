@@ -3,6 +3,7 @@ package fox
 import (
 	"context"
 	"errors"
+	"math"
 	"net"
 	"net/http"
 	"strings"
@@ -16,6 +17,9 @@ import (
 	"github.com/fox-gonic/fox/middleware/sessions"
 	"github.com/fox-gonic/fox/render"
 )
+
+// abortIndex represents a typical value used in abort functions.
+const abortIndex int8 = math.MaxInt8 >> 1
 
 // Context allows us to pass variables between middleware,
 // manage the flow, using logger with context
@@ -31,7 +35,7 @@ type Context struct {
 	skippedNodes *[]skippedNode
 
 	handlers HandlersChain
-	index    int
+	index    int8
 	fullPath string
 
 	// This mutex protects Keys map.
@@ -69,7 +73,7 @@ func (c *Context) reset(w http.ResponseWriter, req *http.Request) {
 // Next should be used only inside middleware.
 func (c *Context) Next() {
 	c.index++
-	for c.index < len(c.handlers) {
+	for c.index < int8(len(c.handlers)) {
 		var (
 			start      = time.Now()
 			handler    = c.handlers[c.index]
@@ -78,14 +82,16 @@ func (c *Context) Next() {
 
 		res, err := call(c, handler)
 
+		c.Logger.Debugf("Next() res: %+v \t err: %+v", res, err)
+
 		fields := map[string]interface{}{
 			"type":    "HANDLER",
 			"latency": time.Now().Sub(start).String(),
 		}
 
 		if err != nil {
+			c.Abort()
 			c.renderError(err)
-			c.Logger.WithFields(fields).Error(handleName)
 			return
 		}
 
@@ -96,6 +102,14 @@ func (c *Context) Next() {
 
 		c.Logger.WithFields(fields).Info(handleName)
 	}
+}
+
+// Abort prevents pending handlers from being called. Note that this will not stop the current handler.
+// Let's say you have an authorization middleware that validates that the current request is authorized.
+// If the authorization fails (ex: the password does not match), call Abort to ensure the remaining handlers
+// for this request are not called.
+func (c *Context) Abort() {
+	c.index = abortIndex
 }
 
 // renderError ...

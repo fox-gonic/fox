@@ -18,8 +18,15 @@ func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
 	if IsDebugging() {
 		nuHandlers := len(handlers)
 		handlerName := nameOfFunction(handlers.Last())
+
+		var handlerNames []string
+		for _, fn := range handlers {
+			handlerNames = append(handlerNames, nameOfFunction(fn))
+		}
+
 		if DebugPrintRouteFunc == nil {
-			debugPrint("%-6s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
+			// debugPrint("%-6s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
+			debugPrint("%-6s %-25s --> %s (%d handlers)\t--> %+v\n", httpMethod, absolutePath, handlerName, nuHandlers, handlerNames)
 		} else {
 			DebugPrintRouteFunc(httpMethod, absolutePath, handlerName, nuHandlers)
 		}
@@ -31,7 +38,7 @@ func debugPrint(format string, values ...any) {
 		if !strings.HasSuffix(format, "\n") {
 			format += "\n"
 		}
-		fmt.Fprintf(DefaultWriter, "[FOX-debug] "+format, values...)
+		fmt.Fprintf(DefaultWriter, "[DBG] "+format, values...)
 	}
 }
 

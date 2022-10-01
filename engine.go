@@ -95,7 +95,7 @@ type Engine struct {
 	// 500 (Internal Server Error).
 	// The handler can be used to keep your server from crashing because of
 	// unrecovered panics.
-	PanicHandler func(http.ResponseWriter, *http.Request, interface{})
+	PanicHandler HandlerFunc
 
 	// cache is a key/value pair global for the engine.
 	cache sync.Map
@@ -213,6 +213,12 @@ func NewWithConfig(path string) (*Engine, error) {
 		return engine.allocateContext()
 	}
 
+	if engine.PanicHandler != nil {
+		engine.Use(engine.PanicHandler)
+	} else {
+		engine.Use(Recovery())
+	}
+
 	err = engine.InitSessionStore()
 	if err != nil {
 		return nil, err
@@ -309,12 +315,6 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	}
 }
 
-func (engine *Engine) recv(w http.ResponseWriter, req *http.Request) {
-	if rcv := recover(); rcv != nil {
-		engine.PanicHandler(w, req, rcv)
-	}
-}
-
 // isTrustedProxy will check whether the IP address is included in the trusted list according to Engine.trustedCIDRs
 func (engine *Engine) isTrustedProxy(ip net.IP) bool {
 	if engine.trustedCIDRs == nil {
@@ -394,10 +394,6 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func (engine *Engine) handleHTTPRequest(ctx *Context) {
-	if engine.PanicHandler != nil {
-		defer engine.recv(ctx.Writer, ctx.Request)
-	}
-
 	httpMethod := ctx.Request.Method
 	path := ctx.Request.URL.Path
 	unescape := false
