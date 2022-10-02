@@ -58,3 +58,22 @@ func joinPaths(absolutePath, relativePath string) string {
 	}
 	return finalPath
 }
+
+func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
+	path += root.path
+	if len(root.handlers) > 0 {
+		handlerFunc := root.handlers.Last()
+		routes = append(routes, RouteInfo{
+			Method:      method,
+			Path:        path,
+			Handler:     nameOfFunction(handlerFunc),
+			HandlerFunc: handlerFunc,
+			Handlers:    root.handlers,
+		})
+
+	}
+	for _, child := range root.children {
+		routes = iterate(path, method, routes, child)
+	}
+	return routes
+}

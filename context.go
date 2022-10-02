@@ -82,8 +82,6 @@ func (c *Context) Next() {
 
 		res, err := call(c, handler)
 
-		c.Logger.Debugf("Next() res: %+v \t err: %+v", res, err)
-
 		fields := map[string]interface{}{
 			"type":    "HANDLER",
 			"latency": time.Now().Sub(start).String(),
@@ -102,6 +100,8 @@ func (c *Context) Next() {
 
 		c.Logger.WithFields(fields).Info(handleName)
 	}
+
+	return
 }
 
 // Abort prevents pending handlers from being called. Note that this will not stop the current handler.

@@ -19,14 +19,8 @@ func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
 		nuHandlers := len(handlers)
 		handlerName := nameOfFunction(handlers.Last())
 
-		var handlerNames []string
-		for _, fn := range handlers {
-			handlerNames = append(handlerNames, nameOfFunction(fn))
-		}
-
 		if DebugPrintRouteFunc == nil {
-			// debugPrint("%-6s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
-			debugPrint("%-6s %-25s --> %s (%d handlers)\t--> %+v\n", httpMethod, absolutePath, handlerName, nuHandlers, handlerNames)
+			debugPrint("%-6s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
 		} else {
 			DebugPrintRouteFunc(httpMethod, absolutePath, handlerName, nuHandlers)
 		}

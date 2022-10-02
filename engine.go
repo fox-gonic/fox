@@ -57,6 +57,18 @@ func (c HandlersChain) Last() HandlerFunc {
 	return nil
 }
 
+// RouteInfo represents a request route's specification which contains method and path and its handler.
+type RouteInfo struct {
+	Method      string
+	Path        string
+	Handler     string
+	HandlerFunc HandlerFunc
+	Handlers    HandlersChain
+}
+
+// RoutesInfo defines a RouteInfo slice.
+type RoutesInfo []RouteInfo
+
 // Engine is a http.Handler which can be used to dispatch requests to different
 // handler functions via configurable routes
 type Engine struct {
@@ -213,11 +225,14 @@ func NewWithConfig(path string) (*Engine, error) {
 		return engine.allocateContext()
 	}
 
-	if engine.PanicHandler != nil {
-		engine.Use(engine.PanicHandler)
-	} else {
-		engine.Use(Recovery())
+	if engine.Env == DevelopmentMode {
+		engine.GET("_engine_info", engine.Info)
 	}
+
+	if engine.PanicHandler == nil {
+		engine.PanicHandler = Recovery()
+	}
+	engine.Use(Recovery())
 
 	err = engine.InitSessionStore()
 	if err != nil {
@@ -313,6 +328,15 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	if sectionsCount := countSections(path); sectionsCount > engine.maxSections {
 		engine.maxSections = sectionsCount
 	}
+}
+
+// Routes returns a slice of registered routes, including some useful information, such as:
+// the http method, path and the handler name.
+func (engine *Engine) Routes() (routes RoutesInfo) {
+	for _, tree := range engine.trees {
+		routes = iterate("", tree.method, routes, tree.root)
+	}
+	return routes
 }
 
 // isTrustedProxy will check whether the IP address is included in the trusted list according to Engine.trustedCIDRs

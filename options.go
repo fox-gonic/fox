@@ -48,18 +48,18 @@ type Options struct {
 	HandleOPTIONS bool
 
 	// ForwardedByClientIP if enabled, client IP will be parsed from the request's headers that
-	// match those stored at `(*gin.Engine).RemoteIPHeaders`. If no IP was
+	// match those stored at `(*fox.Engine).RemoteIPHeaders`. If no IP was
 	// fetched, it falls back to the IP obtained from
-	// `(*gin.Context).Request.RemoteAddr`.
+	// `(*fox.Context).Request.RemoteAddr`.
 	ForwardedByClientIP bool
 
 	// RemoteIPHeaders list of headers used to obtain the client IP when
-	// `(*gin.Engine).ForwardedByClientIP` is `true` and
-	// `(*gin.Context).Request.RemoteAddr` is matched by at least one of the
-	// network origins of list defined by `(*gin.Engine).SetTrustedProxies()`.
+	// `(*fox.Engine).ForwardedByClientIP` is `true` and
+	// `(*fox.Context).Request.RemoteAddr` is matched by at least one of the
+	// network origins of list defined by `(*fox.Engine).SetTrustedProxies()`.
 	RemoteIPHeaders []string
 
-	// TrustedPlatform if set to a constant of value gin.Platform*, trusts the headers set by
+	// TrustedPlatform if set to a constant of value fox.Platform*, trusts the headers set by
 	// that platform, for example to determine the client IP
 	TrustedPlatform string
 
