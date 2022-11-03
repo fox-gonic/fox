@@ -34,8 +34,8 @@ func toLoggerLevel(level gormlogger.LogLevel) log.Level {
 
 // FromContext from context logger
 func (l *logger) FromContext(ctx context.Context) log.Logger {
-	if requestID, ok := ctx.Value(log.TraceIDKey).(string); ok {
-		return l.WithField(log.TraceIDKey, requestID)
+	if requestID, ok := ctx.Value(log.TraceID).(string); ok {
+		return l.WithField(log.TraceID, requestID)
 	}
 	return l.Logger
 }
@@ -91,7 +91,7 @@ func NewLogger(slowThreshold int, requestID ...string) gormlogger.Interface {
 	fields := map[string]interface{}{"type": "DATABASE"}
 
 	if len(requestID) > 0 {
-		fields[log.TraceIDKey] = requestID[0]
+		fields[log.TraceID] = requestID[0]
 	}
 
 	l := log.New().Caller(6).WithFields(fields)

@@ -13,8 +13,8 @@ import (
 
 var pid = uint32(time.Now().UnixNano() % 4294967291)
 
-// TraceIDKey is the key for the x-request-id header.
-var TraceIDKey = "x-request-id"
+// TraceID is the key for the x-request-id header.
+var TraceID = "x-request-id"
 
 // DefaultGenRequestID default generate request id
 var DefaultGenRequestID func() string = func() string {
@@ -121,7 +121,7 @@ func newLogger(traceID ...string) Logger {
 	c := zerolog.New(mw).With().Timestamp().CallerWithSkipFrameCount(3)
 
 	if trace != "" {
-		c = c.Str(TraceIDKey, trace)
+		c = c.Str(TraceID, trace)
 	}
 
 	l := c.Logger().Level(zerolog.Level(DefaultLogLevel))

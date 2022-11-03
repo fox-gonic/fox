@@ -61,13 +61,13 @@ func (c *Context) reset(w http.ResponseWriter, req *http.Request) {
 	*c.skippedNodes = (*c.skippedNodes)[:0]
 
 	// set context logger, traceID and x-request-id header
-	c.traceID = c.GetHeader(logger.TraceIDKey)
+	c.traceID = c.GetHeader(logger.TraceID)
 	if c.traceID == "" {
 		c.traceID = logger.DefaultGenRequestID()
 	}
 	c.Logger = logger.New(c.traceID)
-	c.Set(logger.TraceIDKey, c.traceID)
-	c.Header(logger.TraceIDKey, c.traceID)
+	c.Set(logger.TraceID, c.traceID)
+	c.Header(logger.TraceID, c.traceID)
 }
 
 // Next should be used only inside middleware.
