@@ -80,10 +80,6 @@ func (engine *Engine) InitSessionStore() error {
 	switch opts.Store {
 	case "none":
 		return nil
-	case "gorm_store":
-		if engine.Database != nil {
-			store = sessions.NewGormStore(engine.Database.DB, true, []byte(opts.KeyPairs))
-		}
 	default: // cookie_store
 		store = sessions.NewCookieStore([]byte(opts.KeyPairs))
 	}

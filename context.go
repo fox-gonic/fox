@@ -10,9 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"gorm.io/gorm"
-
-	"github.com/fox-gonic/fox/database"
 	"github.com/fox-gonic/fox/logger"
 	"github.com/fox-gonic/fox/middleware/sessions"
 	"github.com/fox-gonic/fox/render"
@@ -300,21 +297,6 @@ func (c *Context) requestHeader(key string) string {
 /************************************/
 /************* EXTENDS **************/
 /************************************/
-
-// Database returns database with context & config
-func (c *Context) Database(config ...*gorm.Session) *gorm.DB {
-	var session = &gorm.Session{}
-	if len(config) > 0 {
-		session = config[0]
-	}
-	if session.Context == nil {
-		session.Context = c
-	}
-	if session.Logger == nil {
-		session.Logger = database.NewLogger(0)
-	}
-	return c.engine.Database.Session(session)
-}
 
 // Session returns session
 func (c *Context) Session() sessions.Session {

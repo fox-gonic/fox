@@ -5,7 +5,6 @@ import (
 	"html/template"
 	"log"
 
-	"github.com/fox-gonic/fox/database"
 	"github.com/fox-gonic/fox/render"
 )
 
@@ -25,9 +24,6 @@ func (engine *Engine) Info(c *Context) (*render.HTML, error) {
 		return nil, err
 	}
 
-	var databaseConfig *database.Config
-	engine.Configurations.UnmarshalKey("database", &databaseConfig)
-
 	var sessionOptions *SessionOptions
 	engine.Configurations.UnmarshalKey("session", &sessionOptions)
 
@@ -36,7 +32,6 @@ func (engine *Engine) Info(c *Context) (*render.HTML, error) {
 		"handlers":       engine.Handlers,
 		"not_found":      engine.noRoute,
 		"no_method":      engine.noMethod,
-		"databaseConfig": databaseConfig,
 		"sessionOptions": sessionOptions,
 		"routes":         engine.Routes(),
 	}

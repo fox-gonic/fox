@@ -12,7 +12,6 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/fox-gonic/fox/database"
 	"github.com/fox-gonic/fox/internal/bytesconv"
 	"github.com/fox-gonic/fox/logger"
 	"github.com/fox-gonic/fox/middleware/sessions"
@@ -73,7 +72,6 @@ type RoutesInfo []RouteInfo
 // handler functions via configurable routes
 type Engine struct {
 	Configurations *viper.Viper
-	Database       *database.Database
 	SessionName    string
 	SessionStore   sessions.Store
 
@@ -175,17 +173,6 @@ func NewWithConfig(path string) (*Engine, error) {
 
 	engine := &Engine{
 		Configurations: configurations,
-	}
-
-	// init database
-	var databaseConfig *database.Config
-	if err := engine.Configurations.UnmarshalKey("database", &databaseConfig); err != nil {
-		return nil, err
-	}
-	if databaseConfig != nil {
-		if engine.Database, err = database.New(databaseConfig); err != nil {
-			return nil, err
-		}
 	}
 
 	// set logger config
