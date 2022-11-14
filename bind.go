@@ -5,6 +5,7 @@ package fox
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"reflect"
 	"strings"
@@ -95,7 +96,7 @@ func Bind(req *http.Request, parameter interface{}, pathQueryier *Params) (err e
 		fieldType := typ.Field(i)
 		wg.Add(1)
 		go func() {
-			err = easy.bindFieldWithCtx(field, fieldType)
+			err = easy.bindFieldWithCtx(field, fieldType) // TODO(m) Nested structure fields read the body twice, return EOF error
 			if err != nil {
 				cancel()
 			}
@@ -107,6 +108,9 @@ func Bind(req *http.Request, parameter interface{}, pathQueryier *Params) (err e
 
 	if req.ContentLength > 0 && easy.hasJSONBody {
 		err = json.NewDecoder(req.Body).Decode(parameter)
+		if err != nil {
+			err = fmt.Errorf("decode parameter err: %s", err.Error())
+		}
 	}
 
 	return
