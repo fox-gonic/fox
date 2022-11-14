@@ -4,7 +4,10 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
+
+	"github.com/fox-gonic/fox"
 )
 
 const (
@@ -49,6 +52,48 @@ type Session interface {
 	Options(Options)
 	// Save saves all sessions used during the current request.
 	Save() error
+}
+
+// SessionOptions session options
+type SessionOptions struct {
+	Store    string        `mapstructure:"store"`
+	KeyPairs string        `mapstructure:"key_pairs"`
+	Name     string        `mapstructure:"name"`
+	Path     string        `mapstructure:"path"`
+	Domain   string        `mapstructure:"domain"`
+	MaxAge   int           `mapstructure:"max_age"`
+	Secure   bool          `mapstructure:"secure"`
+	HTTPOnly bool          `mapstructure:"http_only"`
+	SameSite http.SameSite `mapstructure:"same_site"`
+}
+
+// NewStore init session store
+func NewStore(opts *SessionOptions) (Store, error) {
+	if opts == nil {
+		return nil, nil
+	}
+
+	var store Store
+	switch opts.Store {
+	case "none":
+		return nil, nil
+	case "gorm_store":
+		// TODO(m)
+		// 	store = sessions.NewGormStore(db, true, []byte(opts.KeyPairs))
+	default: // cookie_store
+		store = NewCookieStore([]byte(opts.KeyPairs))
+	}
+
+	store.Options(Options{
+		Path:     opts.Path,
+		Domain:   opts.Domain,
+		MaxAge:   opts.MaxAge,
+		Secure:   opts.Secure,
+		HttpOnly: opts.HTTPOnly,
+		SameSite: opts.SameSite,
+	})
+
+	return store, nil
 }
 
 // New return default implement session
@@ -135,4 +180,37 @@ func (s *session) Session() *sessions.Session {
 
 func (s *session) Written() bool {
 	return s.written
+}
+
+// Default shortcut to get session
+func Default(c *fox.Context) Session {
+	return c.MustGet(DefaultKey).(Session)
+}
+
+// DefaultMany shortcut to get session with given name
+func DefaultMany(c *fox.Context, name string) sessions.Session {
+	return c.MustGet(DefaultKey).(map[string]sessions.Session)[name]
+}
+
+// NewSessions returns a session middleware
+func NewSessions(name string, store Store) fox.HandlerFunc {
+	return func(c *fox.Context) {
+		s := New(name, store, c.Writer, c.Request)
+		c.Set(DefaultKey, s)
+		defer context.Clear(c.Request)
+		c.Next()
+	}
+}
+
+// ManySessions returns multiple sessions middleware
+func ManySessions(names []string, store Store) fox.HandlerFunc {
+	return func(c *fox.Context) {
+		m := make(map[string]Session, len(names))
+		for _, name := range names {
+			m[name] = New(name, store, c.Writer, c.Request)
+		}
+		c.Set(DefaultKey, m)
+		defer context.Clear(c.Request)
+		c.Next()
+	}
 }

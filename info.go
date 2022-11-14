@@ -24,16 +24,12 @@ func (engine *Engine) Info(c *Context) (*render.HTML, error) {
 		return nil, err
 	}
 
-	var sessionOptions *SessionOptions
-	engine.Configurations.UnmarshalKey("session", &sessionOptions)
-
 	data := map[string]interface{}{
-		"engine":         engine,
-		"handlers":       engine.Handlers,
-		"not_found":      engine.noRoute,
-		"no_method":      engine.noMethod,
-		"sessionOptions": sessionOptions,
-		"routes":         engine.Routes(),
+		"engine":    engine,
+		"handlers":  engine.Handlers,
+		"not_found": engine.noRoute,
+		"no_method": engine.noMethod,
+		"routes":    engine.Routes(),
 	}
 
 	return &render.HTML{

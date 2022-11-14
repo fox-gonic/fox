@@ -14,7 +14,6 @@ import (
 
 	"github.com/fox-gonic/fox/internal/bytesconv"
 	"github.com/fox-gonic/fox/logger"
-	"github.com/fox-gonic/fox/middleware/sessions"
 )
 
 var (
@@ -72,8 +71,6 @@ type RoutesInfo []RouteInfo
 // handler functions via configurable routes
 type Engine struct {
 	Configurations *viper.Viper
-	SessionName    string
-	SessionStore   sessions.Store
 
 	RouterGroup
 
@@ -220,16 +217,6 @@ func NewWithConfig(path string) (*Engine, error) {
 		engine.PanicHandler = Recovery()
 	}
 	engine.Use(Recovery())
-
-	err = engine.InitSessionStore()
-	if err != nil {
-		return nil, err
-	}
-
-	err = engine.InitSessionMiddleware()
-	if err != nil {
-		return nil, err
-	}
 
 	return engine, nil
 }
