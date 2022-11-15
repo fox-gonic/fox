@@ -182,16 +182,6 @@ func (s *session) Written() bool {
 	return s.written
 }
 
-// Default shortcut to get session
-func Default(c *fox.Context) Session {
-	return c.MustGet(DefaultKey).(Session)
-}
-
-// DefaultMany shortcut to get session with given name
-func DefaultMany(c *fox.Context, name string) sessions.Session {
-	return c.MustGet(DefaultKey).(map[string]sessions.Session)[name]
-}
-
 // NewSessions returns a session middleware
 func NewSessions(name string, store Store) fox.HandlerFunc {
 	return func(c *fox.Context) {
@@ -202,8 +192,8 @@ func NewSessions(name string, store Store) fox.HandlerFunc {
 	}
 }
 
-// ManySessions returns multiple sessions middleware
-func ManySessions(names []string, store Store) fox.HandlerFunc {
+// NewManySessions returns multiple sessions middleware
+func NewManySessions(names []string, store Store) fox.HandlerFunc {
 	return func(c *fox.Context) {
 		m := make(map[string]Session, len(names))
 		for _, name := range names {
@@ -213,4 +203,14 @@ func ManySessions(names []string, store Store) fox.HandlerFunc {
 		defer context.Clear(c.Request)
 		c.Next()
 	}
+}
+
+// Default shortcut to get session
+func Default(c *fox.Context) Session {
+	return c.MustGet(DefaultKey).(Session)
+}
+
+// DefaultMany shortcut to get session with given name
+func DefaultMany(c *fox.Context, name string) sessions.Session {
+	return c.MustGet(DefaultKey).(map[string]sessions.Session)[name]
 }
