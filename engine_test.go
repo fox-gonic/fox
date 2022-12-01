@@ -81,7 +81,7 @@ func TestEngineRegisterRoute(t *testing.T) {
 	var ping = func() string { return "pong" }
 
 	type HelloHandlerArgs struct {
-		Name string `pos:"path:name"`
+		Name string `uri:"name"`
 	}
 	var hello = func(c *Context, args *HelloHandlerArgs) string {
 		return fmt.Sprintf("hello %s", args.Name)
@@ -104,7 +104,7 @@ func TestEngineRegisterRoute(t *testing.T) {
 	}
 
 	type ResourceHandlerArgs struct {
-		ID int `pos:"path:id"`
+		ID int `uri:"id"`
 	}
 	type Resource struct {
 		ID int `json:"id"`
@@ -205,8 +205,8 @@ func TestEngineRESTful(t *testing.T) {
 	}
 
 	type ListProductArgs struct {
-		Page     int `pos:"query:page"`
-		PageSize int `pos:"query:page_size"`
+		Page     int `query:"page"`
+		PageSize int `query:"page_size"`
 	}
 	var index = func(c *Context, args *ListProductArgs) ([]Product, error) {
 		products := make([]Product, 10)
@@ -231,7 +231,7 @@ func TestEngineRESTful(t *testing.T) {
 	}
 
 	type GetProductArgs struct {
-		ID int `pos:"path:id"`
+		ID int `uri:"id"`
 	}
 	var show = func(c *Context, args *GetProductArgs) (*Product, error) {
 		if args.ID == 0 {
@@ -249,7 +249,7 @@ func TestEngineRESTful(t *testing.T) {
 	}
 
 	type UpdateProductArgs struct {
-		ID   int    `pos:"path:id"`
+		ID   int    `uri:"id"`
 		Name string `json:"name"`
 		Desc string `json:"desc"`
 	}
@@ -263,7 +263,7 @@ func TestEngineRESTful(t *testing.T) {
 	}
 
 	type DestroyProductArgs struct {
-		ID int `pos:"path:id"`
+		ID int `uri:"id"`
 	}
 	var destroy = func(c *Context, args *DestroyProductArgs) (*Product, error) {
 		if args.ID == 0 {
@@ -287,10 +287,7 @@ func TestEngineRESTful(t *testing.T) {
 	json.Unmarshal(w.Body.Bytes(), &response) // nolint: errcheck
 	assert.Equal(10, len(response))
 
-	body := `{
-		"name": "Product Name",
-		"desc": "Product Desc"
-	}`
+	body := `{"name": "Product Name", "desc": "Product Desc"}`
 	w = PerformRequest(router, http.MethodPost, "/products", nil, strings.NewReader(body))
 	assert.Equal(http.StatusCreated, w.Code)
 	assert.Equal(`{"id":1,"name":"Product Name","desc":"Product Desc"}`, w.Body.String())
@@ -332,7 +329,7 @@ func TestRouterStatic(t *testing.T) {
 	})
 
 	type Args struct {
-		ID int `pos:"path:id"`
+		ID int `uri:"id"`
 	}
 	router.GET("/articles/:id", func(c *Context, args *Args) (string, error) {
 		return fmt.Sprintf("articles/%d", args.ID), nil
@@ -519,7 +516,7 @@ func TestRouterNotFound(t *testing.T) {
 	w = PerformRequest(router, http.MethodPatch, "/path/", nil)
 
 	assert.Equal(http.StatusPermanentRedirect, w.Code)
-	assert.Equal("map[Location:[/path]]", fmt.Sprint(w.Header()))
+	assert.Equal("/path", w.Header().Get("Location"))
 
 	// Test special case where no node for the prefix "/" exists
 	router = Default()

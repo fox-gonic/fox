@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+
+	"github.com/miclle/binding"
 )
 
 func call(ctx *Context, handler HandlerFunc) (any, error) {
@@ -40,7 +42,7 @@ func call(ctx *Context, handler HandlerFunc) (any, error) {
 		for i := 1; i < numIn; i++ {
 			// Bind handler params
 			parameter := reflect.New(funcType.In(i)).Interface()
-			if err := Bind(ctx.Request, parameter, ctx.Params); err != nil {
+			if err := binding.Bind(ctx.Request, parameter, ctx.Params.Values()); err != nil {
 				// TODO(m) err maybe 413 Payload Too Large
 				msg := &Error{
 					Status: http.StatusBadRequest,

@@ -17,6 +17,7 @@ import (
 func TestMiddlewareGeneralCase(t *testing.T) {
 	signature := ""
 	router := Default()
+	router.HandleMethodNotAllowed = true
 	router.Use(func(c *Context) {
 		signature += "A"
 		c.Next()

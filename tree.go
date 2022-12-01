@@ -49,6 +49,15 @@ func (ps Params) ByName(name string) (va string) {
 	return
 }
 
+// Values return url.Values
+func (ps Params) Values() map[string][]string {
+	values := make(map[string][]string)
+	for _, v := range ps {
+		values[v.Key] = []string{v.Value}
+	}
+	return values
+}
+
 type methodTree struct {
 	method string
 	root   *node
