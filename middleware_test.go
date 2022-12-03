@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/fox-gonic/fox/render"
+	"github.com/fox-gonic/fox/testhelper"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,17 +37,17 @@ func TestMiddlewareGeneralCase(t *testing.T) {
 		signature += " XX "
 	})
 
-	w := PerformRequest(router, "GET", "/", nil)
+	w := testhelper.PerformRequest(router, "GET", "/", nil)
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "ACDB", signature)
 
 	signature = ""
-	w = PerformRequest(router, "GET", "/not_found", nil)
+	w = testhelper.PerformRequest(router, "GET", "/not_found", nil)
 	assert.Equal(t, http.StatusNotFound, w.Code)
 	assert.Equal(t, "AC X B", signature)
 
 	signature = ""
-	w = PerformRequest(router, "POST", "/", nil)
+	w = testhelper.PerformRequest(router, "POST", "/", nil)
 	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
 	assert.Equal(t, "AC XX B", signature)
 }
@@ -80,7 +81,7 @@ func TestMiddlewareNotFound(t *testing.T) {
 		signature += " X "
 	})
 
-	w := PerformRequest(router, "GET", "/", nil)
+	w := testhelper.PerformRequest(router, "GET", "/", nil)
 	assert.Equal(t, http.StatusNotFound, w.Code)
 	assert.Equal(t, "ACEGHFDB", signature)
 }
@@ -114,7 +115,7 @@ func TestMiddlewareNoMethodEnabled(t *testing.T) {
 	router.POST("/", func(c *Context) {
 		signature += " XX "
 	})
-	w := PerformRequest(router, "GET", "/", nil)
+	w := testhelper.PerformRequest(router, "GET", "/", nil)
 	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
 	assert.Equal(t, "ACEGHFDB", signature)
 }
@@ -152,7 +153,7 @@ func TestMiddlewareNoMethodDisabled(t *testing.T) {
 		signature += " XX "
 	})
 
-	w := PerformRequest(router, "GET", "/", nil)
+	w := testhelper.PerformRequest(router, "GET", "/", nil)
 	assert.Equal(t, http.StatusNotFound, w.Code)
 	assert.Equal(t, "AC X DB", signature)
 }
@@ -174,7 +175,7 @@ func TestMiddlewareFailHandlersChain(t *testing.T) {
 		c.Next()
 		signature += "C"
 	})
-	w := PerformRequest(router, "GET", "/", nil)
+	w := testhelper.PerformRequest(router, "GET", "/", nil)
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.Equal(t, "A", signature)
 }
@@ -200,7 +201,7 @@ func TestMiddlewareWrite(t *testing.T) {
 		return render.JSON{Data: data}, nil
 	})
 
-	w := PerformRequest(router, "GET", "/", nil)
+	w := testhelper.PerformRequest(router, "GET", "/", nil)
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "hola\n<map><foo>bar</foo></map>{\"foo\":\"bar\"}{\"foo\":\"bar\"}", w.Body.String())
 
@@ -211,7 +212,7 @@ func TestMiddlewareWrite(t *testing.T) {
 			Status: http.StatusBadRequest,
 		}
 	})
-	w = PerformRequest(router, "GET", "/", nil)
+	w = testhelper.PerformRequest(router, "GET", "/", nil)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Equal(t, http.StatusText(http.StatusBadRequest), w.Body.String())
 }
