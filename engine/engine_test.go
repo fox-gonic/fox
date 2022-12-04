@@ -65,7 +65,7 @@ func TestEngine(t *testing.T) {
 	router := engine.NewEngine()
 
 	// Logger
-	router.Engine.Use(engine.GinLoggerMiddleware("FOX"))
+	router.Engine.Use(engine.Logger("FOX"))
 
 	router.GET("ping", MiddlewareFailed, Ping)
 	router.GET("ping2", MiddlewareSuccess, Ping)

@@ -17,7 +17,7 @@ func TestRouterGroup(t *testing.T) {
 	router := engine.NewEngine()
 
 	// Logger
-	router.Engine.Use(engine.GinLoggerMiddleware("FOX"))
+	router.Engine.Use(engine.Logger("FOX"))
 
 	api := router.Group("/api")
 
