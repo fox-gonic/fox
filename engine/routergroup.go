@@ -44,6 +44,13 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 
 				c.Set(logger.TraceID, xRequestID)
 
+				var log logger.Logger
+				if v, exists := c.Get(LoggerContextKey); exists {
+					log = v.(logger.Logger)
+				} else {
+					log = logger.New(xRequestID)
+				}
+
 				var (
 					handleName = getFunctionName(h)
 					start      = time.Now()
@@ -53,7 +60,7 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 
 					context = &Context{
 						Context: c,
-						Logger:  c.MustGet(LoggerContextKey).(logger.Logger),
+						Logger:  log,
 					}
 
 					buf = bytebufferpool.Get()
