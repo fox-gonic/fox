@@ -15,10 +15,6 @@ func TestRouterGroup(t *testing.T) {
 	assert := assert.New(t)
 
 	router := engine.NewEngine()
-
-	// Logger
-	router.Engine.Use(engine.Logger("FOX"))
-
 	api := router.Group("/api")
 
 	api.GET("foo", func(c *engine.Context) (res interface{}, err error) {

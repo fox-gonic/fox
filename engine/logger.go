@@ -15,9 +15,12 @@ var (
 )
 
 // Logger middleware
-func Logger(ServiceName string) gin.HandlerFunc {
+func Logger() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		xRequestID := c.GetHeader(logger.TraceID)
+		var (
+			start      = time.Now()
+			xRequestID = c.GetHeader(logger.TraceID)
+		)
 
 		if len(xRequestID) == 0 {
 			xRequestID = logger.DefaultGenRequestID()
@@ -28,33 +31,24 @@ func Logger(ServiceName string) gin.HandlerFunc {
 		log := logger.New(xRequestID)
 		c.Set(LoggerContextKey, log)
 
-		if !strings.HasPrefix(c.Request.URL.Path, "/static") {
-			fields := map[string]interface{}{
-				"method":    c.Request.Method,
-				"path":      c.Request.URL.Path,
-				"client_ip": c.ClientIP(),
-				"type":      "REQ",
-				"action":    "Start",
-			}
-
-			log.WithFields(fields).Info("[Started]")
+		fields := map[string]interface{}{
+			"method":    c.Request.Method,
+			"path":      c.Request.URL.Path,
+			"client_ip": c.ClientIP(),
+			"type":      "REQ",
 		}
 
-		start := time.Now()
+		if !strings.HasPrefix(c.Request.URL.Path, "/static") {
+			fields["action"] = "Start"
+			log.WithFields(fields).Info("[Started]")
+		}
 
 		c.Next()
 
 		if !strings.HasPrefix(c.Request.URL.Path, "/static") {
-			fields := map[string]interface{}{
-				"method":    c.Request.Method,
-				"path":      c.Request.URL.Path,
-				"status":    c.Writer.Status(),
-				"latency":   time.Since(start).String(),
-				"client_ip": c.ClientIP(),
-				"type":      "REQ",
-				"action":    "Finished",
-			}
-
+			fields["status"] = c.Writer.Status()
+			fields["latency"] = time.Since(start).String()
+			fields["action"] = "Finished"
 			log.WithFields(fields).Info("[Completed]")
 		}
 	}

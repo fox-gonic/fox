@@ -39,8 +39,7 @@ func NewEngine() *Engine {
 	binding.Validator = new(DefaultValidator)
 
 	router := gin.New()
-
-	router.Use(gin.Recovery())
+	router.Use(Logger(), gin.Recovery())
 
 	engine := &Engine{}
 	engine.Engine = router
