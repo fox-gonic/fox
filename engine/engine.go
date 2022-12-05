@@ -32,8 +32,8 @@ type Engine struct {
 	RouterGroup
 }
 
-// NewEngine return engine instance
-func NewEngine() *Engine {
+// New return engine instance
+func New() *Engine {
 
 	// Change gin default validator
 	binding.Validator = new(DefaultValidator)

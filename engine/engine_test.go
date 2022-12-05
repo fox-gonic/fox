@@ -62,7 +62,7 @@ func TestEngine(t *testing.T) {
 
 	assert := assert.New(t)
 
-	router := engine.NewEngine()
+	router := engine.New()
 	router.GET("ping", MiddlewareFailed, Ping)
 	router.GET("ping2", MiddlewareSuccess, Ping)
 
