@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 	"reflect"
-	"runtime"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -53,7 +52,7 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 				}
 
 				var (
-					handleName = getFunctionName(h)
+					handleName = utils.NameOfFunction(h)
 					start      = time.Now()
 
 					res interface{}
@@ -211,10 +210,4 @@ func (group *RouterGroup) OPTIONS(relativePath string, handlers ...HandlerFunc) 
 // HEAD is a shortcut for router.Handle("HEAD", path, handle).
 func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
 	return group.Handle(http.MethodHead, relativePath, handlers...)
-}
-
-// --------------------------------------------------------------------
-
-func getFunctionName(i interface{}) string {
-	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
 }
