@@ -10,6 +10,16 @@ import (
 	"github.com/fox-gonic/fox/testhelper"
 )
 
+func foo(c *engine.Context) (res interface{}, err error) {
+	res = "foo"
+	return
+}
+
+func boo(c *engine.Context) (res interface{}, err error) {
+	res = "boo"
+	return
+}
+
 func TestRouterGroup(t *testing.T) {
 
 	assert := assert.New(t)
@@ -17,15 +27,9 @@ func TestRouterGroup(t *testing.T) {
 	router := engine.New()
 	api := router.Group("/api")
 
-	api.GET("foo", func(c *engine.Context) (res interface{}, err error) {
-		res = "foo"
-		return
-	})
+	api.GET("foo", foo)
 
-	api.GET("boo", func(c *engine.Context) (res interface{}, err error) {
-		res = "boo"
-		return
-	})
+	api.GET("boo", boo)
 
 	w := testhelper.PerformRequest(router, "GET", "/api/foo", nil)
 	assert.Equal(http.StatusOK, w.Code)

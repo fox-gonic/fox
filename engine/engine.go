@@ -2,6 +2,8 @@ package engine
 
 import (
 	"embed"
+	"io"
+	"os"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -17,13 +19,47 @@ const (
 	TestMode = gin.TestMode
 )
 
+var foxMode = DebugMode
+
 // SetMode sets gin mode according to input string.
 func SetMode(value string) {
 	gin.SetMode(value)
+	foxMode = value
 }
 
-// HandlerFunc middleware
+// DefaultWriter is the default io.Writer used by Gin for debug output and
+// middleware output like Logger() or Recovery().
+// Note that both Logger and Recovery provides custom ways to configure their
+// output io.Writer.
+// To support coloring in Windows use:
+//
+//	import "github.com/mattn/go-colorable"
+//	gin.DefaultWriter = colorable.NewColorableStdout()
+var DefaultWriter io.Writer = os.Stdout
+
+// DefaultErrorWriter is the default io.Writer used by Gin to debug errors
+var DefaultErrorWriter io.Writer = os.Stderr
+
+// HandlerFunc is a function that can be registered to a route to handle HTTP
+// requests. Like http.HandlerFunc, but has a third parameter for the values of
+// wildcards (path variables).
+// func(){}
+// func(ctx *Context) any { ... }
+// func(ctx *Context) (any, err) { ... }
+// func(ctx *Context, args *AutoBindingArgType) (any) { ... }
+// func(ctx *Context, args *AutoBindingArgType) (any, err) { ... }
 type HandlerFunc interface{}
+
+// HandlersChain defines a HandlerFunc slice.
+type HandlersChain []HandlerFunc
+
+// Last returns the last handler in the chain. i.e. the last handler is the main one.
+func (c HandlersChain) Last() HandlerFunc {
+	if length := len(c); length > 0 {
+		return c[length-1]
+	}
+	return nil
+}
 
 // Engine for server
 type Engine struct {

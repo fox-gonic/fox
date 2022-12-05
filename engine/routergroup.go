@@ -14,11 +14,12 @@ import (
 
 	"github.com/fox-gonic/fox/errors"
 	"github.com/fox-gonic/fox/logger"
+	"github.com/fox-gonic/fox/utils"
 )
 
 // RouterGroup is gin.RouterGroup wrapper
 type RouterGroup struct {
-	router gin.IRouter
+	router *gin.RouterGroup
 }
 
 // handleWrapper gin.Handle wrapper
@@ -171,6 +172,9 @@ func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *R
 // Handle gin.Handle wrapper
 func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers ...HandlerFunc) gin.IRoutes {
 	handlersChain := group.handleWrapper(handlers...)
+
+	absolutePath := utils.JoinPaths(group.router.BasePath(), relativePath)
+	debugPrintRoute(group, httpMethod, absolutePath, handlers)
 	return group.router.Handle(httpMethod, relativePath, handlersChain...)
 }
 
