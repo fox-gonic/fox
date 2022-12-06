@@ -34,6 +34,11 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 
 		f := func(h HandlerFunc) gin.HandlerFunc {
 
+			// support use gin middleware
+			if ginHandler, ok := h.(gin.HandlerFunc); ok {
+				return ginHandler
+			}
+
 			return func(c *gin.Context) {
 
 				xRequestID := c.Writer.Header().Get(logger.TraceID)
