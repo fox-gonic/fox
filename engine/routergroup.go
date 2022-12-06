@@ -89,12 +89,14 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 				c.Request.Body = io.NopCloser(bytes.NewBuffer(buf.Bytes()))
 
 				end := time.Now()
+				latency := end.Sub(start).String()
 
 				fields := map[string]interface{}{
-					"latency": end.Sub(start).String(),
+					"latency": latency,
+					"type":    "HANDLER",
 				}
 
-				c.Header("latency", end.Sub(start).String())
+				c.Header("latency", latency)
 
 				context.Logger.WithFields(fields).Info(handleName)
 
