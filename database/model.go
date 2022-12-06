@@ -28,8 +28,8 @@ const (
 
 // Pagination model
 type Pagination[T any] struct {
-	Page     int   `json:"page"      pos:"query:page"`
-	PageSize int   `json:"page_size" pos:"query:page_size"`
+	Page     int   `json:"page"      form:"page"      query:"page"`
+	PageSize int   `json:"page_size" form:"page_size" query:"page_size"`
 	Total    int64 `json:"total"`
 	Items    []T   `json:"items"`
 }
