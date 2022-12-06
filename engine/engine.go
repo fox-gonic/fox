@@ -27,6 +27,11 @@ func SetMode(value string) {
 	foxMode = value
 }
 
+// Mode returns current fox mode.
+func Mode() string {
+	return foxMode
+}
+
 // DefaultWriter is the default io.Writer used by Gin for debug output and
 // middleware output like Logger() or Recovery().
 // Note that both Logger and Recovery provides custom ways to configure their
@@ -85,6 +90,12 @@ func New() *Engine {
 // Use middleware
 func (engine *Engine) Use(middleware ...HandlerFunc) {
 	engine.RouterGroup.Use(middleware...)
+}
+
+// NotFound adds handlers for NoRoute. It returns a 404 code by default.
+func (engine *Engine) NotFound(handlers ...HandlerFunc) {
+	handlersChain := engine.RouterGroup.handleWrapper(handlers...)
+	engine.Engine.NoRoute(handlersChain...)
 }
 
 // CORS config
