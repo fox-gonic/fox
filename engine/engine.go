@@ -74,13 +74,11 @@ func New() *Engine {
 	// Change gin default validator
 	binding.Validator = new(DefaultValidator)
 
-	router := gin.New()
-	router.Use(Logger(), gin.Recovery())
-
-	engine := &Engine{}
-	engine.Engine = router
+	engine := &Engine{
+		Engine: gin.New(),
+	}
 	engine.RouterGroup.router = &engine.Engine.RouterGroup
-
+	engine.Use(Logger(), gin.Recovery())
 	return engine
 }
 
