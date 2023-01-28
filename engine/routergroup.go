@@ -127,24 +127,29 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 					return
 				case string:
 					c.String(200, r)
+					c.Abort()
 					return
 				case render.Redirect:
 					c.Redirect(r.Code, r.Location)
+					c.Abort()
 					return
 				case render.YAML:
 					c.YAML(http.StatusOK, r.Data)
+					c.Abort()
 					return
 				case render.XML:
 					c.XML(http.StatusOK, r.Data)
+					c.Abort()
 					return
 				case render.HTML:
 					c.Render(http.StatusOK, r)
+					c.Abort()
 					return
 				case nil:
 					// nothing to do
 					return
 				default:
-					c.JSON(http.StatusOK, r)
+					c.AbortWithStatusJSON(http.StatusOK, r)
 					return
 				}
 			}
