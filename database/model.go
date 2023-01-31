@@ -12,10 +12,10 @@ import (
 //	  database.Model
 //	}
 type Model struct {
-	ID        int64                 `json:"id"         gorm:"primarykey"`
+	ID        int64                 `json:"id"                   gorm:"primarykey"`
 	CreatedAt int64                 `json:"created_at"`
 	UpdatedAt int64                 `json:"updated_at"`
-	DeletedAt soft_delete.DeletedAt `json:"deleted_at" gorm:"index"`
+	DeletedAt soft_delete.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
 }
 
 const (
