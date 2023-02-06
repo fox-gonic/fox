@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"time"
@@ -140,6 +141,25 @@ func (c *Context) MultipartForm() (*multipart.Form, error) {
 // 其他情况从 X-Appengine-Remote-Addr Header 或 request.RemoteAddr 中获取
 func (c *Context) ClientIP() string {
 	return c.Context.ClientIP()
+}
+
+// RequestBody return request body bytes
+func (c *Context) RequestBody() (body []byte, err error) {
+
+	if cb, ok := c.Get(gin.BodyBytesKey); ok {
+		if cbb, ok := cb.([]byte); ok {
+			body = cbb
+		}
+	}
+
+	if body == nil {
+		body, err = io.ReadAll(c.Request().Body)
+		if err != nil {
+			return
+		}
+		c.Set(gin.BodyBytesKey, body)
+	}
+	return
 }
 
 // --------------------------------------------------------------------
