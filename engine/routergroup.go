@@ -1,15 +1,12 @@
 package engine
 
 import (
-	"bytes"
-	"io"
 	"net/http"
 	"reflect"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
-	"github.com/valyala/bytebufferpool"
 
 	"github.com/fox-gonic/fox/errors"
 	"github.com/fox-gonic/fox/logger"
@@ -59,42 +56,10 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 				var (
 					handleName = utils.NameOfFunction(h)
 					start      = time.Now()
-
-					res interface{}
-					err error
-
-					context = &Context{
-						Context: c,
-						Logger:  log,
-					}
-
-					buf = bytebufferpool.Get()
+					context    = &Context{Context: c, Logger: log}
+					res, err   = call(context, h)
+					latency    = time.Until(start).String()
 				)
-
-				// 把 buf 放回 buffer pool
-				defer bytebufferpool.Put(buf)
-
-				// 先把 body 读出来
-				if c.Request.Body != nil {
-					if _, err := io.Copy(buf, c.Request.Body); err != nil {
-						c.Abort()
-						return
-					}
-
-					// 这个地方如果不 close 会有句柄泄漏
-					c.Request.Body.Close()
-
-					// 塞回去，给当前的 handler 用
-					c.Request.Body = io.NopCloser(bytes.NewBuffer(buf.Bytes()))
-				}
-
-				res, err = call(context, h)
-
-				// 再塞一次，给后面的 handler 使用
-				c.Request.Body = io.NopCloser(bytes.NewBuffer(buf.Bytes()))
-
-				end := time.Now()
-				latency := end.Sub(start).String()
 
 				fields := map[string]interface{}{
 					"latency": latency,

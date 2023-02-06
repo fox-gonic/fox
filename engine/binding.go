@@ -18,25 +18,21 @@ var DefaultBinder binding.Binding = binding.JSON
 var Query = &queryBinding{}
 
 var binders = map[string]binding.Binding{
-	binding.MIMEJSON:              binding.JSON,          // json
-	binding.MIMEYAML:              binding.YAML,          // yaml
-	binding.MIMEXML:               binding.XML,           // xml
-	binding.MIMEXML2:              binding.XML,           // xml
 	binding.MIMEMultipartPOSTForm: binding.FormMultipart, // form
 	binding.MIMEPOSTForm:          binding.Form,          // form
-	binding.MIMEPROTOBUF:          binding.ProtoBuf,      // protobuf
-	binding.MIMETOML:              binding.TOML,          // toml
 }
 
-// Bind request arguments
-func Bind(req *http.Request, obj interface{}, params ...map[string][]string) error {
-	var binder = &binder{}
-	return binder.Bind(req, obj, params...)
+var bodyBinders = map[string]binding.BindingBody{
+	binding.MIMEJSON:     binding.JSON,     // json
+	binding.MIMEYAML:     binding.YAML,     // yaml
+	binding.MIMEXML:      binding.XML,      // xml
+	binding.MIMEXML2:     binding.XML,      // xml
+	binding.MIMEPROTOBUF: binding.ProtoBuf, // protobuf
+	binding.MIMETOML:     binding.TOML,     // toml
 }
 
-type binder struct{}
-
-func (binder *binder) Bind(req *http.Request, obj interface{}, params ...map[string][]string) (err error) {
+// bind request arguments
+func bind(ctx *Context, obj interface{}) (err error) {
 
 	vPtr := reflect.ValueOf(obj)
 
@@ -46,16 +42,29 @@ func (binder *binder) Bind(req *http.Request, obj interface{}, params ...map[str
 
 	// bind request body
 	// --------------------------------------------------------------------------
-	var contentType = filterFlags(req.Header.Get("Content-Type"))
+	var (
+		req         = ctx.Request()
+		contentType = filterFlags(req.Header.Get("Content-Type"))
+		body        []byte
+		params      = ctx.params()
+	)
 
-	if binder, exists := binders[contentType]; exists {
-		err = binder.Bind(req, obj)
-	} else {
-		if req.Method == http.MethodGet {
-			err = binding.Form.Bind(req, obj)
-		} else if DefaultBinder != nil {
-			err = DefaultBinder.Bind(req, obj)
+	if bodyBinder, exists := bodyBinders[contentType]; exists {
+		body, err = ctx.RequestBody()
+		if err != nil {
+			return err
 		}
+		err = bodyBinder.BindBody(body, obj)
+
+	} else if binder, exists := binders[contentType]; exists {
+		err = binder.Bind(req, obj)
+
+	} else if req.Method == http.MethodGet {
+		err = binding.Form.Bind(req, obj)
+
+	} else if DefaultBinder != nil {
+		err = DefaultBinder.Bind(req, obj)
+
 	}
 	if err != nil {
 		return err
@@ -81,6 +90,7 @@ func (binder *binder) Bind(req *http.Request, obj interface{}, params ...map[str
 
 	for i := 0; i < vPtr.NumField(); i++ {
 		field := vType.Field(i)
+
 		if tag := field.Tag.Get("query"); tag != "" && tag != "-" {
 			hasQueryField = true
 		}
@@ -92,6 +102,7 @@ func (binder *binder) Bind(req *http.Request, obj interface{}, params ...map[str
 		}
 	}
 
+	// bind query params
 	if hasQueryField {
 		err = Query.Bind(req, obj)
 		if err != nil {
@@ -99,13 +110,15 @@ func (binder *binder) Bind(req *http.Request, obj interface{}, params ...map[str
 		}
 	}
 
+	// bind uri path
 	if hasURIField && len(params) > 0 {
-		err = binding.Uri.BindUri(params[0], obj)
+		err = binding.Uri.BindUri(params, obj)
 		if err != nil {
 			return err
 		}
 	}
 
+	// bind header fields
 	if hasHeaderField {
 		err = binding.Header.Bind(req, obj)
 		if err != nil {

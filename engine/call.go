@@ -43,7 +43,7 @@ func call(ctx *Context, handler HandlerFunc) (any, error) {
 		for i := 1; i < numIn; i++ {
 			// Bind handler params
 			parameter := reflect.New(funcType.In(i)).Interface()
-			if err := Bind(ctx.Request(), parameter, ctx.params()); err != nil {
+			if err := bind(ctx, parameter); err != nil {
 				msg := &errors.Error{
 					HTTPCode: http.StatusBadRequest,
 					Err:      err,

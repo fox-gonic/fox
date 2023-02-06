@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/valyala/bytebufferpool"
 
 	"github.com/fox-gonic/fox/logger"
 )
@@ -144,6 +145,7 @@ func (c *Context) ClientIP() string {
 }
 
 // RequestBody return request body bytes
+// see c.ShouldBindBodyWith
 func (c *Context) RequestBody() (body []byte, err error) {
 
 	if cb, ok := c.Get(gin.BodyBytesKey); ok {
@@ -152,11 +154,18 @@ func (c *Context) RequestBody() (body []byte, err error) {
 		}
 	}
 
-	if body == nil {
-		body, err = io.ReadAll(c.Request().Body)
-		if err != nil {
-			return
+	if request := c.Request(); body == nil && request.Body != nil {
+
+		buf := bytebufferpool.Get()
+		defer bytebufferpool.Put(buf)
+
+		defer request.Body.Close()
+		if _, err := io.CopyN(buf, request.Body, request.ContentLength); err != nil {
+			return nil, err
 		}
+
+		body = buf.Bytes()
+
 		c.Set(gin.BodyBytesKey, body)
 	}
 	return

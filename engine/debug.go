@@ -9,8 +9,6 @@ import (
 	"github.com/fox-gonic/fox/utils"
 )
 
-const ginSupportMinGoVer = 14
-
 func init() {
 	gin.DebugPrintRouteFunc = func(httpMethod, absolutePath, handlerName string, nuHandlers int) {}
 }

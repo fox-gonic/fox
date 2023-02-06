@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,7 +24,6 @@ type MixStruct struct {
 
 func TestBinding(t *testing.T) {
 	var (
-		b          = &binder{}
 		obj        MixStruct
 		url        = "/?page=1&page_size=30&ids[]=1&ids[]=2&ids[]=3&ids[]=4&ids[]=5&start=1669732749"
 		referer    = "http://domain.name/posts"
@@ -37,10 +37,16 @@ func TestBinding(t *testing.T) {
 	req.Header.Add("vary", varyHeader[0])
 	req.Header.Add("vary", varyHeader[1])
 
-	err := b.Bind(req, obj)
+	ctx := &Context{
+		Context: &gin.Context{
+			Request: req,
+		},
+	}
+
+	err := bind(ctx, obj)
 	assert.Equal(t, ErrBindNonPointerValue, err)
 
-	err = b.Bind(req, &obj)
+	err = bind(ctx, &obj)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, obj.Page)
 	assert.Equal(t, 30, obj.PageSize)
@@ -53,7 +59,6 @@ func TestBinding(t *testing.T) {
 
 func TestBindingJSON(t *testing.T) {
 	var (
-		b          = &binder{}
 		obj        MixStruct
 		url        = "/?page=1&page_size=30&ids[]=1&ids[]=2&ids[]=3&ids[]=4&ids[]=5&start=1669732749"
 		referer    = "http://domain.name/posts"
@@ -69,7 +74,13 @@ func TestBindingJSON(t *testing.T) {
 	req.Header.Add("vary", varyHeader[0])
 	req.Header.Add("vary", varyHeader[1])
 
-	err := b.Bind(req, &obj)
+	ctx := &Context{
+		Context: &gin.Context{
+			Request: req,
+		},
+	}
+
+	err := bind(ctx, &obj)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, obj.Page)
 	assert.Equal(t, 30, obj.PageSize)
