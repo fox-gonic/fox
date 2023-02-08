@@ -1,6 +1,8 @@
 package database
 
 import (
+	"math"
+
 	"gorm.io/gorm"
 	"gorm.io/plugin/soft_delete"
 )
@@ -32,6 +34,10 @@ type Pagination[T any] struct {
 	PageSize int   `json:"page_size" form:"page_size" query:"page_size"`
 	Total    int64 `json:"total"`
 	Items    []T   `json:"items"`
+}
+
+func (p *Pagination[T]) TotalPages() int {
+	return int(math.Ceil(float64(p.Total) / float64(p.PageSize)))
 }
 
 // Paginate callback
