@@ -206,6 +206,14 @@ func (c *Context) TraceID() string {
 	return id
 }
 
+// --------------------------------------------------------------------
+
+// Redirect render html
+func (c *Context) Redirect(code int, location string) {
+	// c.Context.Redirect(code, name, obj)
+	c.Context.Redirect(code, location)
+}
+
 // HTML render html
 func (c *Context) HTML(code int, name string, obj interface{}) {
 	c.Context.HTML(code, name, obj)
