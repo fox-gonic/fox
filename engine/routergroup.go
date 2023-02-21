@@ -110,6 +110,10 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 					c.Render(http.StatusOK, r)
 					c.Abort()
 					return
+				case render.Reader:
+					c.Render(http.StatusOK, r)
+					c.Abort()
+					return
 				case nil:
 					// nothing to do
 					return
