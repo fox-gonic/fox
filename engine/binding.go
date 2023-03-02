@@ -49,22 +49,31 @@ func bind(ctx *Context, obj interface{}) (err error) {
 		params      = ctx.params()
 	)
 
-	if bodyBinder, exists := bodyBinders[contentType]; exists {
-		body, err = ctx.RequestBody()
-		if err != nil {
-			return err
-		}
-		err = bodyBinder.BindBody(body, obj)
+	if req.Method == http.MethodGet {
+		err = binding.Form.Bind(req, obj)
 
 	} else if binder, exists := binders[contentType]; exists {
 		err = binder.Bind(req, obj)
 
-	} else if req.Method == http.MethodGet {
-		err = binding.Form.Bind(req, obj)
+	} else if bodyBinder, exists := bodyBinders[contentType]; exists {
+		if body, err = ctx.RequestBody(); err != nil {
+			return err
+		}
+		if len(body) > 0 {
+			err = bodyBinder.BindBody(body, obj)
+		}
 
 	} else if DefaultBinder != nil {
-		err = DefaultBinder.Bind(req, obj)
-
+		if _, ok := DefaultBinder.(binding.BindingBody); ok {
+			if body, err = ctx.RequestBody(); err != nil {
+				return err
+			}
+			if len(body) > 0 {
+				err = bodyBinder.BindBody(body, obj)
+			}
+		} else {
+			err = DefaultBinder.Bind(req, obj)
+		}
 	}
 	if err != nil {
 		return err
