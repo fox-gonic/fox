@@ -81,6 +81,10 @@ func (e Error) MarshalJSON() ([]byte, error) {
 		e.Code = "UNKNOW_ERROR"
 	}
 
+	if len(e.Message) == 0 {
+		e.Message = ErrParams{"error": e.Err.Error()}
+	}
+
 	// return json.Marshal(JSON{
 	// 	HTTPCode: e.HTTPCode,
 	// 	Err:      e.Err,
