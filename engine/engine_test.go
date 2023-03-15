@@ -73,7 +73,7 @@ func TestEngine(t *testing.T) {
 	assert.Equal(http.StatusBadRequest, w.Code)
 
 	body := w.Body.String()
-	assert.Equal(body, `{"code":"INVALID_ARGUMENTS","message":null}`)
+	assert.Equal(body, `{"code":"INVALID_ARGUMENTS","message":{"error":"Bad Request"}}`)
 
 	w = testhelper.PerformRequest(router, "GET", "/ping2", nil)
 	assert.Equal(http.StatusOK, w.Code)
