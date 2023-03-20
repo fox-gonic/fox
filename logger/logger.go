@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
@@ -10,6 +11,18 @@ import (
 
 	"github.com/rs/zerolog"
 )
+
+type key int // key is unexported and used for Context
+
+const (
+	// TraceIDKey key
+	TraceIDKey key = 0
+)
+
+// NewContext return context with reqid
+func NewContext(ctx context.Context, reqID string) context.Context {
+	return context.WithValue(ctx, TraceIDKey, reqID)
+}
 
 var pid = uint32(time.Now().UnixNano() % 4294967291)
 
@@ -85,10 +98,35 @@ type Logger interface {
 
 	// Trace ID
 	TraceID() string
+
+	// context
+	WithContext(ctx ...context.Context) context.Context
 }
 
 // New return logger
 var New func(traceID ...string) Logger = newLogger
+
+// NewWithoutCaller new log without caller field
+func NewWithoutCaller(reqID ...string) Logger {
+	return newLogger(reqID...)
+}
+
+// NewWithContext return logger with context
+func NewWithContext(ctx context.Context) Logger {
+	reqID := ""
+
+	reqid, ok := ctx.Value(TraceIDKey).(string)
+	if ok {
+		reqID = reqid
+	}
+
+	log := newLogger(reqID)
+	l := log.(*Log)
+	zl := l.log.With().CallerWithSkipFrameCount(3).Logger()
+	l.log = &zl
+
+	return l
+}
 
 // newLogger return Logger
 func newLogger(traceID ...string) Logger {
@@ -197,6 +235,14 @@ func (l *Log) Fatalf(format string, arguments ...interface{}) {
 // Panicf panic format
 func (l *Log) Panicf(format string, arguments ...interface{}) {
 	l.log.Panic().Msg(fmt.Sprintf(format, arguments...))
+}
+
+// WithContext return context with log
+func (l *Log) WithContext(ctx ...context.Context) context.Context {
+	if len(ctx) > 0 {
+		return context.WithValue(ctx[0], TraceIDKey, l.traceID)
+	}
+	return context.WithValue(context.Background(), TraceIDKey, l.traceID)
 }
 
 // WithField add new field
