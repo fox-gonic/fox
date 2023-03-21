@@ -157,14 +157,18 @@ func (c *Context) RequestBody() (body []byte, err error) {
 	if request := c.Request(); body == nil && request.Body != nil {
 
 		buf := bytebufferpool.Get()
-		defer bytebufferpool.Put(buf)
+
+		defer func() {
+			buf.Reset()
+			bytebufferpool.Put(buf)
+		}()
 
 		defer request.Body.Close()
 		if _, err := io.CopyN(buf, request.Body, request.ContentLength); err != nil {
 			return nil, err
 		}
 
-		body = buf.Bytes()
+		body = buf.Bytes()[:request.ContentLength]
 
 		c.Set(gin.BodyBytesKey, body)
 	}
