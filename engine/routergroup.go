@@ -58,7 +58,7 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 					start      = time.Now()
 					context    = &Context{Context: c, Logger: log}
 					res, err   = call(context, h)
-					latency    = time.Until(start).String()
+					latency    = time.Since(start).String()
 				)
 
 				fields := map[string]interface{}{
