@@ -27,7 +27,4 @@ const (
 var (
 	// DefaultLogLevel log level
 	DefaultLogLevel Level = TraceLevel
-
-	// DefaultLogTimeFormat default log time format
-	DefaultLogTimeFormat = "2006-01-02 15:04:05.000000"
 )

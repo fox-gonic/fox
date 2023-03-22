@@ -6,7 +6,18 @@ import (
 	"path/filepath"
 
 	"github.com/natefinch/lumberjack"
+	"github.com/rs/zerolog"
 )
+
+var (
+
+	// DefaultLogTimeFormat default log time format
+	DefaultLogTimeFormat = "2006-01-02 15:04:05.000000"
+)
+
+func init() {
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnixNano
+}
 
 // Config for logging
 type Config struct {
