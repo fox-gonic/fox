@@ -66,8 +66,6 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 					"type":    "HANDLER",
 				}
 
-				c.Header("latency", latency)
-
 				context.Logger.WithFields(fields).Info(handleName)
 
 				if context.Context.IsAborted() {
