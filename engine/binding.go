@@ -43,17 +43,15 @@ func bind(ctx *Context, obj interface{}) (err error) {
 	// bind request body
 	// --------------------------------------------------------------------------
 	var (
-		req         = ctx.Request()
-		contentType = filterFlags(req.Header.Get("Content-Type"))
+		contentType = filterFlags(ctx.Request.Header.Get("Content-Type"))
 		body        []byte
-		params      = ctx.params()
 	)
 
-	if req.Method == http.MethodGet {
-		err = binding.Form.Bind(req, obj)
+	if ctx.Request.Method == http.MethodGet {
+		err = binding.Form.Bind(ctx.Request, obj)
 
 	} else if binder, exists := binders[contentType]; exists {
-		err = binder.Bind(req, obj)
+		err = binder.Bind(ctx.Request, obj)
 
 	} else if bodyBinder, exists := bodyBinders[contentType]; exists {
 		if body, err = ctx.RequestBody(); err != nil {
@@ -72,7 +70,7 @@ func bind(ctx *Context, obj interface{}) (err error) {
 				err = bodyBinder.BindBody(body, obj)
 			}
 		} else {
-			err = DefaultBinder.Bind(req, obj)
+			err = DefaultBinder.Bind(ctx.Request, obj)
 		}
 	}
 	if err != nil {
@@ -113,24 +111,25 @@ func bind(ctx *Context, obj interface{}) (err error) {
 
 	// bind query params
 	if hasQueryField {
-		err = Query.Bind(req, obj)
-		if err != nil {
+		if err = Query.Bind(ctx.Request, obj); err != nil {
 			return err
 		}
 	}
 
 	// bind uri path
-	if hasURIField && len(params) > 0 {
-		err = binding.Uri.BindUri(params, obj)
-		if err != nil {
+	if hasURIField && len(ctx.Params) > 0 {
+		m := make(map[string][]string)
+		for _, v := range ctx.Params {
+			m[v.Key] = []string{v.Value}
+		}
+		if err = binding.Uri.BindUri(m, obj); err != nil {
 			return err
 		}
 	}
 
 	// bind header fields
 	if hasHeaderField {
-		err = binding.Header.Bind(req, obj)
-		if err != nil {
+		if err = binding.Header.Bind(ctx.Request, obj); err != nil {
 			return err
 		}
 	}
