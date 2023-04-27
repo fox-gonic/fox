@@ -18,7 +18,7 @@ import (
 func main() {
   router := engine.New()
   router.GET("/ping", func(c *engine.Context) string {
-	  return "pong"
+    return "pong"
   })
   router.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
@@ -41,17 +41,17 @@ import (
 )
 
 type DescribeArticleArgs struct {
-	ID int64 `uri:"title"`
+  ID int64 `uri:"title"`
 }
 
 type CreateArticleArgs struct {
-	Title   string `json:"title"`
-	Content string `json:"content"`
+  Title   string `json:"title"`
+  Content string `json:"content"`
 }
 
 type Article struct {
-	Title     string    `json:"title"`
-	Content   string    `json:"content"`
+  Title     string    `json:"title"`
+  Content   string    `json:"content"`
   CreatedAt time.Time `json:"created_at"`
   UpdatedAt time.Time `json:"updated_at"`
 }
@@ -60,7 +60,7 @@ func main() {
   router := engine.New()
 
   router.GET("/articles/:id", func(c *engine.Context, args *DescribeArticleArgs) int64 {
-	  return args.ID
+    return args.ID
   })
 
   router.POST("/articles", func(c *engine.Context, args *CreateArticleArgs) (*Article, error) {
@@ -69,7 +69,7 @@ func main() {
       Content: args.Content,
     }
     // TODO: do something ...
-	  return article, nil
+    return article, nil
   })
 
   router.Run()
