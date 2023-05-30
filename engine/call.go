@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"reflect"
 
-	"github.com/fox-gonic/fox/errors"
+	"github.com/fox-gonic/fox/httperrors"
 )
 
 func call(ctx *Context, handler HandlerFunc) (any, error) {
@@ -44,11 +44,11 @@ func call(ctx *Context, handler HandlerFunc) (any, error) {
 			// Bind handler params
 			parameter := reflect.New(funcType.In(i)).Interface()
 			if err := bind(ctx, parameter); err != nil {
-				msg := &errors.Error{
+				msg := &httperrors.Error{
 					HTTPCode: http.StatusBadRequest,
 					Err:      err,
 					Code:     "BIND_ERROR",
-					Message:  errors.ErrParams{"bind": err.Error()},
+					Message:  httperrors.ErrParams{"bind": err.Error()},
 				}
 				return nil, msg
 			}

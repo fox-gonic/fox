@@ -1,4 +1,4 @@
-package errors
+package httperrors
 
 import (
 	"errors"
@@ -33,21 +33,21 @@ var ErrDatabaseServerError = &Error{
 	Code:     "INTERNAL_SERVER_ERROR",
 }
 
-// ErrUnauthorized 未认证/未授权
+// ErrUnauthorized unauthorized
 var ErrUnauthorized = &Error{
 	HTTPCode: http.StatusUnauthorized,
 	Err:      errors.New("unauthorized"),
 	Code:     "UNAUTHORIZED",
 }
 
-// ErrInvalidArguments 无效的参数
+// ErrInvalidArguments invalid arguments
 var ErrInvalidArguments = &Error{
 	HTTPCode: http.StatusBadRequest,
 	Err:      errors.New("Bad Request"),
 	Code:     "INVALID_ARGUMENTS",
 }
 
-// ErrRequestEntityTooLarge 请求实体太大
+// ErrRequestEntityTooLarge request entity too large
 var ErrRequestEntityTooLarge = &Error{
 	HTTPCode: http.StatusRequestEntityTooLarge,
 	Err:      errors.New("Request Entity TooLarge"),

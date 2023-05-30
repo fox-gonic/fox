@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/fox-gonic/fox/engine"
-	"github.com/fox-gonic/fox/errors"
+	"github.com/fox-gonic/fox/httperrors"
 	"github.com/fox-gonic/fox/testhelper"
 )
 
@@ -20,7 +20,7 @@ type Foo struct {
 func MiddlewareFailed(c *engine.Context) (res interface{}, err error) {
 	c.Logger.Info("MiddlewareFailed")
 	res = "Middleware"
-	err = errors.ErrInvalidArguments
+	err = httperrors.ErrInvalidArguments
 	return
 }
 
@@ -42,9 +42,9 @@ func HandleSuccess(c *engine.Context, in TestInput) (res interface{}, err error)
 }
 
 func HandleFailed(c *engine.Context, in *TestInput) (res interface{}, err error) {
-	err = &errors.Error{
+	err = &httperrors.Error{
 		HTTPCode: http.StatusBadRequest,
-		Code:     errors.ErrInvalidArguments.Code,
+		Code:     httperrors.ErrInvalidArguments.Code,
 		Message: map[string]interface{}{
 			"param": "invalid param " + in.Param,
 		},

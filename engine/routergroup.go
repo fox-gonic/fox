@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
 
-	"github.com/fox-gonic/fox/errors"
+	"github.com/fox-gonic/fox/httperrors"
 	"github.com/fox-gonic/fox/logger"
 	"github.com/fox-gonic/fox/utils"
 )
@@ -74,19 +74,19 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 
 				// output parameter processing
 				if err != nil {
-					res = errors.Wrap(err)
+					res = httperrors.Wrap(err)
 				}
 
 				switch r := res.(type) {
-				case *errors.Error:
+				case *httperrors.Error:
 					c.AbortWithStatusJSON(r.HTTPCode, r)
 					return
 				case error:
-					if e, ok := r.(errors.StatusCoder); ok {
+					if e, ok := r.(httperrors.StatusCoder); ok {
 						c.AbortWithStatusJSON(e.StatusCode(), r)
 						return
 					}
-					c.AbortWithStatusJSON(400, errors.Wrap(r))
+					c.AbortWithStatusJSON(400, httperrors.Wrap(r))
 					return
 				case string:
 					c.String(200, r)
