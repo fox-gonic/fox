@@ -295,32 +295,32 @@ func Panic(arguments ...interface{}) {
 
 // Debugf debug format
 func Debugf(format string, arguments ...interface{}) {
-	std.Debug(format, arguments)
+	std.Debugf(format, arguments...)
 }
 
 // Infof info format
 func Infof(format string, arguments ...interface{}) {
-	std.Info(format, arguments)
+	std.Infof(format, arguments...)
 }
 
 // Warnf warn format
 func Warnf(format string, arguments ...interface{}) {
-	std.Warn(format, arguments)
+	std.Warnf(format, arguments...)
 }
 
 // Errorf error format
 func Errorf(format string, arguments ...interface{}) {
-	std.Error(format, arguments)
+	std.Errorf(format, arguments...)
 }
 
 // Fatalf fatal format
 func Fatalf(format string, arguments ...interface{}) {
-	std.Fatal(format, arguments)
+	std.Fatalf(format, arguments...)
 }
 
 // Panicf panic format
 func Panicf(format string, arguments ...interface{}) {
-	std.Panic(format, arguments)
+	std.Panicf(format, arguments...)
 }
 
 // WithField add new field
