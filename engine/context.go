@@ -4,7 +4,6 @@ import (
 	"io"
 
 	"github.com/gin-gonic/gin"
-	"github.com/valyala/bytebufferpool"
 
 	"github.com/fox-gonic/fox/logger"
 )
@@ -27,21 +26,10 @@ func (c *Context) RequestBody() (body []byte, err error) {
 	}
 
 	if body == nil && c.Request != nil && c.Request.Body != nil {
-
-		buf := bytebufferpool.Get()
-
-		defer func() {
-			buf.Reset()
-			bytebufferpool.Put(buf)
-		}()
-
-		defer c.Request.Body.Close()
-		if _, err := io.CopyN(buf, c.Request.Body, c.Request.ContentLength); err != nil {
-			return nil, err
+		body, err = io.ReadAll(c.Request.Body)
+		if err != nil {
+			return
 		}
-
-		body = buf.Bytes()[:c.Request.ContentLength]
-
 		c.Set(gin.BodyBytesKey, body)
 	}
 	return
