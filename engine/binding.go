@@ -62,7 +62,7 @@ func bind(ctx *Context, obj interface{}) (err error) {
 		}
 
 	} else if DefaultBinder != nil {
-		if _, ok := DefaultBinder.(binding.BindingBody); ok {
+		if bodyBinder, ok := DefaultBinder.(binding.BindingBody); ok {
 			if body, err = ctx.RequestBody(); err != nil {
 				return err
 			}
