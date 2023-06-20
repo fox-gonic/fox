@@ -78,47 +78,38 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 				}
 
 				switch r := res.(type) {
-				case *httperrors.Error:
-					c.AbortWithStatusJSON(r.HTTPCode, r)
-					return
-				case error:
-					if e, ok := r.(httperrors.StatusCoder); ok {
-						c.AbortWithStatusJSON(e.StatusCode(), r)
-						return
-					}
-					c.AbortWithStatusJSON(400, httperrors.Wrap(r))
-					return
-				case string:
-					c.String(200, r)
-					c.Abort()
-					return
-				case render.Redirect:
-					c.Redirect(r.Code, r.Location)
-					c.Abort()
-					return
-				case render.YAML:
-					c.YAML(http.StatusOK, r.Data)
-					c.Abort()
-					return
-				case render.XML:
-					c.XML(http.StatusOK, r.Data)
-					c.Abort()
-					return
-				case render.HTML:
-					c.Render(http.StatusOK, r)
-					c.Abort()
-					return
-				case render.Reader:
-					c.Render(http.StatusOK, r)
-					c.Abort()
-					return
 				case nil:
 					// nothing to do
 					return
+				case *httperrors.Error:
+					if r == nil {
+						// nothing to do
+						return
+					}
+					c.JSON(r.HTTPCode, r)
+				case error:
+					if e, ok := r.(httperrors.StatusCoder); ok {
+						c.JSON(e.StatusCode(), r)
+					} else {
+						c.JSON(400, httperrors.Wrap(r))
+					}
+				case string:
+					c.String(200, r)
+				case render.Redirect:
+					c.Redirect(r.Code, r.Location)
+				case render.YAML:
+					c.YAML(http.StatusOK, r.Data)
+				case render.XML:
+					c.XML(http.StatusOK, r.Data)
+				case render.HTML:
+					c.Render(http.StatusOK, r)
+				case render.Reader:
+					c.Render(http.StatusOK, r)
 				default:
-					c.AbortWithStatusJSON(http.StatusOK, r)
-					return
+					c.JSON(http.StatusOK, r)
 				}
+
+				c.Abort()
 			}
 		}
 
