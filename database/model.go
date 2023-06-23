@@ -41,15 +41,19 @@ func (p *Pagination[T]) TotalPages() int {
 }
 
 // Paginate callback
-func (p *Pagination[T]) Paginate() func(db *gorm.DB) *gorm.DB {
+func (p *Pagination[T]) Paginate(pageSize ...int) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if p.Page <= 0 {
 			p.Page = 1
 		}
 
 		switch {
+		case len(pageSize) > 0:
+			p.PageSize = pageSize[0]
+
 		case p.PageSize > MaxPageSize:
 			p.PageSize = MaxPageSize
+
 		case p.PageSize <= 0:
 			p.PageSize = DefaultPageSize
 		}
