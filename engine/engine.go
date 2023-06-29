@@ -83,7 +83,7 @@ func New() *Engine {
 		Engine: gin.New(),
 	}
 	engine.RouterGroup.router = &engine.Engine.RouterGroup
-	engine.Use(Logger(), gin.Recovery())
+	engine.Use(NewXResponseTimer(), Logger(), gin.Recovery())
 	return engine
 }
 
