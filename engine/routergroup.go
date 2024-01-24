@@ -181,3 +181,10 @@ func (group *RouterGroup) OPTIONS(relativePath string, handlers ...HandlerFunc) 
 func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
 	return group.Handle(http.MethodHead, relativePath, handlers...)
 }
+
+// Any registers a route that matches all the HTTP methods.
+// GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE.
+func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
+	handlersChain := group.handleWrapper(handlers...)
+	return group.router.Any(relativePath, handlersChain...)
+}
