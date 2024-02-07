@@ -43,13 +43,13 @@ var ErrUnauthorized = &Error{
 // ErrInvalidArguments invalid arguments
 var ErrInvalidArguments = &Error{
 	HTTPCode: http.StatusBadRequest,
-	Err:      errors.New("Bad Request"),
+	Err:      errors.New("invalid arguments"),
 	Code:     "INVALID_ARGUMENTS",
 }
 
 // ErrRequestEntityTooLarge request entity too large
 var ErrRequestEntityTooLarge = &Error{
 	HTTPCode: http.StatusRequestEntityTooLarge,
-	Err:      errors.New("Request Entity TooLarge"),
+	Err:      errors.New("request entity too large"),
 	Code:     "REQUEST_ENTITY_TOO_LARGE",
 }
