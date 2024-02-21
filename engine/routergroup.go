@@ -13,6 +13,13 @@ import (
 	"github.com/fox-gonic/fox/utils"
 )
 
+// anyMethods for RouterGroup Any method
+var anyMethods = []string{
+	http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch,
+	http.MethodHead, http.MethodOptions, http.MethodDelete, http.MethodConnect,
+	http.MethodTrace,
+}
+
 // RouterGroup is gin.RouterGroup wrapper
 type RouterGroup struct {
 	router *gin.RouterGroup
@@ -184,7 +191,8 @@ func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) gin
 
 // Any registers a route that matches all the HTTP methods.
 // GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE.
-func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) gin.IRoutes {
-	handlersChain := group.handleWrapper(handlers...)
-	return group.router.Any(relativePath, handlersChain...)
+func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) {
+	for _, method := range anyMethods {
+		group.Handle(method, relativePath, handlers...)
+	}
 }
