@@ -48,12 +48,13 @@ func Logger(config ...LoggerConfig) gin.HandlerFunc {
 
 		if len(xRequestID) == 0 {
 			xRequestID = logger.DefaultGenRequestID()
-			c.Header(logger.TraceID, xRequestID)
+			c.Request.Header.Set(logger.TraceID, xRequestID)
 		}
 
 		log := logger.New(xRequestID)
 		c.Set(LoggerContextKey, log)
 
+		c.Header(logger.TraceID, xRequestID)
 		c.Next()
 
 		// Log only when path is not being skipped
