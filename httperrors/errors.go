@@ -1,10 +1,9 @@
 package httperrors
 
-// https://blog.golang.org/go1.13-errors
-
 import (
 	"errors"
 	"fmt"
+	"net/http"
 
 	jsoniter "github.com/json-iterator/go"
 )
@@ -13,24 +12,30 @@ var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 // --------------------------------------------------------------------
 
-// New is errors.New
-func New(text string) error {
-	return errors.New(text)
-}
+// New returns a new http Error object
+func New(httpCode int, text string, params ...ErrParams) *Error {
 
-// Unwrap is errors.Unwrap
-func Unwrap(err error) error {
-	return errors.Unwrap(err)
-}
+	if text == "" {
+		text = http.StatusText(httpCode)
+	}
 
-// Is errors.Is
-func Is(err, target error) bool {
-	return errors.Is(err, target)
+	err := &Error{
+		HTTPCode: httpCode,
+		Err:      errors.New(text),
+	}
+
+	if len(params) > 0 {
+		err.Message = params[0]
+	}
+
+	return err
 }
 
 // As is errors.As
-func As(err error, target interface{}) bool {
-	return errors.As(err, target)
+func As(err error) (*Error, bool) {
+	var t *Error
+	ok := errors.As(err, &t)
+	return t, ok
 }
 
 // --------------------------------------------------------------------
@@ -62,6 +67,10 @@ type JSON struct {
 }
 
 func (e *Error) Error() string {
+	if len(e.Message) == 0 {
+		return fmt.Sprintf("(%d): %s", e.HTTPCode, e.Err.Error())
+	}
+
 	message, _ := json.Marshal(e.Message)
 	return fmt.Sprintf("(%d): %s %s", e.HTTPCode, e.Err.Error(), string(message))
 }
