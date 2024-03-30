@@ -1,4 +1,4 @@
-package engine_test
+package fox_test
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/fox-gonic/fox/engine"
+	"github.com/fox-gonic/fox"
 	"github.com/fox-gonic/fox/httperrors"
 	"github.com/fox-gonic/fox/testhelper"
 )
@@ -17,14 +17,14 @@ type Foo struct {
 	B string
 }
 
-func MiddlewareFailed(c *engine.Context) (res interface{}, err error) {
+func MiddlewareFailed(c *fox.Context) (res interface{}, err error) {
 	c.Logger.Info("MiddlewareFailed")
 	res = "Middleware"
 	err = httperrors.ErrInvalidArguments
 	return
 }
 
-func MiddlewareSuccess(c *engine.Context) (res interface{}, err error) {
+func MiddlewareSuccess(c *fox.Context) (res interface{}, err error) {
 	c.Logger.Info("MiddlewareSuccess")
 	return
 }
@@ -36,12 +36,12 @@ type TestInput struct {
 	Body string `json:"body"`
 }
 
-func HandleSuccess(c *engine.Context, in TestInput) (res interface{}, err error) {
+func HandleSuccess(c *fox.Context, in TestInput) (res interface{}, err error) {
 	res = in
 	return
 }
 
-func HandleFailed(c *engine.Context, in *TestInput) (res interface{}, err error) {
+func HandleFailed(c *fox.Context, in *TestInput) (res interface{}, err error) {
 	err = &httperrors.Error{
 		HTTPCode: http.StatusBadRequest,
 		Code:     httperrors.ErrInvalidArguments.Code,
@@ -52,7 +52,7 @@ func HandleFailed(c *engine.Context, in *TestInput) (res interface{}, err error)
 	return
 }
 
-func Ping(c *engine.Context) (res interface{}, err error) {
+func Ping(c *fox.Context) (res interface{}, err error) {
 	c.Logger.Info("PingHandler")
 	res = Foo{"a", "b"}
 	return
@@ -62,7 +62,7 @@ func TestEngine(t *testing.T) {
 
 	assert := assert.New(t)
 
-	router := engine.New()
+	router := fox.New()
 	router.GET("ping", MiddlewareFailed, Ping)
 	router.GET("ping2", MiddlewareSuccess, Ping)
 
@@ -73,7 +73,7 @@ func TestEngine(t *testing.T) {
 	assert.Equal(http.StatusBadRequest, w.Code)
 
 	body := w.Body.String()
-	assert.Equal(body, `{"code":"INVALID_ARGUMENTS","message":{"error":"Bad Request"}}`)
+	assert.Equal(`{"code":"INVALID_ARGUMENTS","message":{"error":"invalid arguments"}}`, body)
 
 	w = testhelper.PerformRequest(router, "GET", "/ping2", nil)
 	assert.Equal(http.StatusOK, w.Code)

@@ -1,4 +1,4 @@
-package engine
+package fox
 
 import (
 	"time"
@@ -48,7 +48,9 @@ func Logger(config ...LoggerConfig) gin.HandlerFunc {
 
 		if len(xRequestID) == 0 {
 			xRequestID = logger.DefaultGenRequestID()
-			c.Request.Header.Set(logger.TraceID, xRequestID)
+			if c.Request.Header != nil {
+				c.Request.Header.Set(logger.TraceID, xRequestID)
+			}
 		}
 
 		log := logger.New(xRequestID)

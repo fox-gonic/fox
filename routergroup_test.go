@@ -1,4 +1,4 @@
-package engine_test
+package fox_test
 
 import (
 	"net/http"
@@ -6,16 +6,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/fox-gonic/fox/engine"
+	"github.com/fox-gonic/fox"
 	"github.com/fox-gonic/fox/testhelper"
 )
 
-func foo(c *engine.Context) (res interface{}, err error) {
+func foo(c *fox.Context) (res interface{}, err error) {
 	res = "foo"
 	return
 }
 
-func boo(c *engine.Context) (res interface{}, err error) {
+func boo(c *fox.Context) (res interface{}, err error) {
 	res = "boo"
 	return
 }
@@ -24,7 +24,7 @@ func TestRouterGroup(t *testing.T) {
 
 	assert := assert.New(t)
 
-	router := engine.New()
+	router := fox.New()
 	api := router.Group("/api")
 
 	api.GET("foo", foo)
