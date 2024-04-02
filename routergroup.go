@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/render"
 
 	"github.com/fox-gonic/fox/httperrors"
 	"github.com/fox-gonic/fox/logger"
+	"github.com/fox-gonic/fox/render"
 	"github.com/fox-gonic/fox/utils"
 )
 
