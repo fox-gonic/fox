@@ -85,15 +85,11 @@ func NewWithContext(ctx context.Context) Logger {
 
 	if id, ok := ctx.Value(TraceID).(string); ok {
 		traceID = id
-
-		fmt.Println("traceID", traceID)
 	}
 
 	if traceID == "" {
 		if id, ok := ctx.Value(TraceIDKey).(string); ok {
 			traceID = id
-
-			fmt.Println("TraceIDKey", traceID)
 		}
 	}
 
