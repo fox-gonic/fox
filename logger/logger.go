@@ -81,14 +81,23 @@ func NewWithoutCaller(reqID ...string) Logger {
 
 // NewWithContext return logger with context
 func NewWithContext(ctx context.Context) Logger {
-	reqID := ""
+	traceID := ""
 
-	reqid, ok := ctx.Value(TraceIDKey).(string)
-	if ok {
-		reqID = reqid
+	if id, ok := ctx.Value(TraceID).(string); ok {
+		traceID = id
+
+		fmt.Println("traceID", traceID)
 	}
 
-	log := newLogger(reqID)
+	if traceID == "" {
+		if id, ok := ctx.Value(TraceIDKey).(string); ok {
+			traceID = id
+
+			fmt.Println("TraceIDKey", traceID)
+		}
+	}
+
+	log := newLogger(traceID)
 	l := log.(*Log)
 	zl := l.log.With().CallerWithSkipFrameCount(3).Logger()
 	l.log = &zl

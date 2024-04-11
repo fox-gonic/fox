@@ -17,5 +17,7 @@
 # misc
 .DS_Store
 
+.golint.log
+
 coverage.txt
 coverage.html
