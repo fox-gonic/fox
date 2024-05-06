@@ -59,3 +59,8 @@ func kindOfData(data interface{}) reflect.Kind {
 	}
 	return valueType
 }
+
+// IsValider interface
+type IsValider interface {
+	IsValid() error
+}

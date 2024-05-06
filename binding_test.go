@@ -2,10 +2,12 @@ package fox
 
 import (
 	"bytes"
+	"errors"
 	"net/http"
 	"testing"
 	"time"
 
+	"github.com/fox-gonic/fox/httperrors"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
@@ -66,7 +68,7 @@ func TestBindingJSON(t *testing.T) {
 		XRequestID = "l4dCIsjENo3QsCoX"
 	)
 
-	req := requestWithBody(http.MethodPost, url, `{"name": "Binder"}`)
+	req, _ := http.NewRequest(http.MethodPost, url, bytes.NewBufferString(`{"name": "Binder"}`))
 	req.Header.Set("Content-Type", "application/json")
 
 	req.Header.Set("Referer", referer)
@@ -93,7 +95,53 @@ func TestBindingJSON(t *testing.T) {
 	assert.NotZero(t, obj.Start)
 }
 
-func requestWithBody(method, path, body string) (req *http.Request) {
-	req, _ = http.NewRequest(method, path, bytes.NewBufferString(body))
-	return
+var ErrPasswordTooShort = &httperrors.Error{
+	HTTPCode: http.StatusBadRequest,
+	Err:      errors.New("password too short"),
+	Code:     "PASSWORD_TOO_SHORT",
+}
+
+type CreateUserArgs struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (args *CreateUserArgs) IsValid() error {
+	if args.Username == "" && args.Email == "" {
+		return httperrors.ErrInvalidArguments
+	}
+	if len(args.Password) < 6 {
+		return ErrPasswordTooShort
+	}
+	return nil
+}
+
+func TestIsValider(t *testing.T) {
+	assert := assert.New(t)
+
+	req, _ := http.NewRequest(http.MethodPost, "/users/signup", bytes.NewBufferString(`{"name": "Binder"}`))
+	req.Header.Set("Content-Type", "application/json")
+
+	ctx := &Context{
+		Context: &gin.Context{
+			Request: req,
+		},
+	}
+
+	err := bind(ctx, &CreateUserArgs{})
+	assert.Error(err)
+	assert.Equal(httperrors.ErrInvalidArguments, err)
+
+	err = bind(ctx, &CreateUserArgs{
+		Username: "binder",
+	})
+	assert.Error(err)
+	assert.Equal(ErrPasswordTooShort, err)
+
+	err = bind(ctx, &CreateUserArgs{
+		Username: "binder",
+		Password: "123456",
+	})
+	assert.Nil(err)
 }

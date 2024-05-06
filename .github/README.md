@@ -99,3 +99,57 @@ func main() {
   router.Run()
 }
 ```
+
+#### Support custom IsValider for binding.
+
+```go
+package main
+
+import (
+  "github.com/fox-gonic/fox"
+)
+
+var ErrPasswordTooShort = &httperrors.Error{
+	HTTPCode: http.StatusBadRequest,
+	Err:      errors.New("password too short"),
+	Code:     "PASSWORD_TOO_SHORT",
+}
+
+type CreateUserArgs struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (args *CreateUserArgs) IsValid() error {
+	if args.Username == "" && args.Email == "" {
+		return httperrors.ErrInvalidArguments
+	}
+	if len(args.Password) < 6 {
+		return ErrPasswordTooShort
+	}
+	return nil
+}
+
+func main() {
+  router := fox.New()
+
+  router.POST("/users/signup", func(c *fox.Context, args *CreateUserArgs) (*User, error) {
+    var user = &User{
+      Username: args.Username,
+      Email:    args.Email,
+    }
+    // TODO: do something ...
+    return user, nil
+  })
+
+  router.Run()
+}
+```
+
+```shell
+$ curl -X POST http://localhost:8080/users/signup \
+    -H 'content-type: application/json' \
+    -d '{"username": "George", "email": "george@vandaley.com"}'
+{"code":"PASSWORD_TOO_SHORT"}
+```

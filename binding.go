@@ -134,6 +134,10 @@ func bind(ctx *Context, obj interface{}) (err error) {
 		}
 	}
 
+	if valider, ok := obj.(IsValider); ok {
+		return valider.IsValid()
+	}
+
 	return nil
 }
 
