@@ -65,7 +65,7 @@ import (
 )
 
 type DescribeArticleArgs struct {
-  ID int64 `uri:"title"`
+  ID int64 `uri:"id"`
 }
 
 type CreateArticleArgs struct {
