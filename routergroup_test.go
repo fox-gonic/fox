@@ -2,12 +2,12 @@ package fox_test
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/fox-gonic/fox"
-	"github.com/fox-gonic/fox/testhelper"
 )
 
 func foo(c *fox.Context) (res interface{}, err error) {
@@ -31,15 +31,15 @@ func TestRouterGroup(t *testing.T) {
 
 	api.GET("boo", boo)
 
-	w := testhelper.PerformRequest(router, "GET", "/api/foo", nil)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/foo", nil)
+	router.ServeHTTP(w, req)
 	assert.Equal(http.StatusOK, w.Code)
+	assert.Equal("foo", w.Body.String())
 
-	body := w.Body.String()
-	assert.Equal(body, "foo")
-
-	w = testhelper.PerformRequest(router, "GET", "/api/boo", nil)
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/boo", nil)
+	router.ServeHTTP(w, req)
 	assert.Equal(http.StatusOK, w.Code)
-
-	body = w.Body.String()
-	assert.Equal(body, "boo")
+	assert.Equal("boo", w.Body.String())
 }

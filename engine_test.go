@@ -1,15 +1,16 @@
 package fox_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/fox-gonic/fox"
 	"github.com/fox-gonic/fox/httperrors"
-	"github.com/fox-gonic/fox/testhelper"
 )
 
 type Foo struct {
@@ -69,13 +70,17 @@ func TestEngine(t *testing.T) {
 	router.POST("/handle/:param/success", HandleSuccess)
 	router.POST("/handle/:param/failed", HandleFailed)
 
-	w := testhelper.PerformRequest(router, "GET", "/ping", nil)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/ping", nil)
+	router.ServeHTTP(w, req)
 	assert.Equal(http.StatusBadRequest, w.Code)
 
 	body := w.Body.String()
 	assert.Equal(`{"code":"INVALID_ARGUMENTS","message":{"error":"invalid arguments"}}`, body)
 
-	w = testhelper.PerformRequest(router, "GET", "/ping2", nil)
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/ping2", nil)
+	router.ServeHTTP(w, req)
 	assert.Equal(http.StatusOK, w.Code)
 
 	var response Foo
@@ -86,11 +91,18 @@ func TestEngine(t *testing.T) {
 	assert.Equal(response.B, "b")
 
 	jsonData := map[string]string{"body": "fromBody"}
-	w = testhelper.PerformRequestJSON(router, http.MethodPost, "/handle/hello/success?query=world", jsonData)
+	data, _ := json.Marshal(jsonData)
+
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/handle/hello/success?query=world", bytes.NewReader(data))
+	router.ServeHTTP(w, req)
 	assert.Equal(http.StatusOK, w.Code)
 	assert.Equal(`{"Param":"hello","Query":"world","body":"fromBody"}`, w.Body.String())
 
-	w = testhelper.PerformRequestJSON(router, http.MethodPost, "/handle/hello/failed?query=world", jsonData)
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/handle/hello/failed?query=world", bytes.NewReader(data))
+	router.ServeHTTP(w, req)
+
 	assert.Equal(http.StatusBadRequest, w.Code)
 	assert.Equal(`{"code":"INVALID_ARGUMENTS","message":{"param":"invalid param hello"}}`, w.Body.String())
 }
