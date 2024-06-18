@@ -1,7 +1,9 @@
 package fox
 
 import (
+	"bytes"
 	"errors"
+	"io"
 	"net/http"
 	"reflect"
 
@@ -39,6 +41,17 @@ func bind(ctx *Context, obj interface{}) (err error) {
 	if vPtr.Kind() != reflect.Ptr {
 		return ErrBindNonPointerValue
 	}
+
+	// copy request body
+	// --------------------------------------------------------------------------
+	var (
+		buf   bytes.Buffer
+		rBody = io.TeeReader(ctx.Request.Body, &buf)
+	)
+	ctx.Request.Body = io.NopCloser(rBody)
+	defer func() {
+		ctx.Request.Body = io.NopCloser(&buf)
+	}()
 
 	// bind request body
 	// --------------------------------------------------------------------------
