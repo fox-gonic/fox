@@ -31,18 +31,14 @@ func (c *Context) RequestBody() (body []byte, err error) {
 			buf   bytes.Buffer
 			bodyR = io.TeeReader(c.Request.Body, &buf)
 		)
-
-		defer func() {
-			if err == nil {
-				c.Request.Body = io.NopCloser(&buf)
-			}
-		}()
-
 		if body, err = io.ReadAll(bodyR); err != nil {
 			return
 		}
 
 		c.Set(gin.BodyBytesKey, body)
+
+		// copy the request body to the next handler
+		c.Request.Body = io.NopCloser(&buf)
 	}
 	return
 }

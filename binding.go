@@ -1,7 +1,9 @@
 package fox
 
 import (
+	"bytes"
 	"errors"
+	"io"
 	"net/http"
 	"reflect"
 
@@ -50,6 +52,11 @@ func bind(ctx *Context, obj interface{}) (err error) {
 	if body, err = ctx.RequestBody(); err != nil {
 		return err
 	}
+
+	defer func() {
+		// copy the request body to the next handler
+		ctx.Request.Body = io.NopCloser(bytes.NewBuffer(body))
+	}()
 
 	if ctx.Request.Method == http.MethodGet {
 		err = binding.Form.Bind(ctx.Request, obj)
