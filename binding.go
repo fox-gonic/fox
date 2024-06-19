@@ -1,9 +1,7 @@
 package fox
 
 import (
-	"bytes"
 	"errors"
-	"io"
 	"net/http"
 	"reflect"
 
@@ -42,23 +40,16 @@ func bind(ctx *Context, obj interface{}) (err error) {
 		return ErrBindNonPointerValue
 	}
 
-	// copy request body
-	// --------------------------------------------------------------------------
-	var (
-		buf   bytes.Buffer
-		rBody = io.TeeReader(ctx.Request.Body, &buf)
-	)
-	ctx.Request.Body = io.NopCloser(rBody)
-	defer func() {
-		ctx.Request.Body = io.NopCloser(&buf)
-	}()
-
 	// bind request body
 	// --------------------------------------------------------------------------
 	var (
 		contentType = filterFlags(ctx.Request.Header.Get("Content-Type"))
 		body        []byte
 	)
+
+	if body, err = ctx.RequestBody(); err != nil {
+		return err
+	}
 
 	if ctx.Request.Method == http.MethodGet {
 		err = binding.Form.Bind(ctx.Request, obj)
@@ -67,18 +58,12 @@ func bind(ctx *Context, obj interface{}) (err error) {
 		err = binder.Bind(ctx.Request, obj)
 
 	} else if bodyBinder, exists := bodyBinders[contentType]; exists {
-		if body, err = ctx.RequestBody(); err != nil {
-			return err
-		}
 		if len(body) > 0 {
 			err = bodyBinder.BindBody(body, obj)
 		}
 
 	} else if DefaultBinder != nil {
 		if bodyBinder, ok := DefaultBinder.(binding.BindingBody); ok {
-			if body, err = ctx.RequestBody(); err != nil {
-				return err
-			}
 			if len(body) > 0 {
 				err = bodyBinder.BindBody(body, obj)
 			}

@@ -1,6 +1,7 @@
 package fox
 
 import (
+	"bytes"
 	"io"
 
 	"github.com/gin-gonic/gin"
@@ -26,10 +27,21 @@ func (c *Context) RequestBody() (body []byte, err error) {
 	}
 
 	if body == nil && c.Request != nil && c.Request.Body != nil {
-		body, err = io.ReadAll(c.Request.Body)
-		if err != nil {
+		var (
+			buf   bytes.Buffer
+			bodyR = io.TeeReader(c.Request.Body, &buf)
+		)
+
+		defer func() {
+			if err == nil {
+				c.Request.Body = io.NopCloser(&buf)
+			}
+		}()
+
+		if body, err = io.ReadAll(bodyR); err != nil {
 			return
 		}
+
 		c.Set(gin.BodyBytesKey, body)
 	}
 	return

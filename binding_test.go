@@ -93,6 +93,18 @@ func TestBindingJSON(t *testing.T) {
 	assert.Equal(t, "Binder", obj.Name)
 	assert.Nil(t, obj.Content)
 	assert.NotZero(t, obj.Start)
+
+	req, _ = http.NewRequest(http.MethodPost, url, bytes.NewBufferString(""))
+	req.Header.Set("Content-Type", "application/json")
+
+	ctx = &Context{
+		Context: &gin.Context{
+			Request: req,
+		},
+	}
+
+	err = bind(ctx, &obj)
+	assert.NoError(t, err)
 }
 
 var ErrPasswordTooShort = &httperrors.Error{
