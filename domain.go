@@ -20,43 +20,63 @@ type DomainEngine struct {
 	domains []*domain
 }
 
-// NewSubdomainEngine new domain engine
-func NewSubdomainEngine() *DomainEngine {
+// NewDomainEngine new domain engine
+func NewDomainEngine() *DomainEngine {
 	return &DomainEngine{
 		Engine: New(),
 	}
 }
 
 // Domain add domain handler
-func (engines *DomainEngine) Domain(name string, handler http.Handler, isRegexp ...bool) {
+func (engine *DomainEngine) Domain(name string, engineFunc func(subEngine *Engine)) {
+	engine.server(name, false, engineFunc)
+}
+
+// DomainRegexp add domain handler
+func (engine *DomainEngine) DomainRegexp(name string, engineFunc func(subEngine *Engine)) {
+	engine.server(name, true, engineFunc)
+}
+
+// server add domain handler
+func (engine *DomainEngine) server(name string, isRegexp bool, engineFunc func(*Engine)) {
 
 	domain := &domain{
-		Name:    name,
-		Handler: handler,
+		Name:     name,
+		IsRegexp: isRegexp,
 	}
 
-	if len(isRegexp) > 0 && isRegexp[0] {
-		if req, err := regexp.Compile(name); err == nil {
-			domain.IsRegexp = true
-			domain.Regexp = req
+	if isRegexp {
+		req, err := regexp.Compile(name)
+		if err != nil {
+			panic(err)
 		}
+
+		domain.Regexp = req
 	}
 
-	engines.domains = append(engines.domains, domain)
+	subEngine := New()
+	engineFunc(subEngine)
+
+	domain.Handler = subEngine
+
+	engine.domains = append(engine.domains, domain)
 }
 
 // ServeHTTP conforms to the http.Handler interface.
-func (engines *DomainEngine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (engine *DomainEngine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+
+	if len(engine.domains) == 0 {
+		engine.Engine.ServeHTTP(w, req)
+		return
+	}
 
 	host := req.Host
 	if strings.Contains(host, ":") {
-		parts := strings.Split(host, ":")
-		host = parts[0]
+		host = strings.Split(host, ":")[0]
 	}
 
-	for i := 0; i < len(engines.domains); i++ {
-		var domain = engines.domains[i]
-
+	for i := 0; i < len(engine.domains); i++ {
+		var domain = engine.domains[i]
 		if domain.IsRegexp && domain.Regexp.MatchString(host) {
 			domain.Handler.ServeHTTP(w, req)
 			return
@@ -66,5 +86,5 @@ func (engines *DomainEngine) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		}
 	}
 
-	engines.Engine.ServeHTTP(w, req)
+	engine.Engine.ServeHTTP(w, req)
 }
