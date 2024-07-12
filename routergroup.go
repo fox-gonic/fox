@@ -64,7 +64,7 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 					handleName = utils.NameOfFunction(h)
 					start      = time.Now()
 					context    = &Context{Context: c, Logger: log}
-					res, err   = call(context, h)
+					res        = call(context, h)
 					latency    = time.Since(start).String()
 				)
 
@@ -75,13 +75,8 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 
 				context.Logger.WithFields(fields).Info(handleName)
 
-				if context.Context.IsAborted() {
+				if context.IsAborted() {
 					return
-				}
-
-				// output parameter processing
-				if err != nil {
-					res = httperrors.Wrap(err)
 				}
 
 				switch r := res.(type) {

@@ -58,14 +58,6 @@ type Error struct {
 	Message  ErrParams
 }
 
-// JSON custom error json struct
-type JSON struct {
-	HTTPCode int       `json:"-"`
-	Err      error     `json:"-"`
-	Code     string    `json:"code"`
-	Message  ErrParams `json:"message"`
-}
-
 func (e *Error) Error() string {
 	if len(e.Message) == 0 {
 		return fmt.Sprintf("(%d): %s", e.HTTPCode, e.Err.Error())

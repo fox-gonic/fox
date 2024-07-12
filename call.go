@@ -8,7 +8,7 @@ import (
 	"github.com/fox-gonic/fox/httperrors"
 )
 
-func call(ctx *Context, handler HandlerFunc) (any, error) {
+func call(ctx *Context, handler HandlerFunc) any {
 
 	var (
 		funcValue = reflect.ValueOf(handler)
@@ -50,7 +50,7 @@ func call(ctx *Context, handler HandlerFunc) (any, error) {
 					Code:     "BIND_ERROR",
 					Message:  httperrors.ErrParams{"bind": err.Error()},
 				}
-				return nil, msg
+				return msg
 			}
 			in = append(in, reflect.ValueOf(parameter).Elem())
 		}
@@ -59,19 +59,19 @@ func call(ctx *Context, handler HandlerFunc) (any, error) {
 
 	switch numOut {
 	case 0:
-		return nil, nil
+		return nil
 	case 1:
 		res := values[0].Interface()
 		if err, ok := res.(error); ok {
-			return nil, err
+			return err
 		}
-		return res, nil
+		return res
 
 	default: // 2
 		res, err := values[0].Interface(), values[1].Interface()
 		if err, ok := err.(error); ok {
-			return res, err
+			return err
 		}
-		return res, nil
+		return res
 	}
 }
