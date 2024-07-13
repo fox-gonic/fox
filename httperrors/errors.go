@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
 
 	jsoniter "github.com/json-iterator/go"
+	"github.com/mitchellh/mapstructure"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -55,16 +57,28 @@ type Error struct {
 	HTTPCode int
 	Err      error
 	Code     string
+	Meta     any
 	Message  ErrParams
 }
 
-func (e *Error) Error() string {
-	if len(e.Message) == 0 {
-		return fmt.Sprintf("(%d): %s", e.HTTPCode, e.Err.Error())
-	}
+var _ error = (*Error)(nil)
 
-	message, _ := json.Marshal(e.Message)
-	return fmt.Sprintf("(%d): %s %s", e.HTTPCode, e.Err.Error(), string(message))
+func (e *Error) Error() string {
+	return fmt.Sprintf("(%d): %s", e.HTTPCode, e.Err.Error())
+}
+
+// SetMeta sets the error's meta data.
+func (e *Error) SetMeta(data any) *Error {
+	e.Meta = data
+	return e
+}
+
+// AddMessage adds message
+func (e *Error) AddMessage(key string, value any) {
+	if e.Message == nil {
+		e.Message = ErrParams{}
+	}
+	e.Message[key] = value
 }
 
 // StatusCode return http status code
@@ -75,28 +89,70 @@ func (e *Error) StatusCode() int {
 // Unwrap method
 func (e *Error) Unwrap() error { return e.Err }
 
-// MarshalJSON implements the json.Marshaler interface.
-func (e Error) MarshalJSON() ([]byte, error) {
-	// TODO: exchange e.Code
+// JSON creates a properly formatted JSON
+func (e *Error) JSON() (any, error) {
+
 	if len(e.Code) == 0 {
 		e.Code = "UNKNOW_ERROR"
 	}
 
-	if len(e.Message) == 0 {
-		e.Message = ErrParams{"error": e.Err.Error()}
+	jsonData := map[string]any{}
+
+	if e.Meta != nil {
+		value := reflect.ValueOf(e.Meta)
+		switch value.Kind() {
+		case reflect.Struct:
+			decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+				TagName: "json",
+				Result:  &jsonData,
+			})
+			if err != nil {
+				return nil, err
+			}
+			if err := decoder.Decode(e.Meta); err != nil {
+				return nil, err
+			}
+
+		case reflect.Map:
+			for _, key := range value.MapKeys() {
+				jsonData[key.String()] = value.MapIndex(key).Interface()
+			}
+
+		default:
+			jsonData["message"] = e.Meta
+		}
 	}
 
-	// return json.Marshal(JSON{
-	// 	HTTPCode: e.HTTPCode,
-	// 	Err:      e.Err,
-	// 	Code:     e.Code,
-	// 	Message:  e.Message,
-	// })
+	if _, exists := jsonData["code"]; !exists {
+		jsonData["code"] = e.Code
+	}
 
-	return json.Marshal(map[string]interface{}{
-		"code":    e.Code,
-		"message": e.Message,
-	})
+	if _, exists := jsonData["error"]; !exists {
+		jsonData["error"] = e.Error()
+	}
+
+	if e.Message != nil {
+		if _, exists := jsonData["message"]; exists {
+			if value, ok := jsonData["message"].(map[string]any); ok {
+				for k, v := range e.Message {
+					value[k] = v
+				}
+			}
+		} else {
+			jsonData["message"] = e.Message
+		}
+	}
+
+	return jsonData, nil
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (e Error) MarshalJSON() ([]byte, error) {
+	v, err := e.JSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(v)
 }
 
 // --------------------------------------------------------------------
