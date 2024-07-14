@@ -1,6 +1,7 @@
 package fox
 
 import (
+	"encoding/json"
 	"net/http"
 	"reflect"
 	"time"
@@ -79,21 +80,20 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 					return
 				}
 
-				switch r := res.(type) {
-				case nil:
-					// nothing to do
+				if res == nil {
 					return
-				case *httperrors.Error:
-					if r == nil {
-						// nothing to do
-						return
-					}
-					c.JSON(r.HTTPCode, r)
+				}
+
+				switch r := res.(type) {
 				case error:
+					var code = 400
 					if e, ok := r.(httperrors.StatusCoder); ok {
-						c.JSON(e.StatusCode(), r)
+						code = e.StatusCode()
+					}
+					if e, ok := r.(json.Marshaler); ok {
+						c.JSON(code, e)
 					} else {
-						c.JSON(400, httperrors.Wrap(r))
+						c.String(code, r.Error())
 					}
 				case string:
 					c.String(200, r)
