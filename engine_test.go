@@ -42,15 +42,17 @@ func HandleSuccess(c *fox.Context, in TestInput) (res interface{}, err error) {
 	return
 }
 
-func HandleFailed(c *fox.Context, in *TestInput) (res interface{}, err error) {
-	err = &httperrors.Error{
+func HandleFailed(c *fox.Context, in *TestInput) (interface{}, error) {
+	err := &httperrors.Error{
 		HTTPCode: http.StatusBadRequest,
 		Code:     httperrors.ErrInvalidArguments.Code,
-		Message: map[string]interface{}{
-			"param": "invalid param " + in.Param,
-		},
 	}
-	return
+
+	_ = err.AddField("message", map[string]interface{}{
+		"param": "invalid param " + in.Param,
+	})
+
+	return nil, err
 }
 
 func Ping(c *fox.Context) (res interface{}, err error) {

@@ -13,34 +13,26 @@ import (
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 // New returns a new http Error object
-func New(httpCode int, text string, params ...ErrParams) *Error {
+func New(httpCode int, text string) *Error {
 
 	if text == "" {
 		text = http.StatusText(httpCode)
 	}
 
-	err := &Error{
+	return &Error{
 		HTTPCode: httpCode,
 		Err:      errors.New(text),
 	}
-
-	if len(params) > 0 {
-		err.Message = params[0]
-	}
-
-	return err
 }
-
-// ErrParams error params
-type ErrParams map[string]any
 
 // Error custom error
 type Error struct {
 	HTTPCode int
 	Err      error
 	Code     string
-	Meta     any
-	Message  ErrParams
+
+	Meta   any
+	Fields map[string]any
 }
 
 var _ error = (*Error)(nil)
@@ -70,12 +62,23 @@ func (e *Error) SetMeta(data any) *Error {
 	return e
 }
 
-// AddMessage adds message
-func (e *Error) AddMessage(key string, value any) *Error {
-	if e.Message == nil {
-		e.Message = ErrParams{}
+// AddField adds field
+func (e *Error) AddField(key string, value any) *Error {
+	if e.Fields == nil {
+		e.Fields = map[string]any{}
 	}
-	e.Message[key] = value
+	e.Fields[key] = value
+	return e
+}
+
+// AddFields adds fields
+func (e *Error) AddFields(fields map[string]any) *Error {
+	if e.Fields == nil {
+		e.Fields = map[string]any{}
+	}
+	for key, value := range fields {
+		e.Fields[key] = value
+	}
 	return e
 }
 
@@ -91,7 +94,7 @@ func (e *Error) Unwrap() error {
 
 // MarshalJSON implements the json.Marshaler interface.
 func (e Error) MarshalJSON() ([]byte, error) {
-	jsonData := ErrParams{}
+	jsonData := map[string]any{}
 
 	if e.Meta == nil {
 		e.Meta = e.Err
@@ -117,7 +120,7 @@ func (e Error) MarshalJSON() ([]byte, error) {
 			}
 		default:
 			if _, ok := e.Meta.(error); !ok {
-				jsonData["message"] = e.Meta
+				jsonData["meta"] = e.Meta
 			}
 		}
 	}
@@ -125,21 +128,17 @@ func (e Error) MarshalJSON() ([]byte, error) {
 	if _, exists := jsonData["code"]; !exists {
 		jsonData["code"] = e.Code
 	}
+
 	if _, exists := jsonData["error"]; !exists && e.Error() != "" {
 		jsonData["error"] = e.Error()
 	}
 
-	if e.Message != nil {
-		if _, exists := jsonData["message"]; exists {
-			if value, ok := jsonData["message"].(map[string]any); ok {
-				for k, v := range e.Message {
-					value[k] = v
-				}
-			}
-		} else {
-			jsonData["message"] = e.Message
+	if e.Fields != nil {
+		for key, value := range e.Fields {
+			jsonData[key] = value
 		}
 	}
+
 	return json.Marshal(jsonData)
 }
 
