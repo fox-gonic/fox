@@ -1,16 +1,13 @@
 package fox
 
 import (
-	"encoding/json"
 	"net/http"
 	"reflect"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/fox-gonic/fox/httperrors"
 	"github.com/fox-gonic/fox/logger"
-	"github.com/fox-gonic/fox/render"
 	"github.com/fox-gonic/fox/utils"
 )
 
@@ -64,8 +61,8 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 				var (
 					handleName = utils.NameOfFunction(h)
 					start      = time.Now()
-					context    = &Context{Context: c, Logger: log}
-					res        = call(context, h)
+					ctx        = &Context{Context: c, Logger: log}
+					res        = call(ctx, h)
 					latency    = time.Since(start).String()
 				)
 
@@ -74,44 +71,13 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 					"type":    "HANDLER",
 				}
 
-				context.Logger.WithFields(fields).Info(handleName)
+				ctx.Logger.WithFields(fields).Info(handleName)
 
-				if context.IsAborted() {
+				if ctx.IsAborted() {
 					return
 				}
 
-				if res == nil {
-					return
-				}
-
-				switch r := res.(type) {
-				case error:
-					var code = 400
-					if e, ok := r.(httperrors.StatusCoder); ok {
-						code = e.StatusCode()
-					}
-					if e, ok := r.(json.Marshaler); ok {
-						c.JSON(code, e)
-					} else {
-						c.String(code, r.Error())
-					}
-				case string:
-					c.String(200, r)
-				case render.Redirect:
-					c.Redirect(r.Code, r.Location)
-				case render.YAML:
-					c.YAML(http.StatusOK, r.Data)
-				case render.XML:
-					c.XML(http.StatusOK, r.Data)
-				case render.HTML:
-					c.Render(http.StatusOK, r)
-				case render.Reader:
-					c.Render(http.StatusOK, r)
-				default:
-					c.JSON(http.StatusOK, r)
-				}
-
-				c.Abort()
+				ctx.render(res)
 			}
 		}
 

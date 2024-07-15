@@ -1,6 +1,6 @@
-all: gofmt govet golangci-lint golint test
+all: gofmt govet golangci-lint test
 
-check: gofmt govet golangci-lint golint test
+check: gofmt govet golangci-lint test
 
 gofmt:
 	gofmt -s -l . | tee .gofmt.log
@@ -12,11 +12,6 @@ govet:
 
 golangci-lint:
 	golangci-lint run --go=1.18 ./...
-
-golint:
-	golint ./... | tee .golint.log
-	test `cat .golint.log | wc -l` -eq 0
-	rm .golint.log
 
 test:
 	go test -v -coverprofile=coverage.txt -covermode=atomic ./...

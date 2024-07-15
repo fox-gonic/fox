@@ -2,17 +2,21 @@ package render
 
 import "github.com/gin-gonic/gin/render"
 
-// HTML alias for gin/render.HTML
-type HTML = render.HTML
-
-// YAML alias for gin/render.YAML
-type YAML = render.YAML
-
-// XML alias for gin/render.XML
-type XML = render.XML
-
-// Reader alias for gin/render.Reader
-type Reader = render.Reader
-
-// Redirect alias for gin/render.Redirect
-type Redirect = render.Redirect
+// render alias for gin/render.
+type (
+	Render       = render.Render
+	JSON         = render.JSON
+	IndentedJSON = render.IndentedJSON
+	SecureJSON   = render.SecureJSON
+	JsonpJSON    = render.JsonpJSON
+	XML          = render.XML
+	String       = render.String
+	Redirect     = render.Redirect
+	Data         = render.Data
+	HTML         = render.HTML
+	YAML         = render.YAML
+	Reader       = render.Reader
+	AsciiJSON    = render.AsciiJSON
+	ProtoBuf     = render.ProtoBuf
+	TOML         = render.TOML
+)

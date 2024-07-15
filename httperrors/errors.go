@@ -31,11 +31,6 @@ func New(httpCode int, text string, params ...ErrParams) *Error {
 	return err
 }
 
-// StatusCoder is a interface for http status code
-type StatusCoder interface {
-	StatusCode() int
-}
-
 // ErrParams error params
 type ErrParams map[string]any
 

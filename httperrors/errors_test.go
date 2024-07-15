@@ -36,7 +36,7 @@ func TestError(t *testing.T) {
 	}
 
 	{
-		err.SetMeta(ErrorInfo{
+		_ = err.SetMeta(ErrorInfo{
 			Err:   "invalid arguments",
 			Reqid: "F4CD:20C1B9:2894CD0:3468624:6692A040",
 			Details: []string{
@@ -49,7 +49,7 @@ func TestError(t *testing.T) {
 			IgnoreField:    "IgnoreField",
 		})
 
-		err.AddMessage("stack", "test")
+		_ = err.AddMessage("stack", "test")
 
 		data, e := json.Marshal(err)
 		assert.NoError(e)

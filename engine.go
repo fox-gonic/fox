@@ -3,6 +3,7 @@ package fox
 import (
 	"embed"
 	"io"
+	"net/http"
 	"os"
 
 	"github.com/gin-contrib/cors"
@@ -44,6 +45,9 @@ var DefaultWriter io.Writer = os.Stdout
 
 // DefaultErrorWriter is the default io.Writer used by Gin to debug errors
 var DefaultErrorWriter io.Writer = os.Stderr
+
+// DefaultRenderErrorStatusCode is the default http status code used for automatic rendering
+var DefaultRenderErrorStatusCode = http.StatusBadRequest
 
 // HandlerFunc is a function that can be registered to a route to handle HTTP
 // requests. Like http.HandlerFunc, but has a third parameter for the values of
