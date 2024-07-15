@@ -63,6 +63,8 @@ func (c *Context) render(res any) {
 		c.renderError(r)
 	case string:
 		c.String(http.StatusOK, r)
+	case render.Redirect:
+		c.Redirect(r.Code, r.Location)
 	case render.Render:
 		c.Render(http.StatusOK, r)
 	default:
