@@ -89,10 +89,13 @@ func (e *Error) Unwrap() error {
 	return e.Err
 }
 
-// JSON creates a properly formatted JSON
-func (e *Error) JSON() (any, error) {
-
+// MarshalJSON implements the json.Marshaler interface.
+func (e Error) MarshalJSON() ([]byte, error) {
 	jsonData := ErrParams{}
+
+	if e.Meta == nil {
+		e.Meta = e.Err
+	}
 
 	if e.Meta != nil {
 		value := reflect.ValueOf(e.Meta)
@@ -108,21 +111,20 @@ func (e *Error) JSON() (any, error) {
 			if err := decoder.Decode(e.Meta); err != nil {
 				return nil, err
 			}
-
 		case reflect.Map:
 			for _, key := range value.MapKeys() {
 				jsonData[key.String()] = value.MapIndex(key).Interface()
 			}
-
 		default:
-			jsonData["message"] = e.Meta
+			if _, ok := e.Meta.(error); !ok {
+				jsonData["message"] = e.Meta
+			}
 		}
 	}
 
 	if _, exists := jsonData["code"]; !exists {
 		jsonData["code"] = e.Code
 	}
-
 	if _, exists := jsonData["error"]; !exists && e.Error() != "" {
 		jsonData["error"] = e.Error()
 	}
@@ -138,30 +140,7 @@ func (e *Error) JSON() (any, error) {
 			jsonData["message"] = e.Message
 		}
 	}
-
-	return jsonData, nil
-}
-
-// MarshalJSON implements the json.Marshaler interface.
-func (e Error) MarshalJSON() ([]byte, error) {
-	v, err := e.JSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(v)
-}
-
-// GenerateUnknownError return a unknown error
-func GenerateUnknownError(err error, httpCode ...int) *Error {
-	var code = 500
-	if len(httpCode) > 0 {
-		code = httpCode[0]
-	}
-
-	return &Error{
-		HTTPCode: code,
-		Err:      err,
-	}
+	return json.Marshal(jsonData)
 }
 
 // As is errors.As
@@ -179,5 +158,13 @@ func Wrap(err error, httpCode ...int) (e *Error) {
 		return e
 	}
 
-	return GenerateUnknownError(err, httpCode...)
+	var code int
+	if len(httpCode) > 0 {
+		code = httpCode[0]
+	}
+
+	return &Error{
+		HTTPCode: code,
+		Err:      err,
+	}
 }

@@ -19,9 +19,12 @@ func (c *Context) renderError(err error) {
 		return
 	}
 
-	var code = DefaultRenderErrorStatusCode
+	var code int
 	if e, ok := err.(StatusCoder); ok {
 		code = e.StatusCode()
+	}
+	if code == 0 {
+		code = DefaultRenderErrorStatusCode
 	}
 
 	if r, ok := err.(render.Render); ok {

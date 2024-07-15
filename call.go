@@ -48,7 +48,6 @@ func call(ctx *Context, handler HandlerFunc) any {
 					HTTPCode: http.StatusBadRequest,
 					Err:      err,
 					Code:     "BIND_ERROR",
-					Message:  httperrors.ErrParams{"bind": err.Error()},
 				}
 				return msg
 			}
