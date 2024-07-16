@@ -21,6 +21,7 @@ var anyMethods = []string{
 // RouterGroup is gin.RouterGroup wrapper
 type RouterGroup struct {
 	router *gin.RouterGroup
+	engine *Engine
 }
 
 // handleWrapper gin.Handle wrapper
@@ -60,10 +61,14 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 
 				var (
 					handleName = utils.NameOfFunction(h)
-					start      = time.Now()
-					ctx        = &Context{Context: c, Logger: log}
-					res        = call(ctx, h)
-					latency    = time.Since(start).String()
+					ctx        = &Context{
+						Context: c,
+						engine:  group.engine,
+						Logger:  log,
+					}
+					start   = time.Now()
+					res     = call(ctx, h)
+					latency = time.Since(start).String()
 				)
 
 				fields := map[string]interface{}{
@@ -103,6 +108,7 @@ func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *R
 	handlersChain := group.handleWrapper(handlers...)
 	return &RouterGroup{
 		router: group.router.Group(relativePath, handlersChain...),
+		engine: group.engine,
 	}
 }
 

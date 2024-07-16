@@ -46,9 +46,6 @@ var DefaultWriter io.Writer = os.Stdout
 // DefaultErrorWriter is the default io.Writer used by Gin to debug errors
 var DefaultErrorWriter io.Writer = os.Stderr
 
-// DefaultRenderErrorStatusCode is the default http status code used for automatic rendering
-var DefaultRenderErrorStatusCode = http.StatusBadRequest
-
 // HandlerFunc is a function that can be registered to a route to handle HTTP
 // requests. Like http.HandlerFunc, but has a third parameter for the values of
 // wildcards (path variables).
@@ -75,6 +72,9 @@ type Engine struct {
 	*gin.Engine
 
 	RouterGroup
+
+	// DefaultRenderErrorStatusCode is the default http status code used for automatic rendering
+	DefaultRenderErrorStatusCode int
 }
 
 // New return engine instance
@@ -87,6 +87,10 @@ func New() *Engine {
 		Engine: gin.New(),
 	}
 	engine.RouterGroup.router = &engine.Engine.RouterGroup
+	engine.RouterGroup.engine = engine
+
+	engine.DefaultRenderErrorStatusCode = http.StatusBadRequest
+
 	engine.Use(NewXResponseTimer(), Logger(), gin.Recovery())
 	return engine
 }

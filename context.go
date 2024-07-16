@@ -13,6 +13,7 @@ import (
 type Context struct {
 	*gin.Context
 
+	engine *Engine
 	Logger logger.Logger
 }
 

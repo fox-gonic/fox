@@ -71,6 +71,15 @@ func (e *Error) AddField(key string, value any) *Error {
 	return e
 }
 
+// HasField checks if field exists
+func (e *Error) HasField(key string) bool {
+	if e.Fields == nil {
+		return false
+	}
+	_, ok := e.Fields[key]
+	return ok
+}
+
 // AddFields adds fields
 func (e *Error) AddFields(fields map[string]any) *Error {
 	if e.Fields == nil {

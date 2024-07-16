@@ -24,7 +24,7 @@ func (c *Context) renderError(err error) {
 		code = e.StatusCode()
 	}
 	if code == 0 {
-		code = DefaultRenderErrorStatusCode
+		code = c.engine.DefaultRenderErrorStatusCode
 	}
 
 	if r, ok := err.(render.Render); ok {
