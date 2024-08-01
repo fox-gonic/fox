@@ -13,8 +13,9 @@ import (
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 // New returns a new http Error object
-func New(httpCode int, text string) *Error {
+func New(httpCode int, format string, a ...any) *Error {
 
+	text := fmt.Sprintf(format, a...)
 	if text == "" {
 		text = http.StatusText(httpCode)
 	}
@@ -135,7 +136,11 @@ func (e Error) MarshalJSON() ([]byte, error) {
 	}
 
 	if _, exists := jsonData["code"]; !exists {
-		jsonData["code"] = e.Code
+		if e.Code != "" {
+			jsonData["code"] = e.Code
+		} else {
+			jsonData["code"] = fmt.Sprintf("%d", e.HTTPCode)
+		}
 	}
 
 	if _, exists := jsonData["error"]; !exists && e.Error() != "" {

@@ -3,7 +3,6 @@ package fox
 import (
 	"encoding/json"
 	"net/http"
-	"reflect"
 
 	"github.com/fox-gonic/fox/render"
 )
@@ -32,19 +31,7 @@ func (c *Context) renderError(err error) {
 		return
 	}
 
-	value := reflect.TypeOf(err)
-	if value.Kind() == reflect.Ptr {
-		value = value.Elem()
-	}
-
 	// TODO(m): render by writer content-type
-
-	switch value.Kind() {
-	case reflect.Struct, reflect.Map, reflect.Array, reflect.Slice:
-		c.JSON(code, err)
-		return
-	}
-
 	if e, ok := err.(json.Marshaler); ok {
 		c.JSON(code, e)
 	} else {
