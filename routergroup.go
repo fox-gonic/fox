@@ -3,7 +3,6 @@ package fox
 import (
 	"net/http"
 	"reflect"
-	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -60,23 +59,13 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 				}
 
 				var (
-					handleName = utils.NameOfFunction(h)
-					ctx        = &Context{
+					ctx = &Context{
 						Context: c,
 						engine:  group.engine,
 						Logger:  log,
 					}
-					start   = time.Now()
-					res     = call(ctx, h)
-					latency = time.Since(start).String()
+					res = call(ctx, h)
 				)
-
-				fields := map[string]interface{}{
-					"latency": latency,
-					"type":    "HANDLER",
-				}
-
-				ctx.Logger.WithFields(fields).Info(handleName)
 
 				if ctx.IsAborted() {
 					return
