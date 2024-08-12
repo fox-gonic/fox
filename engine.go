@@ -84,13 +84,19 @@ func New() *Engine {
 	binding.Validator = new(DefaultValidator)
 
 	engine := &Engine{
-		Engine: gin.New(),
+		Engine:                       gin.New(),
+		DefaultRenderErrorStatusCode: http.StatusBadRequest,
 	}
+
 	engine.RouterGroup.router = &engine.Engine.RouterGroup
 	engine.RouterGroup.engine = engine
 
-	engine.DefaultRenderErrorStatusCode = http.StatusBadRequest
+	return engine
+}
 
+// Default return an Engine instance with Logger and Recovery middleware already attached
+func Default() *Engine {
+	engine := New()
 	engine.Use(NewXResponseTimer(), Logger(), gin.Recovery())
 	return engine
 }

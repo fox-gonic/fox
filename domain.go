@@ -17,14 +17,30 @@ type domain struct {
 type DomainEngine struct {
 	*Engine
 
+	GetEngine func() *Engine
+
 	domains []*domain
 }
 
 // NewDomainEngine new domain engine
-func NewDomainEngine() *DomainEngine {
-	return &DomainEngine{
-		Engine: New(),
+func NewDomainEngine(get ...func() *Engine) *DomainEngine {
+
+	de := &DomainEngine{}
+
+	if len(get) > 0 {
+		de.GetEngine = get[0]
+	} else {
+		de.GetEngine = Default
 	}
+
+	de.Engine = de.GetEngine()
+
+	return de
+}
+
+// NewDefaultDomainEngine new default domain engine
+func NewDefaultDomainEngine() *DomainEngine {
+	return NewDomainEngine(Default)
 }
 
 // Domain add domain handler
@@ -54,7 +70,7 @@ func (engine *DomainEngine) server(name string, isRegexp bool, engineFunc func(*
 		domain.Regexp = req
 	}
 
-	subEngine := New()
+	subEngine := engine.GetEngine()
 	engineFunc(subEngine)
 
 	domain.Handler = subEngine
