@@ -1,6 +1,7 @@
 package fox
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -17,7 +18,7 @@ type XResponseTimer struct {
 
 // WriteHeader implement http.ResponseWriter
 func (w *XResponseTimer) WriteHeader(statusCode int) {
-	w.Header().Set(w.key, time.Since(w.start).String())
+	w.Header().Set(w.key, fmt.Sprintf("%d, %d", w.start.UnixMilli(), time.Since(w.start).Nanoseconds()))
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 
