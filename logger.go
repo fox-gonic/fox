@@ -74,7 +74,9 @@ func Logger(config ...LoggerConfig) gin.HandlerFunc {
 				"latency":   time.Since(start).String(),
 			}
 
-			log.WithFields(fields).Info("[ROUTE]")
+			errorMessage := c.Errors.ByType(gin.ErrorTypePrivate).String()
+
+			log.WithFields(fields).Info(errorMessage)
 		}
 	}
 }
