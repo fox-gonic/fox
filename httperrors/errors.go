@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/mitchellh/mapstructure"
@@ -14,15 +15,13 @@ var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 // New returns a new http Error object
 func New(httpCode int, format string, a ...any) *Error {
-
-	text := fmt.Sprintf(format, a...)
-	if text == "" {
-		text = http.StatusText(httpCode)
+	if strings.TrimSpace(format) == "" {
+		format = http.StatusText(httpCode)
 	}
 
 	return &Error{
 		HTTPCode: httpCode,
-		Err:      errors.New(text),
+		Err:      fmt.Errorf(format, a...),
 	}
 }
 
@@ -43,6 +42,24 @@ func (e *Error) Error() string {
 		return ""
 	}
 	return fmt.Sprintf("(%d): %s", e.HTTPCode, e.Err.Error())
+}
+
+func (e *Error) Clone() *Error {
+	err := &Error{
+		HTTPCode: e.HTTPCode,
+		Err:      e.Err,
+		Code:     e.Code,
+		Meta:     e.Meta,
+	}
+
+	if e.Fields != nil {
+		err.Fields = make(map[string]any, len(e.Fields))
+	}
+
+	for k, v := range e.Fields {
+		err.Fields[k] = v
+	}
+	return err
 }
 
 // SetHTTPCode sets the error's http code.
@@ -102,6 +119,13 @@ func (e *Error) Unwrap() error {
 	return e.Err
 }
 
+func (e *Error) Is(target error) bool {
+	if t, ok := target.(*Error); ok {
+		return errors.Is(e.Err, t.Err)
+	}
+	return errors.Is(e.Err, target)
+}
+
 // MarshalJSON implements the json.Marshaler interface.
 func (e Error) MarshalJSON() ([]byte, error) {
 	jsonData := map[string]any{}
@@ -129,7 +153,9 @@ func (e Error) MarshalJSON() ([]byte, error) {
 				jsonData[key.String()] = value.MapIndex(key).Interface()
 			}
 		default:
-			if _, ok := e.Meta.(error); !ok {
+			if err, ok := e.Meta.(error); ok {
+				jsonData["meta"] = err.Error()
+			} else {
 				jsonData["meta"] = e.Meta
 			}
 		}
@@ -159,25 +185,4 @@ func (e Error) MarshalJSON() ([]byte, error) {
 // As is errors.As
 func As(err error) (t *Error, ok bool) {
 	return t, errors.As(err, &t)
-}
-
-// Wrap httperrors wrapper helper
-func Wrap(err error, httpCode ...int) (e *Error) {
-	if err == nil {
-		return nil
-	}
-
-	if errors.As(err, &e) {
-		return e
-	}
-
-	var code int
-	if len(httpCode) > 0 {
-		code = httpCode[0]
-	}
-
-	return &Error{
-		HTTPCode: code,
-		Err:      err,
-	}
 }
