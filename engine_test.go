@@ -78,7 +78,7 @@ func TestEngine(t *testing.T) {
 	assert.Equal(http.StatusBadRequest, w.Code)
 
 	body := w.Body.String()
-	assert.Equal(`{"code":"INVALID_ARGUMENTS","error":"(400): invalid arguments"}`, body)
+	assert.Equal(`{"code":"INVALID_ARGUMENTS","error":"(400): invalid arguments","meta":"invalid arguments"}`, body)
 
 	w = httptest.NewRecorder()
 	req = httptest.NewRequest("GET", "/ping2", nil)
