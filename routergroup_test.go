@@ -10,12 +10,12 @@ import (
 	"github.com/fox-gonic/fox"
 )
 
-func foo(c *fox.Context) (res interface{}, err error) {
+func foo(c *fox.Context) (res any, err error) {
 	res = "foo"
 	return
 }
 
-func boo(c *fox.Context) (res interface{}, err error) {
+func boo(c *fox.Context) (res any, err error) {
 	res = "boo"
 	return
 }

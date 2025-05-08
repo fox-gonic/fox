@@ -40,22 +40,22 @@ var DefaultGenRequestID func() string = func() string {
 // Logger logger methods
 type Logger interface {
 	// STD log
-	Debug(arguments ...interface{})
-	Info(arguments ...interface{})
-	Warn(arguments ...interface{})
-	Error(arguments ...interface{})
-	Fatal(arguments ...interface{})
-	Panic(arguments ...interface{})
-	Debugf(format string, arguments ...interface{})
-	Infof(format string, arguments ...interface{})
-	Warnf(format string, arguments ...interface{})
-	Errorf(format string, arguments ...interface{})
-	Fatalf(format string, arguments ...interface{})
-	Panicf(format string, arguments ...interface{})
+	Debug(arguments ...any)
+	Info(arguments ...any)
+	Warn(arguments ...any)
+	Error(arguments ...any)
+	Fatal(arguments ...any)
+	Panic(arguments ...any)
+	Debugf(format string, arguments ...any)
+	Infof(format string, arguments ...any)
+	Warnf(format string, arguments ...any)
+	Errorf(format string, arguments ...any)
+	Fatalf(format string, arguments ...any)
+	Panicf(format string, arguments ...any)
 
 	// Field logger
-	WithField(key string, value interface{}) Logger
-	WithFields(fields map[string]interface{}) Logger
+	WithField(key string, value any) Logger
+	WithFields(fields map[string]any) Logger
 	WithError(err error) Logger
 
 	// Set level
@@ -151,62 +151,62 @@ type Log struct {
 }
 
 // Debug debug level
-func (l *Log) Debug(arguments ...interface{}) {
+func (l *Log) Debug(arguments ...any) {
 	l.log.Debug().Msg(fmt.Sprint(arguments...))
 }
 
 // Info info level
-func (l *Log) Info(arguments ...interface{}) {
+func (l *Log) Info(arguments ...any) {
 	l.log.Info().Msg(fmt.Sprint(arguments...))
 }
 
 // Warn warn level
-func (l *Log) Warn(arguments ...interface{}) {
+func (l *Log) Warn(arguments ...any) {
 	l.log.Warn().Msg(fmt.Sprint(arguments...))
 }
 
 // Error error level
-func (l *Log) Error(arguments ...interface{}) {
+func (l *Log) Error(arguments ...any) {
 	l.log.Error().Msg(fmt.Sprint(arguments...))
 }
 
 // Fatal fatal level
-func (l *Log) Fatal(arguments ...interface{}) {
+func (l *Log) Fatal(arguments ...any) {
 	l.log.Fatal().Msg(fmt.Sprint(arguments...))
 }
 
 // Panic panic level
-func (l *Log) Panic(arguments ...interface{}) {
+func (l *Log) Panic(arguments ...any) {
 	l.log.Panic().Msg(fmt.Sprint(arguments...))
 }
 
 // Debugf debug format
-func (l *Log) Debugf(format string, arguments ...interface{}) {
+func (l *Log) Debugf(format string, arguments ...any) {
 	l.log.Debug().Msg(fmt.Sprintf(format, arguments...))
 }
 
 // Infof info format
-func (l *Log) Infof(format string, arguments ...interface{}) {
+func (l *Log) Infof(format string, arguments ...any) {
 	l.log.Info().Msg(fmt.Sprintf(format, arguments...))
 }
 
 // Warnf warn format
-func (l *Log) Warnf(format string, arguments ...interface{}) {
+func (l *Log) Warnf(format string, arguments ...any) {
 	l.log.Warn().Msg(fmt.Sprintf(format, arguments...))
 }
 
 // Errorf error format
-func (l *Log) Errorf(format string, arguments ...interface{}) {
+func (l *Log) Errorf(format string, arguments ...any) {
 	l.log.Error().Msg(fmt.Sprintf(format, arguments...))
 }
 
 // Fatalf fatal format
-func (l *Log) Fatalf(format string, arguments ...interface{}) {
+func (l *Log) Fatalf(format string, arguments ...any) {
 	l.log.Fatal().Msg(fmt.Sprintf(format, arguments...))
 }
 
 // Panicf panic format
-func (l *Log) Panicf(format string, arguments ...interface{}) {
+func (l *Log) Panicf(format string, arguments ...any) {
 	l.log.Panic().Msg(fmt.Sprintf(format, arguments...))
 }
 
@@ -219,8 +219,8 @@ func (l *Log) WithContext(ctx ...context.Context) context.Context {
 }
 
 // WithField add new field
-func (l *Log) WithField(key string, value interface{}) Logger {
-	log := l.log.With().Fields(map[string]interface{}{key: value}).Logger()
+func (l *Log) WithField(key string, value any) Logger {
+	log := l.log.With().Fields(map[string]any{key: value}).Logger()
 	return &Log{
 		log:     &log,
 		traceID: l.traceID,
@@ -228,7 +228,7 @@ func (l *Log) WithField(key string, value interface{}) Logger {
 }
 
 // WithFields add new fields
-func (l *Log) WithFields(fields map[string]interface{}) Logger {
+func (l *Log) WithFields(fields map[string]any) Logger {
 	log := l.log.With().Fields(fields).Logger()
 	return &Log{
 		log:     &log,
@@ -269,72 +269,72 @@ func (l *Log) TraceID() string {
 }
 
 // Debug debug level
-func Debug(arguments ...interface{}) {
+func Debug(arguments ...any) {
 	std.Debug(arguments)
 }
 
 // Info info level
-func Info(arguments ...interface{}) {
+func Info(arguments ...any) {
 	std.Info(arguments)
 }
 
 // Warn warn level
-func Warn(arguments ...interface{}) {
+func Warn(arguments ...any) {
 	std.Warn(arguments)
 }
 
 // Error error level
-func Error(arguments ...interface{}) {
+func Error(arguments ...any) {
 	std.Error(arguments)
 }
 
 // Fatal fatal level
-func Fatal(arguments ...interface{}) {
+func Fatal(arguments ...any) {
 	std.Fatal(arguments)
 }
 
 // Panic panic level
-func Panic(arguments ...interface{}) {
+func Panic(arguments ...any) {
 	std.Panic(arguments)
 }
 
 // Debugf debug format
-func Debugf(format string, arguments ...interface{}) {
+func Debugf(format string, arguments ...any) {
 	std.Debugf(format, arguments...)
 }
 
 // Infof info format
-func Infof(format string, arguments ...interface{}) {
+func Infof(format string, arguments ...any) {
 	std.Infof(format, arguments...)
 }
 
 // Warnf warn format
-func Warnf(format string, arguments ...interface{}) {
+func Warnf(format string, arguments ...any) {
 	std.Warnf(format, arguments...)
 }
 
 // Errorf error format
-func Errorf(format string, arguments ...interface{}) {
+func Errorf(format string, arguments ...any) {
 	std.Errorf(format, arguments...)
 }
 
 // Fatalf fatal format
-func Fatalf(format string, arguments ...interface{}) {
+func Fatalf(format string, arguments ...any) {
 	std.Fatalf(format, arguments...)
 }
 
 // Panicf panic format
-func Panicf(format string, arguments ...interface{}) {
+func Panicf(format string, arguments ...any) {
 	std.Panicf(format, arguments...)
 }
 
 // WithField add new field
-func WithField(key string, value interface{}) Logger {
+func WithField(key string, value any) Logger {
 	return std.WithField(key, value)
 }
 
 // WithFields add new fields
-func WithFields(fields map[string]interface{}) Logger {
+func WithFields(fields map[string]any) Logger {
 	return std.WithFields(fields)
 }
 

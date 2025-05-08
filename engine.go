@@ -54,10 +54,12 @@ var DefaultErrorWriter io.Writer = os.Stderr
 // func(ctx *Context) (any, err) { ... }
 // func(ctx *Context, args *AutoBindingArgType) (any) { ... }
 // func(ctx *Context, args *AutoBindingArgType) (any, err) { ... }
-type HandlerFunc interface{}
+type HandlerFunc any
 
 // HandlersChain defines a HandlerFunc slice.
 type HandlersChain []HandlerFunc
+
+var Recovery = gin.Recovery
 
 // Last returns the last handler in the chain. i.e. the last handler is the main one.
 func (c HandlersChain) Last() HandlerFunc {
@@ -97,7 +99,7 @@ func New() *Engine {
 // Default return an Engine instance with Logger and Recovery middleware already attached
 func Default() *Engine {
 	engine := New()
-	engine.Use(NewXResponseTimer(), Logger(), gin.Recovery())
+	engine.Use(NewXResponseTimer(), Logger(), Recovery())
 	return engine
 }
 

@@ -65,7 +65,7 @@ func Logger(config ...LoggerConfig) gin.HandlerFunc {
 				path = path + "?" + raw
 			}
 
-			fields := map[string]interface{}{
+			fields := map[string]any{
 				"method":    c.Request.Method,
 				"path":      path,
 				"client_ip": c.ClientIP(),

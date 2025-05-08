@@ -34,7 +34,7 @@ var bodyBinders = map[string]binding.BindingBody{
 }
 
 // bind request arguments
-func bind(ctx *Context, obj interface{}) (err error) {
+func bind(ctx *Context, obj any) (err error) {
 
 	vPtr := reflect.ValueOf(obj)
 

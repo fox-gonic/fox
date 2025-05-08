@@ -18,14 +18,14 @@ type Foo struct {
 	B string
 }
 
-func MiddlewareFailed(c *fox.Context) (res interface{}, err error) {
+func MiddlewareFailed(c *fox.Context) (res any, err error) {
 	c.Logger.Info("MiddlewareFailed")
 	res = "Middleware"
 	err = httperrors.ErrInvalidArguments
 	return
 }
 
-func MiddlewareSuccess(c *fox.Context) (res interface{}, err error) {
+func MiddlewareSuccess(c *fox.Context) (res any, err error) {
 	c.Logger.Info("MiddlewareSuccess")
 	return
 }
@@ -37,25 +37,25 @@ type TestInput struct {
 	Body string `json:"body"`
 }
 
-func HandleSuccess(c *fox.Context, in TestInput) (res interface{}, err error) {
+func HandleSuccess(c *fox.Context, in TestInput) (res any, err error) {
 	res = in
 	return
 }
 
-func HandleFailed(c *fox.Context, in *TestInput) (interface{}, error) {
+func HandleFailed(c *fox.Context, in *TestInput) (any, error) {
 	err := &httperrors.Error{
 		HTTPCode: http.StatusBadRequest,
 		Code:     httperrors.ErrInvalidArguments.Code,
 	}
 
-	_ = err.AddField("message", map[string]interface{}{
+	_ = err.AddField("message", map[string]any{
 		"param": "invalid param " + in.Param,
 	})
 
 	return nil, err
 }
 
-func Ping(c *fox.Context) (res interface{}, err error) {
+func Ping(c *fox.Context) (res any, err error) {
 	c.Logger.Info("PingHandler")
 	res = Foo{"a", "b"}
 	return
