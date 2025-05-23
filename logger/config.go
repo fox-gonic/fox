@@ -22,28 +22,28 @@ func init() {
 // Config for logging
 type Config struct {
 	// log level
-	LogLevel Level `mapstructure:"log_level"`
+	LogLevel Level `json:"log_level" yaml:"log_level" mapstructure:"log_level"`
 
 	// Enable console logging
-	ConsoleLoggingEnabled bool `mapstructure:"console_logging_enabled"`
+	ConsoleLoggingEnabled bool `json:"console_logging_enabled" yaml:"console_logging_enabled" mapstructure:"console_logging_enabled"`
 
 	// EncodeLogsAsJSON makes the log framework log JSON
-	EncodeLogsAsJSON bool `mapstructure:"encode_logs_as_json"`
+	EncodeLogsAsJSON bool `json:"encode_logs_as_json" yaml:"encode_logs_as_json" mapstructure:"encode_logs_as_json"`
 
 	// FileLoggingEnabled makes the framework log to a file, the fields below can be skipped if this value is false!
-	FileLoggingEnabled bool `mapstructure:"file_logging_enabled"`
+	FileLoggingEnabled bool `json:"file_logging_enabled" yaml:"file_logging_enabled" mapstructure:"file_logging_enabled"`
 
 	// Filename is the name of the logfile which will be placed inside the directory
-	Filename string `mapstructure:"filename"`
+	Filename string `json:"filename" yaml:"filename" mapstructure:"filename"`
 
 	// MaxSize the max size in MB of the logfile before it's rolled
-	MaxSize int `mapstructure:"max_size"`
+	MaxSize int `json:"max_size" yaml:"max_size" mapstructure:"max_size"`
 
 	// MaxBackups the max number of rolled files to keep
-	MaxBackups int `mapstructure:"max_backups"`
+	MaxBackups int `json:"max_backups" yaml:"max_backups" mapstructure:"max_backups"`
 
 	// MaxAge the max age in days to keep a logfile
-	MaxAge int `mapstructure:"max_age"`
+	MaxAge int `json:"max_age" yaml:"max_age" mapstructure:"max_age"`
 
 	rollingWrite io.Writer
 }
