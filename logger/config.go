@@ -48,14 +48,14 @@ type Config struct {
 	rollingWrite io.Writer
 }
 
-var config = &Config{
+var config = Config{
 	ConsoleLoggingEnabled: true,
 	EncodeLogsAsJSON:      false,
 	FileLoggingEnabled:    false,
 }
 
 // SetConfig set logger config
-func SetConfig(cfg *Config) {
+func SetConfig(cfg Config) {
 
 	config = cfg
 
