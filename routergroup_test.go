@@ -20,6 +20,11 @@ func boo(c *fox.Context) (res any, err error) {
 	return
 }
 
+func tooManyValues(c *fox.Context) (res any, other any, err error) {
+	res = "too many values"
+	return
+}
+
 func TestRouterGroup(t *testing.T) {
 
 	assert := assert.New(t)
@@ -42,4 +47,20 @@ func TestRouterGroup(t *testing.T) {
 	router.ServeHTTP(w, req)
 	assert.Equal(http.StatusOK, w.Code)
 	assert.Equal("boo", w.Body.String())
+}
+
+func TestRouterGroupPanic(t *testing.T) {
+	assert := assert.New(t)
+
+	defer func() {
+		if r := recover(); r != nil {
+			assert.Contains(r.(string), "only support handler func returns max is two values")
+		} else {
+			t.Error("expected panic did not occur")
+		}
+	}()
+
+	router := fox.New()
+	api := router.Group("/api")
+	api.GET("too-many-values", tooManyValues)
 }

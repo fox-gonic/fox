@@ -3,6 +3,7 @@ package fox
 import (
 	"net/http"
 	"reflect"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -30,8 +31,15 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 
 	for _, handler := range handlers {
 
-		if reflect.TypeOf(handler).Kind() != reflect.Func {
-			panic("handler must be a callable function")
+		handlerType := reflect.TypeOf(handler)
+
+		if handlerType.Kind() != reflect.Func {
+			panic("handler must be a callable function, but got " + handlerType.String())
+		}
+
+		numOut := handlerType.NumOut()
+		if numOut > 2 {
+			panic("only support handler func returns max is two values, but got " + strconv.Itoa(numOut))
 		}
 
 		f := func(h HandlerFunc) gin.HandlerFunc {
