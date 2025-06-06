@@ -55,9 +55,9 @@ var config = Config{
 }
 
 // SetConfig set logger config
-func SetConfig(cfg Config) {
+func SetConfig(cfg *Config) {
 
-	config = cfg
+	config = *cfg
 
 	DefaultLogLevel = cfg.LogLevel
 
