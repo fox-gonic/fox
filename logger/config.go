@@ -48,7 +48,7 @@ type Config struct {
 	rollingWrite io.Writer
 }
 
-var config = &Config{
+var config = Config{
 	ConsoleLoggingEnabled: true,
 	EncodeLogsAsJSON:      false,
 	FileLoggingEnabled:    false,
@@ -57,7 +57,7 @@ var config = &Config{
 // SetConfig set logger config
 func SetConfig(cfg *Config) {
 
-	config = cfg
+	config = *cfg
 
 	DefaultLogLevel = cfg.LogLevel
 

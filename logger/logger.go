@@ -19,6 +19,11 @@ const (
 	TraceIDKey key = 0
 )
 
+// NewWithConfig return logger with config
+func NewWithConfig(cfg Config, traceID ...string) Logger {
+	return newLogger(cfg, traceID...)
+}
+
 // NewContext return context with reqid
 func NewContext(ctx context.Context, reqID string) context.Context {
 	return context.WithValue(ctx, TraceIDKey, reqID)
@@ -72,11 +77,13 @@ type Logger interface {
 }
 
 // New return logger
-var New func(traceID ...string) Logger = newLogger
+var New func(traceID ...string) Logger = func(traceID ...string) Logger {
+	return newLogger(config, traceID...)
+}
 
 // NewWithoutCaller new log without caller field
 func NewWithoutCaller(reqID ...string) Logger {
-	return newLogger(reqID...)
+	return newLogger(config, reqID...)
 }
 
 // NewWithContext return logger with context
@@ -93,7 +100,7 @@ func NewWithContext(ctx context.Context) Logger {
 		}
 	}
 
-	log := newLogger(traceID)
+	log := newLogger(config, traceID)
 	l := log.(*Log)
 	zl := l.log.With().CallerWithSkipFrameCount(3).Logger()
 	l.log = &zl
@@ -102,7 +109,7 @@ func NewWithContext(ctx context.Context) Logger {
 }
 
 // newLogger return Logger
-func newLogger(traceID ...string) Logger {
+func newLogger(cfg Config, traceID ...string) Logger {
 
 	var trace string
 	if len(traceID) > 0 {
@@ -111,19 +118,19 @@ func newLogger(traceID ...string) Logger {
 
 	var writers []io.Writer
 
-	if config.ConsoleLoggingEnabled {
-		if config.EncodeLogsAsJSON {
+	if cfg.ConsoleLoggingEnabled {
+		if cfg.EncodeLogsAsJSON {
 			writers = append(writers, os.Stderr)
 		} else {
 			writers = append(writers, zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: DefaultLogTimeFormat})
 		}
 	}
 
-	if config.FileLoggingEnabled {
+	if cfg.FileLoggingEnabled {
 		if config.EncodeLogsAsJSON {
-			writers = append(writers, config.rollingWrite)
+			writers = append(writers, cfg.rollingWrite)
 		} else {
-			writers = append(writers, zerolog.ConsoleWriter{Out: config.rollingWrite, TimeFormat: DefaultLogTimeFormat})
+			writers = append(writers, zerolog.ConsoleWriter{Out: cfg.rollingWrite, TimeFormat: DefaultLogTimeFormat})
 		}
 	}
 
@@ -135,7 +142,13 @@ func newLogger(traceID ...string) Logger {
 		c = c.Str(TraceID, trace)
 	}
 
-	l := c.Logger().Level(zerolog.Level(DefaultLogLevel))
+	// TODO: Consider using pointer type or string type for Level to distinguish
+	// between unset (nil) and explicitly set to 0 (DebugLevel).
+	// Current implementation using int8 cannot differentiate between:
+	// 1. Level not being set (should be nil)
+	// 2. Level explicitly set to 0 (DebugLevel).
+	// This could lead to ambiguity in log level configuration.
+	l := c.Logger().Level(zerolog.Level(cfg.LogLevel))
 
 	log := &Log{log: &l, traceID: trace}
 
