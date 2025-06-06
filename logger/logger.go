@@ -142,13 +142,7 @@ func newLogger(cfg Config, traceID ...string) Logger {
 		c = c.Str(TraceID, trace)
 	}
 
-	// TODO: Consider using pointer type or string type for Level to distinguish
-	// between unset (nil) and explicitly set to 0 (DebugLevel).
-	// Current implementation using int8 cannot differentiate between:
-	// 1. Level not being set (should be nil)
-	// 2. Level explicitly set to 0 (DebugLevel).
-	// This could lead to ambiguity in log level configuration.
-	l := c.Logger().Level(zerolog.Level(cfg.LogLevel))
+	l := c.Logger().Level(cfg.LogLevel.ZerologLevel())
 
 	log := &Log{log: &l, traceID: trace}
 
@@ -260,7 +254,7 @@ func (l *Log) WithError(err error) Logger {
 
 // SetLevel set level
 func (l *Log) SetLevel(level Level) Logger {
-	zl := l.log.Level(zerolog.Level(DefaultLogLevel))
+	zl := l.log.Level(level.ZerologLevel())
 	return &Log{
 		log:     &zl,
 		traceID: l.traceID,
