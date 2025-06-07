@@ -108,3 +108,156 @@ func TestEngine(t *testing.T) {
 	assert.Equal(http.StatusBadRequest, w.Code)
 	assert.Equal(`{"code":"INVALID_ARGUMENTS","message":{"param":"invalid param hello"}}`, w.Body.String())
 }
+
+type TestRequest struct {
+	Name string
+	Age  int
+}
+
+// CustomError is a custom error type for testing
+type CustomError struct {
+	Code    int
+	Message string
+}
+
+func (e *CustomError) Error() string {
+	return e.Message
+}
+
+// HTTPError is another custom error type for testing
+type HTTPError struct {
+	Status  int
+	Message string
+}
+
+func (e *HTTPError) Error() string {
+	return e.Message
+}
+
+func TestIsValidHandlerFunc(t *testing.T) {
+	tests := []struct {
+		name     string
+		handler  fox.HandlerFunc
+		expected bool
+	}{
+		{
+			name:     "Empty function",
+			handler:  func() {},
+			expected: true,
+		},
+		{
+			name:     "Only Context parameter",
+			handler:  func(ctx *fox.Context) string { return "" },
+			expected: true,
+		},
+		{
+			name:     "Context parameter with error return",
+			handler:  func(ctx *fox.Context) (int, error) { return 0, nil },
+			expected: true,
+		},
+		{
+			name:     "Context with struct parameter",
+			handler:  func(ctx *fox.Context, args TestRequest) string { return "" },
+			expected: true,
+		},
+		{
+			name:     "Context with struct pointer parameter",
+			handler:  func(ctx *fox.Context, args *TestRequest) int { return 0 },
+			expected: true,
+		},
+		{
+			name:     "Context with map parameter",
+			handler:  func(ctx *fox.Context, args map[string]any) bool { return true },
+			expected: true,
+		},
+		{
+			name:     "Context with map parameter and error return",
+			handler:  func(ctx *fox.Context, args map[string]any) ([]byte, error) { return nil, nil },
+			expected: true,
+		},
+		{
+			name:     "Too many parameters",
+			handler:  func(ctx *fox.Context, args TestRequest, extra int) string { return "" },
+			expected: false,
+		},
+		{
+			name:     "Too many return values",
+			handler:  func(ctx *fox.Context) (string, int, error) { return "", 0, nil },
+			expected: false,
+		},
+		{
+			name:     "First parameter is not Context",
+			handler:  func(ctx string) string { return "" },
+			expected: false,
+		},
+		{
+			name:     "Second parameter is not struct or map",
+			handler:  func(ctx *fox.Context, args int) string { return "" },
+			expected: false,
+		},
+		{
+			name:     "Second return value is not error",
+			handler:  func(ctx *fox.Context) (string, string) { return "", "" },
+			expected: false,
+		},
+		{
+			name:     "Not a function type",
+			handler:  "not a function",
+			expected: false,
+		},
+		{
+			name:     "Context parameter is not pointer type",
+			handler:  func(ctx fox.Context) string { return "" },
+			expected: false,
+		},
+		{
+			name:     "Context parameter is not pointer type with error return",
+			handler:  func(ctx fox.Context) (string, error) { return "", nil },
+			expected: false,
+		},
+		{
+			name:     "Context parameter is not pointer type with struct parameter",
+			handler:  func(ctx fox.Context, args TestRequest) string { return "" },
+			expected: false,
+		},
+		{
+			name:     "Context parameter is not pointer type with map parameter",
+			handler:  func(ctx fox.Context, args map[string]any) string { return "" },
+			expected: false,
+		},
+		{
+			name:     "Custom error return type",
+			handler:  func(ctx *fox.Context) (string, *CustomError) { return "", nil },
+			expected: true,
+		},
+		{
+			name:     "HTTP error return type",
+			handler:  func(ctx *fox.Context) (int, *HTTPError) { return 0, nil },
+			expected: true,
+		},
+		{
+			name:     "Custom error with struct parameter",
+			handler:  func(ctx *fox.Context, args TestRequest) (bool, *CustomError) { return true, nil },
+			expected: true,
+		},
+		{
+			name:     "HTTP error with map parameter",
+			handler:  func(ctx *fox.Context, args map[string]any) ([]byte, *HTTPError) { return nil, nil },
+			expected: true,
+		},
+		{
+			name:     "Non-error second return type",
+			handler:  func(ctx *fox.Context) (string, string) { return "", "" },
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := fox.IsValidHandlerFunc(tt.handler)
+			if result != tt.expected {
+				t.Errorf("IsValidHandlerFunc() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}

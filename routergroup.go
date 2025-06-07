@@ -1,9 +1,9 @@
 package fox
 
 import (
+	"fmt"
 	"net/http"
 	"reflect"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -11,46 +11,35 @@ import (
 	"github.com/fox-gonic/fox/utils"
 )
 
-// anyMethods for RouterGroup Any method
+// anyMethods for RouterGroup Any method.
 var anyMethods = []string{
 	http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch,
 	http.MethodHead, http.MethodOptions, http.MethodDelete, http.MethodConnect,
 	http.MethodTrace,
 }
 
-// RouterGroup is gin.RouterGroup wrapper
+// RouterGroup is gin.RouterGroup wrapper.
 type RouterGroup struct {
 	router *gin.RouterGroup
 	engine *Engine
 }
 
-// handleWrapper gin.Handle wrapper
+// handleWrapper gin.Handle wrapper.
 func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersChain {
-
 	var handlersChain gin.HandlersChain
 
 	for _, handler := range handlers {
-
-		handlerType := reflect.TypeOf(handler)
-
-		if handlerType.Kind() != reflect.Func {
-			panic("handler must be a callable function, but got " + handlerType.String())
-		}
-
-		numOut := handlerType.NumOut()
-		if numOut > 2 {
-			panic("only support handler func returns max is two values, but got " + strconv.Itoa(numOut))
+		if !IsValidHandlerFunc(handler) {
+			panic(fmt.Sprintf(ErrInvalidHandlerType, reflect.TypeOf(handler).String(), utils.NameOfFunction(handler)))
 		}
 
 		f := func(h HandlerFunc) gin.HandlerFunc {
-
 			// support use gin middleware
 			if ginHandler, ok := h.(gin.HandlerFunc); ok {
 				return ginHandler
 			}
 
 			return func(c *gin.Context) {
-
 				xRequestID := c.Writer.Header().Get(logger.TraceID)
 				if xRequestID == "" {
 					xRequestID = logger.DefaultGenRequestID()
@@ -109,7 +98,7 @@ func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *R
 	}
 }
 
-// Handle gin.Handle wrapper
+// Handle gin.Handle wrapper.
 func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers ...HandlerFunc) gin.IRoutes {
 	handlersChain := group.handleWrapper(handlers...)
 
