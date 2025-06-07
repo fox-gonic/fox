@@ -57,17 +57,24 @@ var ErrInvalidHandlerType = "invalid handler type: %s\n" +
 	"4. func(ctx *Context, args S) T\n" +
 	"5. func(ctx *Context, args S) (T, error)\n" +
 	"Where:\n" +
-	"- T can be any type, T will be auto render to response body\n" +
 	"- S can be struct or map type, S will be auto binding from request body\n" +
+	"- T can be any type, T will be auto render to response body\n" +
 	"- error can be any type that implements error interface"
 
 // HandlerFunc is a function that can be registered to a route to handle HTTP requests.
-// Like http.HandlerFunc, but has a third parameter for the values of wildcards (path variables).
-// func(){}
-// func(ctx *Context) T { ... }
-// func(ctx *Context) (T, err) { ... }
-// func(ctx *Context, args S) (T) { ... }
-// func(ctx *Context, args S) (T, error) { ... }
+// Like http.HandlerFunc, but support auto binding and auto render.
+//
+// Support handler types:
+//  1. func(){}
+//  2. func(ctx *Context) T { ... }
+//  3. func(ctx *Context) (T, error) { ... }
+//  4. func(ctx *Context, args S) T { ... }
+//  5. func(ctx *Context, args S) (T, error) { ... }
+//
+// Where:
+//   - S can be struct or map type, S will be auto binding from request body
+//   - T can be any type, T will be auto render to response body
+//   - error can be any type that implements error interface
 type HandlerFunc any
 
 // HandlersChain defines a HandlerFunc slice.
