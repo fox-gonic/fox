@@ -43,3 +43,19 @@ func TestRouterGroup(t *testing.T) {
 	assert.Equal(http.StatusOK, w.Code)
 	assert.Equal("boo", w.Body.String())
 }
+
+func TestRouterGroupHandleInvalidHandler(t *testing.T) {
+	router := fox.New()
+
+	assert.Panics(t, func() {
+		router.GET("too-many-values", func(c *fox.Context) (res any, other any, err error) { return })
+	})
+
+	assert.Panics(t, func() {
+		router.GET("invalid", "not a function")
+	})
+
+	assert.Panics(t, func() {
+		router.Handle("GET", "/invalid", func(i int) string { return "" })
+	})
+}

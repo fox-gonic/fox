@@ -1,7 +1,6 @@
 package fox
 
 import (
-	"fmt"
 	"net/http"
 	"reflect"
 
@@ -16,19 +15,10 @@ func call(ctx *Context, handler HandlerFunc) any {
 		ctxValue  = reflect.ValueOf(ctx)
 	)
 
-	// TODO(m) check handler type when route registering
-	if funcValue.Kind() != reflect.Func {
-		panic(fmt.Sprintf("%#v is not a function", handler))
-	}
-
 	var (
 		numIn  = funcType.NumIn()
 		numOut = funcType.NumOut()
 	)
-
-	if numOut > 2 {
-		panic("only support handler func returns max is two values")
-	}
 
 	var values []reflect.Value
 

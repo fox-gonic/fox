@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"reflect"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -43,17 +44,37 @@ func Mode() string {
 //	gin.DefaultWriter = colorable.NewColorableStdout()
 var DefaultWriter io.Writer = os.Stdout
 
-// DefaultErrorWriter is the default io.Writer used by Gin to debug errors
+// DefaultErrorWriter is the default io.Writer used by Gin to debug errors.
 var DefaultErrorWriter io.Writer = os.Stderr
 
-// HandlerFunc is a function that can be registered to a route to handle HTTP
-// requests. Like http.HandlerFunc, but has a third parameter for the values of
-// wildcards (path variables).
-// func(){}
-// func(ctx *Context) any { ... }
-// func(ctx *Context) (any, err) { ... }
-// func(ctx *Context, args *AutoBindingArgType) (any) { ... }
-// func(ctx *Context, args *AutoBindingArgType) (any, err) { ... }
+// ErrInvalidHandlerType is the error message for invalid handler type.
+var ErrInvalidHandlerType = "invalid handler type: %s\n" +
+	"handler signature: %s\n" +
+	"Supported handler types:\n" +
+	"1. func()\n" +
+	"2. func(ctx *Context) T\n" +
+	"3. func(ctx *Context) (T, error)\n" +
+	"4. func(ctx *Context, args S) T\n" +
+	"5. func(ctx *Context, args S) (T, error)\n" +
+	"Where:\n" +
+	"- S can be struct or map type, S will be auto binding from request body\n" +
+	"- T can be any type, T will be auto render to response body\n" +
+	"- error can be any type that implements error interface"
+
+// HandlerFunc is a function that can be registered to a route to handle HTTP requests.
+// Like http.HandlerFunc, but support auto binding and auto render.
+//
+// Support handler types:
+//  1. func(){}
+//  2. func(ctx *Context) T { ... }
+//  3. func(ctx *Context) (T, error) { ... }
+//  4. func(ctx *Context, args S) T { ... }
+//  5. func(ctx *Context, args S) (T, error) { ... }
+//
+// Where:
+//   - S can be struct or map type, S will be auto binding from request body
+//   - T can be any type, T will be auto render to response body
+//   - error can be any type that implements error interface
 type HandlerFunc any
 
 // HandlersChain defines a HandlerFunc slice.
@@ -69,7 +90,7 @@ func (c HandlersChain) Last() HandlerFunc {
 	return nil
 }
 
-// Engine for server
+// Engine for server.
 type Engine struct {
 	*gin.Engine
 
@@ -79,10 +100,10 @@ type Engine struct {
 	DefaultRenderErrorStatusCode int
 }
 
-// New return engine instance
+// New return engine instance.
 func New() *Engine {
 
-	// Change gin default validator
+	// Change gin default validator.
 	binding.Validator = new(DefaultValidator)
 
 	engine := &Engine{
@@ -96,14 +117,14 @@ func New() *Engine {
 	return engine
 }
 
-// Default return an Engine instance with Logger and Recovery middleware already attached
+// Default return an Engine instance with Logger and Recovery middleware already attached.
 func Default() *Engine {
 	engine := New()
 	engine.Use(NewXResponseTimer(), Logger(), Recovery())
 	return engine
 }
 
-// Use middleware
+// Use middleware.
 func (engine *Engine) Use(middleware ...HandlerFunc) {
 	engine.RouterGroup.Use(middleware...)
 }
@@ -114,17 +135,72 @@ func (engine *Engine) NotFound(handlers ...HandlerFunc) {
 	engine.Engine.NoRoute(handlersChain...)
 }
 
-// CORS config
+// CORS config.
 func (engine *Engine) CORS(config cors.Config) {
 	if config.Validate() == nil {
 		engine.Engine.Use(cors.New(config))
 	}
 }
 
-// RouterConfigFunc engine load router config func
+// RouterConfigFunc engine load router config func.
 type RouterConfigFunc func(router *Engine, embedFS ...embed.FS)
 
-// Load router config
+// Load router config.
 func (engine *Engine) Load(f RouterConfigFunc, fs ...embed.FS) {
 	f(engine, fs...)
+}
+
+// IsValidHandlerFunc checks if the handler matches the HandlerFunc type requirements.
+func IsValidHandlerFunc(handler HandlerFunc) bool {
+	handlerType := reflect.TypeOf(handler)
+
+	// Check if it's a function typ
+	if handlerType.Kind() != reflect.Func {
+		return false
+	}
+
+	// Check number of parameters
+	numIn := handlerType.NumIn()
+	if numIn > 2 {
+		return false
+	}
+
+	// Check number of return values
+	numOut := handlerType.NumOut()
+	if numOut > 2 {
+		return false
+	}
+
+	// Check if first parameter is *Context
+	if numIn > 0 {
+		firstParam := handlerType.In(0)
+		if firstParam.Kind() != reflect.Ptr || firstParam.Elem().Name() != "Context" {
+			return false
+		}
+	}
+
+	// Check if second parameter is struct or map type
+	if numIn > 1 {
+		secondParam := handlerType.In(1)
+		// If it's a pointer type, get the type it points to
+		if secondParam.Kind() == reflect.Ptr {
+			secondParam = secondParam.Elem()
+		}
+		// Check if it's a struct or map type
+		if secondParam.Kind() != reflect.Struct && secondParam.Kind() != reflect.Map {
+			return false
+		}
+	}
+
+	// Check return value types
+	// First return value can be any type
+	if numOut > 1 {
+		// Second return value must implement error interface
+		secondReturn := handlerType.Out(1)
+		if !secondReturn.Implements(reflect.TypeOf((*error)(nil)).Elem()) {
+			return false
+		}
+	}
+
+	return true
 }
