@@ -12,6 +12,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type AuthInfo struct {
+	Username string
+}
+
+type Service struct {
+	Name string
+}
+
 type MixStruct struct {
 	Page       int        `query:"page"`
 	PageSize   int        `query:"page_size"`
@@ -22,6 +30,10 @@ type MixStruct struct {
 	Vary       []string   `header:"vary"`
 	Name       string     `json:"name"`
 	Content    *string    `json:"content"`
+
+	AuthInfo *AuthInfo `context:"auth_info"`
+	service  *Service  `context:"service"`
+	UserID   int64     `context:"user_id"`
 }
 
 func TestBinding(t *testing.T) {
@@ -45,6 +57,10 @@ func TestBinding(t *testing.T) {
 		},
 	}
 
+	ctx.Set("auth_info", &AuthInfo{Username: "binder"})
+	ctx.Set("service", &Service{Name: "service"})
+	ctx.Set("user_id", int64(123))
+
 	err := bind(ctx, obj)
 	assert.Equal(t, ErrBindNonPointerValue, err)
 
@@ -57,6 +73,9 @@ func TestBinding(t *testing.T) {
 	assert.Equal(t, varyHeader, obj.Vary)
 	assert.Equal(t, []int{1, 2, 3, 4, 5}, obj.IDs)
 	assert.NotZero(t, obj.Start)
+	assert.Equal(t, &AuthInfo{Username: "binder"}, obj.AuthInfo)
+	assert.Nil(t, obj.service)
+	assert.Equal(t, int64(123), obj.UserID)
 }
 
 func TestBindingJSON(t *testing.T) {

@@ -112,6 +112,16 @@ func bind(ctx *Context, obj any) (err error) {
 		if tag := field.Tag.Get("header"); tag != "" && tag != "-" {
 			hasHeaderField = true
 		}
+		if tag := field.Tag.Get("context"); tag != "" && tag != "-" {
+			if value, exists := ctx.Get(tag); exists {
+				if fieldValue := vPtr.Field(i); fieldValue.CanSet() {
+					// convert context value to field type and set
+					if val := reflect.ValueOf(value); val.Type().ConvertibleTo(fieldValue.Type()) {
+						fieldValue.Set(val.Convert(fieldValue.Type()))
+					}
+				}
+			}
+		}
 	}
 
 	// bind query params
