@@ -18,6 +18,10 @@ type Foo struct {
 	B string
 }
 
+type AuthInfo struct {
+	Username string `json:"username"`
+}
+
 func MiddlewareFailed(c *fox.Context) (res any, err error) {
 	c.Logger.Info("MiddlewareFailed")
 	res = "Middleware"
@@ -27,6 +31,8 @@ func MiddlewareFailed(c *fox.Context) (res any, err error) {
 
 func MiddlewareSuccess(c *fox.Context) (res any, err error) {
 	c.Logger.Info("MiddlewareSuccess")
+	c.Set("user_id", int64(123))
+	c.Set("auth_info", &AuthInfo{Username: "binder"})
 	return
 }
 
@@ -61,6 +67,18 @@ func Ping(c *fox.Context) (res any, err error) {
 	return
 }
 
+type ContextBindingArgs struct {
+	UserID   int64     `context:"user_id"   json:"user_id"`
+	AuthInfo *AuthInfo `context:"auth_info" json:"auth_info"`
+	Foo      *Foo      `context:"foo"       json:"foo,omitempty"`
+}
+
+func ContextBinding(c *fox.Context, args ContextBindingArgs) (res any, err error) {
+	c.Logger.Info("ContextBinding", args)
+	res = args
+	return
+}
+
 func TestEngine(t *testing.T) {
 
 	assert := assert.New(t)
@@ -68,45 +86,60 @@ func TestEngine(t *testing.T) {
 	router := fox.New()
 	router.GET("ping", MiddlewareFailed, Ping)
 	router.GET("ping2", MiddlewareSuccess, Ping)
+	router.GET("binding", MiddlewareSuccess, ContextBinding)
 
 	router.POST("/handle/:param/success", HandleSuccess)
 	router.POST("/handle/:param/failed", HandleFailed)
 
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/ping", nil)
-	router.ServeHTTP(w, req)
-	assert.Equal(http.StatusBadRequest, w.Code)
+	{
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/ping", nil)
+		router.ServeHTTP(w, req)
+		assert.Equal(http.StatusBadRequest, w.Code)
 
-	body := w.Body.String()
-	assert.Equal(`{"code":"INVALID_ARGUMENTS","error":"(400): invalid arguments","meta":"invalid arguments"}`, body)
+		body := w.Body.String()
+		assert.Equal(`{"code":"INVALID_ARGUMENTS","error":"(400): invalid arguments","meta":"invalid arguments"}`, body)
+	}
 
-	w = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/ping2", nil)
-	router.ServeHTTP(w, req)
-	assert.Equal(http.StatusOK, w.Code)
+	{
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/ping2", nil)
+		router.ServeHTTP(w, req)
+		assert.Equal(http.StatusOK, w.Code)
 
-	var response Foo
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.Nil(err)
+		var response Foo
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.Nil(err)
 
-	assert.Equal(response.A, "a")
-	assert.Equal(response.B, "b")
+		assert.Equal(response.A, "a")
+		assert.Equal(response.B, "b")
+	}
 
-	jsonData := map[string]string{"body": "fromBody"}
-	data, _ := json.Marshal(jsonData)
+	{
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/binding", nil)
+		router.ServeHTTP(w, req)
+		assert.Equal(http.StatusOK, w.Code)
+		assert.Equal(`{"user_id":123,"auth_info":{"username":"binder"}}`, w.Body.String())
+	}
 
-	w = httptest.NewRecorder()
-	req = httptest.NewRequest("POST", "/handle/hello/success?query=world", bytes.NewReader(data))
-	router.ServeHTTP(w, req)
-	assert.Equal(http.StatusOK, w.Code)
-	assert.Equal(`{"Param":"hello","Query":"world","body":"fromBody"}`, w.Body.String())
+	{
+		jsonData := map[string]string{"body": "fromBody"}
+		data, _ := json.Marshal(jsonData)
 
-	w = httptest.NewRecorder()
-	req = httptest.NewRequest("POST", "/handle/hello/failed?query=world", bytes.NewReader(data))
-	router.ServeHTTP(w, req)
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("POST", "/handle/hello/success?query=world", bytes.NewReader(data))
+		router.ServeHTTP(w, req)
+		assert.Equal(http.StatusOK, w.Code)
+		assert.Equal(`{"Param":"hello","Query":"world","body":"fromBody"}`, w.Body.String())
 
-	assert.Equal(http.StatusBadRequest, w.Code)
-	assert.Equal(`{"code":"INVALID_ARGUMENTS","message":{"param":"invalid param hello"}}`, w.Body.String())
+		w = httptest.NewRecorder()
+		req = httptest.NewRequest("POST", "/handle/hello/failed?query=world", bytes.NewReader(data))
+		router.ServeHTTP(w, req)
+
+		assert.Equal(http.StatusBadRequest, w.Code)
+		assert.Equal(`{"code":"INVALID_ARGUMENTS","message":{"param":"invalid param hello"}}`, w.Body.String())
+	}
 }
 
 type TestRequest struct {
