@@ -9,11 +9,8 @@ import (
 	"github.com/rs/zerolog"
 )
 
-var (
-
-	// DefaultLogTimeFormat default log time format
-	DefaultLogTimeFormat = "2006-01-02 15:04:05.000000"
-)
+// DefaultLogTimeFormat default log time format
+var DefaultLogTimeFormat = "2006-01-02 15:04:05.000000"
 
 func init() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnixNano
@@ -56,7 +53,6 @@ var config = Config{
 
 // SetConfig set logger config
 func SetConfig(cfg *Config) {
-
 	config = *cfg
 
 	DefaultLogLevel = cfg.LogLevel

@@ -35,7 +35,7 @@ var pid = uint32(time.Now().UnixNano() % 4294967291)
 var TraceID = "x-request-id"
 
 // DefaultGenRequestID default generate request id
-var DefaultGenRequestID func() string = func() string {
+var DefaultGenRequestID = func() string {
 	var b [12]byte
 	binary.LittleEndian.PutUint32(b[:], pid)
 	binary.LittleEndian.PutUint64(b[4:], uint64(time.Now().UnixNano()))
@@ -77,7 +77,7 @@ type Logger interface {
 }
 
 // New return logger
-var New func(traceID ...string) Logger = func(traceID ...string) Logger {
+var New = func(traceID ...string) Logger {
 	return newLogger(config, traceID...)
 }
 
@@ -110,7 +110,6 @@ func NewWithContext(ctx context.Context) Logger {
 
 // newLogger return Logger
 func newLogger(cfg Config, traceID ...string) Logger {
-
 	var trace string
 	if len(traceID) > 0 {
 		trace = traceID[0]

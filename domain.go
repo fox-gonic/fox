@@ -24,7 +24,6 @@ type DomainEngine struct {
 
 // NewDomainEngine new domain engine
 func NewDomainEngine(get ...func() *Engine) *DomainEngine {
-
 	de := &DomainEngine{}
 
 	if len(get) > 0 {
@@ -55,7 +54,6 @@ func (engine *DomainEngine) DomainRegexp(name string, engineFunc func(subEngine 
 
 // server add domain handler
 func (engine *DomainEngine) server(name string, isRegexp bool, engineFunc func(*Engine)) {
-
 	domain := &domain{
 		Name:     name,
 		IsRegexp: isRegexp,
@@ -80,7 +78,6 @@ func (engine *DomainEngine) server(name string, isRegexp bool, engineFunc func(*
 
 // ServeHTTP conforms to the http.Handler interface.
 func (engine *DomainEngine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-
 	if len(engine.domains) == 0 {
 		engine.Engine.ServeHTTP(w, req)
 		return
@@ -92,7 +89,7 @@ func (engine *DomainEngine) ServeHTTP(w http.ResponseWriter, req *http.Request) 
 	}
 
 	for i := 0; i < len(engine.domains); i++ {
-		var domain = engine.domains[i]
+		domain := engine.domains[i]
 		if domain.IsRegexp && domain.Regexp.MatchString(host) {
 			domain.Handler.ServeHTTP(w, req)
 			return

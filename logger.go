@@ -8,14 +8,11 @@ import (
 	"github.com/fox-gonic/fox/logger"
 )
 
-var (
-	// LoggerContextKey logger save in gin context
-	LoggerContextKey = "_fox-goinc/fox/logger/context/key"
-)
+// LoggerContextKey logger save in gin context
+var LoggerContextKey = "_fox-goinc/fox/logger/context/key"
 
 // LoggerConfig defines the config for Logger middleware.
 type LoggerConfig struct {
-
 	// SkipPaths is an url path array which logs are not written.
 	// Optional.
 	SkipPaths []string
@@ -23,7 +20,6 @@ type LoggerConfig struct {
 
 // Logger middleware
 func Logger(config ...LoggerConfig) gin.HandlerFunc {
-
 	var conf LoggerConfig
 	if len(config) > 0 {
 		conf = config[0]

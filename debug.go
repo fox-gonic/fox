@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	gin.DebugPrintRouteFunc = func(httpMethod, absolutePath, handlerName string, nuHandlers int) {}
+	gin.DebugPrintRouteFunc = func(_, _, _ string, _ int) {}
 }
 
 // IsDebugging returns true if the framework is running in debug mode.

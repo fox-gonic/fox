@@ -7,9 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fox-gonic/fox/httperrors"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/fox-gonic/fox/httperrors"
 )
 
 type AuthInfo struct {
@@ -62,10 +64,10 @@ func TestBinding(t *testing.T) {
 	ctx.Set("user_id", int64(123))
 
 	err := bind(ctx, obj)
-	assert.Equal(t, ErrBindNonPointerValue, err)
+	require.Equal(t, ErrBindNonPointerValue, err)
 
 	err = bind(ctx, &obj)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 1, obj.Page)
 	assert.Equal(t, 30, obj.PageSize)
 	assert.Equal(t, referer, obj.Referer)
@@ -102,7 +104,7 @@ func TestBindingJSON(t *testing.T) {
 	}
 
 	err := bind(ctx, &obj)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 1, obj.Page)
 	assert.Equal(t, 30, obj.PageSize)
 	assert.Equal(t, referer, obj.Referer)
@@ -123,7 +125,7 @@ func TestBindingJSON(t *testing.T) {
 	}
 
 	err = bind(ctx, &obj)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 var ErrPasswordTooShort = &httperrors.Error{
@@ -149,8 +151,6 @@ func (args *CreateUserArgs) IsValid() error {
 }
 
 func TestIsValider(t *testing.T) {
-	assert := assert.New(t)
-
 	req, _ := http.NewRequest(http.MethodPost, "/users/signup", bytes.NewBufferString(`{"name": "Binder"}`))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -161,18 +161,18 @@ func TestIsValider(t *testing.T) {
 	}
 
 	err := bind(ctx, &CreateUserArgs{})
-	assert.Error(err)
-	assert.Equal(httperrors.ErrInvalidArguments, err)
+	require.Error(t, err)
+	require.Equal(t, httperrors.ErrInvalidArguments, err)
 
 	err = bind(ctx, &CreateUserArgs{
 		Username: "binder",
 	})
-	assert.Error(err)
-	assert.Equal(ErrPasswordTooShort, err)
+	require.Error(t, err)
+	require.Equal(t, ErrPasswordTooShort, err)
 
 	err = bind(ctx, &CreateUserArgs{
 		Username: "binder",
 		Password: "123456",
 	})
-	assert.Nil(err)
+	require.NoError(t, err)
 }

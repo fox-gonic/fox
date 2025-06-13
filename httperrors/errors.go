@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
 
 	jsoniter "github.com/json-iterator/go"
@@ -165,7 +166,7 @@ func (e Error) MarshalJSON() ([]byte, error) {
 		if e.Code != "" {
 			jsonData["code"] = e.Code
 		} else {
-			jsonData["code"] = fmt.Sprintf("%d", e.HTTPCode)
+			jsonData["code"] = strconv.Itoa(e.HTTPCode)
 		}
 	}
 

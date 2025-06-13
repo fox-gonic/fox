@@ -34,8 +34,7 @@ var bodyBinders = map[string]binding.BindingBody{
 }
 
 // bind request arguments
-func bind(ctx *Context, obj any) (err error) {
-
+func bind(ctx *Context, obj any) error {
 	vPtr := reflect.ValueOf(obj)
 
 	if vPtr.Kind() != reflect.Ptr {
@@ -47,6 +46,7 @@ func bind(ctx *Context, obj any) (err error) {
 	var (
 		contentType = filterFlags(ctx.Request.Header.Get("Content-Type"))
 		body        []byte
+		err         error
 	)
 
 	if body, err = ctx.RequestBody(); err != nil {
@@ -60,15 +60,12 @@ func bind(ctx *Context, obj any) (err error) {
 
 	if ctx.Request.Method == http.MethodGet {
 		err = binding.Form.Bind(ctx.Request, obj)
-
 	} else if binder, exists := binders[contentType]; exists {
 		err = binder.Bind(ctx.Request, obj)
-
 	} else if bodyBinder, exists := bodyBinders[contentType]; exists {
 		if len(body) > 0 {
 			err = bodyBinder.BindBody(body, obj)
 		}
-
 	} else if DefaultBinder != nil {
 		if bodyBinder, ok := DefaultBinder.(binding.BindingBody); ok {
 			if len(body) > 0 {
@@ -94,10 +91,10 @@ func bind(ctx *Context, obj any) (err error) {
 	}
 
 	if vPtr.Kind() != reflect.Struct {
-		return
+		return nil
 	}
 
-	var vType = vPtr.Type()
+	vType := vPtr.Type()
 	var hasQueryField, hasURIField, hasHeaderField bool
 
 	for i := 0; i < vPtr.NumField(); i++ {
