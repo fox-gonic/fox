@@ -294,3 +294,35 @@ func TestIsValidHandlerFunc(t *testing.T) {
 		})
 	}
 }
+
+func TestCustomErrorRendering(t *testing.T) {
+	assert := assert.New(t)
+
+	customErr := &CustomError{
+		Code:    500,
+		Message: "custom error message",
+	}
+
+	handler := func(c *fox.Context) (any, error) {
+		return nil, customErr
+	}
+
+	router := fox.New()
+
+	router.RenderErrorFunc = func(ctx *fox.Context, err error) {
+		if e, ok := err.(*CustomError); ok {
+			ctx.JSON(e.Code, map[string]string{
+				"error": e.Message,
+			})
+		}
+	}
+
+	router.GET("/error", handler)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/error", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(500, w.Code)
+	assert.Equal(`{"error":"custom error message"}`, w.Body.String())
+}

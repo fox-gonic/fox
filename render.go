@@ -18,6 +18,11 @@ func (c *Context) renderError(err error) {
 		return
 	}
 
+	if c.engine.RenderErrorFunc != nil {
+		c.engine.RenderErrorFunc(c, err)
+		return
+	}
+
 	var code int
 	if e, ok := err.(StatusCoder); ok {
 		code = e.StatusCode()

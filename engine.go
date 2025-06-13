@@ -90,6 +90,8 @@ func (c HandlersChain) Last() HandlerFunc {
 	return nil
 }
 
+type RenderErrorFunc func(ctx *Context, err error)
+
 // Engine for server.
 type Engine struct {
 	*gin.Engine
@@ -98,6 +100,8 @@ type Engine struct {
 
 	// DefaultRenderErrorStatusCode is the default http status code used for automatic rendering
 	DefaultRenderErrorStatusCode int
+
+	RenderErrorFunc RenderErrorFunc
 }
 
 // New return engine instance.
@@ -133,6 +137,16 @@ func (engine *Engine) Use(middleware ...HandlerFunc) {
 func (engine *Engine) NotFound(handlers ...HandlerFunc) {
 	handlersChain := engine.RouterGroup.handleWrapper(handlers...)
 	engine.Engine.NoRoute(handlersChain...)
+}
+
+func (engine *Engine) NoRoute(handlers ...HandlerFunc) {
+	handlersChain := engine.RouterGroup.handleWrapper(handlers...)
+	engine.Engine.NoRoute(handlersChain...)
+}
+
+func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
+	handlersChain := engine.RouterGroup.handleWrapper(handlers...)
+	engine.Engine.NoMethod(handlersChain...)
 }
 
 // CORS config.
