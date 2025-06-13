@@ -153,7 +153,7 @@ func TestError(t *testing.T) {
 
 		e = json.Unmarshal(data, &obj)
 		r.NoError(e)
-		r.Equal(float64(123), obj["meta"])
+		r.InEpsilon(123, obj["meta"].(float64), 0.0001)
 	}
 
 	{
