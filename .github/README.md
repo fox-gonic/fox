@@ -6,10 +6,9 @@ The fox is an extension of the [gin](https://github.com/gin-gonic/gin) framework
 
 Fox is currently in beta and under active development. While it offers exciting new features, please note that it may not be stable for production use. If you choose to use, be prepared for potential bugs and breaking changes. Always check the official documentation and release notes for updates and proceed with caution. Happy coding!
 
-
 ## Installation
 
-Fox requires **Go version `1.21` or higher** to run. If you need to install or upgrade Go, visit the [official Go download page](https://go.dev/dl/). To start setting up your project. Create a new directory for your project and navigate into it. Then, initialize your project with Go modules by executing the following command in your terminal:
+Fox requires **Go version `1.23` or higher** to run. If you need to install or upgrade Go, visit the [official Go download page](https://go.dev/dl/). To start setting up your project. Create a new directory for your project and navigate into it. Then, initialize your project with Go modules by executing the following command in your terminal:
 
 ```bash
 go mod init github.com/your/repo
@@ -24,7 +23,6 @@ go get -u github.com/fox-gonic/fox
 ```
 
 This command fetches the Fox package and adds it to your project's dependencies, allowing you to start building your web applications with Fox.
-
 
 ## Quickstart
 
@@ -50,7 +48,7 @@ func main() {
 
 And use the Go command to run the demo:
 
-```
+```shell
 # run example.go and visit 0.0.0.0:8080/ping on browser
 $ go run example.go
 ```
