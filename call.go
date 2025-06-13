@@ -8,7 +8,6 @@ import (
 )
 
 func call(ctx *Context, handler HandlerFunc) any {
-
 	var (
 		funcValue = reflect.ValueOf(handler)
 		funcType  = funcValue.Type()

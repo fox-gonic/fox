@@ -9,7 +9,7 @@ import (
 
 const headerXResponseTime = "X-Response-Time"
 
-// XResponseTimer wrap gin reponse writer add start time
+// XResponseTimer wrap gin response writer add start time
 type XResponseTimer struct {
 	gin.ResponseWriter
 	start time.Time

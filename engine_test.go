@@ -3,11 +3,13 @@ package fox_test
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/fox-gonic/fox"
 	"github.com/fox-gonic/fox/httperrors"
@@ -80,8 +82,7 @@ func ContextBinding(c *fox.Context, args ContextBindingArgs) (res any, err error
 }
 
 func TestEngine(t *testing.T) {
-
-	assert := assert.New(t)
+	r := assert.New(t)
 
 	router := fox.New()
 	router.GET("ping", MiddlewareFailed, Ping)
@@ -93,34 +94,34 @@ func TestEngine(t *testing.T) {
 
 	{
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest("GET", "/ping", nil)
+		req := httptest.NewRequest(http.MethodGet, "/ping", nil)
 		router.ServeHTTP(w, req)
-		assert.Equal(http.StatusBadRequest, w.Code)
+		r.Equal(http.StatusBadRequest, w.Code)
 
 		body := w.Body.String()
-		assert.Equal(`{"code":"INVALID_ARGUMENTS","error":"(400): invalid arguments","meta":"invalid arguments"}`, body)
+		r.JSONEq(`{"code":"INVALID_ARGUMENTS","error":"(400): invalid arguments","meta":"invalid arguments"}`, body)
 	}
 
 	{
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest("GET", "/ping2", nil)
+		req := httptest.NewRequest(http.MethodGet, "/ping2", nil)
 		router.ServeHTTP(w, req)
-		assert.Equal(http.StatusOK, w.Code)
+		r.Equal(http.StatusOK, w.Code)
 
 		var response Foo
 		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.Nil(err)
+		require.NoError(t, err)
 
-		assert.Equal(response.A, "a")
-		assert.Equal(response.B, "b")
+		r.Equal("a", response.A)
+		r.Equal("b", response.B)
 	}
 
 	{
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest("GET", "/binding", nil)
+		req := httptest.NewRequest(http.MethodGet, "/binding", nil)
 		router.ServeHTTP(w, req)
-		assert.Equal(http.StatusOK, w.Code)
-		assert.Equal(`{"user_id":123,"auth_info":{"username":"binder"}}`, w.Body.String())
+		r.Equal(http.StatusOK, w.Code)
+		r.JSONEq(`{"user_id":123,"auth_info":{"username":"binder"}}`, w.Body.String())
 	}
 
 	{
@@ -128,17 +129,17 @@ func TestEngine(t *testing.T) {
 		data, _ := json.Marshal(jsonData)
 
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest("POST", "/handle/hello/success?query=world", bytes.NewReader(data))
+		req := httptest.NewRequest(http.MethodPost, "/handle/hello/success?query=world", bytes.NewReader(data))
 		router.ServeHTTP(w, req)
-		assert.Equal(http.StatusOK, w.Code)
-		assert.Equal(`{"Param":"hello","Query":"world","body":"fromBody"}`, w.Body.String())
+		r.Equal(http.StatusOK, w.Code)
+		r.JSONEq(`{"Param":"hello","Query":"world","body":"fromBody"}`, w.Body.String())
 
 		w = httptest.NewRecorder()
-		req = httptest.NewRequest("POST", "/handle/hello/failed?query=world", bytes.NewReader(data))
+		req = httptest.NewRequest(http.MethodPost, "/handle/hello/failed?query=world", bytes.NewReader(data))
 		router.ServeHTTP(w, req)
 
-		assert.Equal(http.StatusBadRequest, w.Code)
-		assert.Equal(`{"code":"INVALID_ARGUMENTS","message":{"param":"invalid param hello"}}`, w.Body.String())
+		r.Equal(http.StatusBadRequest, w.Code)
+		r.JSONEq(`{"code":"INVALID_ARGUMENTS","message":{"param":"invalid param hello"}}`, w.Body.String())
 	}
 }
 
@@ -310,9 +311,10 @@ func TestCustomErrorRendering(t *testing.T) {
 	router := fox.New()
 
 	router.RenderErrorFunc = func(ctx *fox.Context, err error) {
-		if e, ok := err.(*CustomError); ok {
-			ctx.JSON(e.Code, map[string]string{
-				"error": e.Message,
+		var customErr *CustomError
+		if errors.As(err, &customErr) {
+			ctx.JSON(customErr.Code, map[string]string{
+				"error": customErr.Message,
 			})
 		}
 	}
@@ -320,9 +322,9 @@ func TestCustomErrorRendering(t *testing.T) {
 	router.GET("/error", handler)
 
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/error", nil)
+	req := httptest.NewRequest(http.MethodGet, "/error", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(500, w.Code)
-	assert.Equal(`{"error":"custom error message"}`, w.Body.String())
+	assert.JSONEq(`{"error":"custom error message"}`, w.Body.String())
 }

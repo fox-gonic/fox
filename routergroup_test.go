@@ -21,7 +21,6 @@ func boo(c *fox.Context) (res any, err error) {
 }
 
 func TestRouterGroup(t *testing.T) {
-
 	assert := assert.New(t)
 
 	router := fox.New()
@@ -32,13 +31,13 @@ func TestRouterGroup(t *testing.T) {
 	api.GET("boo", boo)
 
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/api/foo", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/foo", nil)
 	router.ServeHTTP(w, req)
 	assert.Equal(http.StatusOK, w.Code)
 	assert.Equal("foo", w.Body.String())
 
 	w = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/api/boo", nil)
+	req = httptest.NewRequest(http.MethodGet, "/api/boo", nil)
 	router.ServeHTTP(w, req)
 	assert.Equal(http.StatusOK, w.Code)
 	assert.Equal("boo", w.Body.String())
@@ -56,6 +55,6 @@ func TestRouterGroupHandleInvalidHandler(t *testing.T) {
 	})
 
 	assert.Panics(t, func() {
-		router.Handle("GET", "/invalid", func(i int) string { return "" })
+		router.Handle(http.MethodGet, "/invalid", func(i int) string { return "" })
 	})
 }

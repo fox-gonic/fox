@@ -20,7 +20,6 @@ type Context struct {
 // RequestBody return request body bytes
 // see c.ShouldBindBodyWith
 func (c *Context) RequestBody() (body []byte, err error) {
-
 	if cb, ok := c.Get(gin.BodyBytesKey); ok {
 		if cbb, ok := cb.([]byte); ok {
 			body = cbb
@@ -46,7 +45,6 @@ func (c *Context) RequestBody() (body []byte, err error) {
 
 // TraceID return request id
 func (c *Context) TraceID() string {
-
 	if id, exists := c.Get(logger.TraceID); exists {
 		return id.(string)
 	}

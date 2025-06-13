@@ -52,7 +52,4 @@ func (l Level) ZerologLevel() zerolog.Level {
 	}
 }
 
-var (
-	// DefaultLogLevel log level
-	DefaultLogLevel Level = TraceLevel
-)
+var DefaultLogLevel = TraceLevel

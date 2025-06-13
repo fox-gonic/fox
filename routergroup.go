@@ -83,7 +83,6 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 
 // Use adds middleware to the group, see example code in GitHub.
 func (group *RouterGroup) Use(middleware ...HandlerFunc) gin.IRoutes {
-
 	handlersChain := group.handleWrapper(middleware...)
 	return group.router.Use(handlersChain...)
 }

@@ -106,7 +106,6 @@ type Engine struct {
 
 // New return engine instance.
 func New() *Engine {
-
 	// Change gin default validator.
 	binding.Validator = new(DefaultValidator)
 
@@ -115,8 +114,8 @@ func New() *Engine {
 		DefaultRenderErrorStatusCode: http.StatusBadRequest,
 	}
 
-	engine.RouterGroup.router = &engine.Engine.RouterGroup
-	engine.RouterGroup.engine = engine
+	engine.router = &engine.Engine.RouterGroup
+	engine.engine = engine
 
 	return engine
 }
@@ -135,17 +134,17 @@ func (engine *Engine) Use(middleware ...HandlerFunc) {
 
 // NotFound adds handlers for NoRoute. It returns a 404 code by default.
 func (engine *Engine) NotFound(handlers ...HandlerFunc) {
-	handlersChain := engine.RouterGroup.handleWrapper(handlers...)
+	handlersChain := engine.handleWrapper(handlers...)
 	engine.Engine.NoRoute(handlersChain...)
 }
 
 func (engine *Engine) NoRoute(handlers ...HandlerFunc) {
-	handlersChain := engine.RouterGroup.handleWrapper(handlers...)
+	handlersChain := engine.handleWrapper(handlers...)
 	engine.Engine.NoRoute(handlersChain...)
 }
 
 func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
-	handlersChain := engine.RouterGroup.handleWrapper(handlers...)
+	handlersChain := engine.handleWrapper(handlers...)
 	engine.Engine.NoMethod(handlersChain...)
 }
 

@@ -21,7 +21,6 @@ var _ binding.StructValidator = &DefaultValidator{}
 
 // ValidateStruct check struct
 func (v *DefaultValidator) ValidateStruct(obj any) error {
-
 	if kindOfData(obj) == reflect.Struct {
 
 		v.lazyinit()
@@ -50,7 +49,6 @@ func (v *DefaultValidator) lazyinit() {
 }
 
 func kindOfData(data any) reflect.Kind {
-
 	value := reflect.ValueOf(data)
 	valueType := value.Kind()
 
