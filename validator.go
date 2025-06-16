@@ -42,7 +42,6 @@ func (v *DefaultValidator) Engine() any {
 func (v *DefaultValidator) lazyinit() {
 	v.once.Do(func() {
 		v.validate = validator.New()
-		v.validate.SetTagName("binding")
 
 		// add any custom validations etc. here
 	})
