@@ -280,6 +280,11 @@ func TestIsValidHandlerFunc(t *testing.T) {
 			expected: true,
 		},
 		{
+			name:     "HTTP error with interface parameter",
+			handler:  func(ctx *fox.Context, args any) ([]byte, *HTTPError) { return nil, nil },
+			expected: true,
+		},
+		{
 			name:     "Non-error second return type",
 			handler:  func(ctx *fox.Context) (string, string) { return "", "" },
 			expected: false,
