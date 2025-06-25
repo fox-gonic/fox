@@ -200,7 +200,7 @@ func IsValidHandlerFunc(handler HandlerFunc) bool {
 			secondParam = secondParam.Elem()
 		}
 		// Check if it's a struct or map type
-		if secondParam.Kind() != reflect.Struct && secondParam.Kind() != reflect.Map {
+		if secondParam.Kind() != reflect.Struct && secondParam.Kind() != reflect.Map && secondParam.Kind() != reflect.Interface {
 			return false
 		}
 	}
