@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/fox-gonic/fox"
@@ -57,4 +58,28 @@ func TestRouterGroupHandleInvalidHandler(t *testing.T) {
 	assert.Panics(t, func() {
 		router.Handle(http.MethodGet, "/invalid", func(i int) string { return "" })
 	})
+}
+
+func TestRouterGroupCompatibleWithGinHandler(t *testing.T) {
+	middleware := func() gin.HandlerFunc {
+		return func(c *gin.Context) {
+			c.Set("foo", "bar")
+			c.Next()
+		}
+	}
+	assert := assert.New(t)
+
+	router := fox.New()
+	api := router.Group("/api")
+	api.Use(middleware())
+	api.GET("foo", func(c *gin.Context) {
+		foo, _ := c.Get("foo")
+		c.String(http.StatusOK, foo.(string))
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/foo", nil)
+	router.ServeHTTP(w, req)
+	assert.Equal(http.StatusOK, w.Code)
+	assert.Equal("bar", w.Body.String())
 }

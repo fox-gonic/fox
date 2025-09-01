@@ -70,6 +70,7 @@ var ErrInvalidHandlerType = "invalid handler type: %s\n" +
 //  3. func(ctx *Context) (T, error) { ... }
 //  4. func(ctx *Context, args S) T { ... }
 //  5. func(ctx *Context, args S) (T, error) { ... }
+//  6. func(ctx *gin.Context) { ... }  // compatible with gin.HandlerFunc
 //
 // Where:
 //   - S can be struct or map type, S will be auto binding from request body
@@ -113,6 +114,9 @@ func New() *Engine {
 		Engine:                       gin.New(),
 		DefaultRenderErrorStatusCode: http.StatusBadRequest,
 	}
+
+	// recommend default use context.Context to store request-scoped values
+	engine.ContextWithFallback = true
 
 	engine.router = &engine.Engine.RouterGroup
 	engine.engine = engine
