@@ -340,7 +340,7 @@ func TestDefaultEnableContextWithFallback(t *testing.T) {
 
 	router := fox.New()
 
-	assert.Equal(true, router.ContextWithFallback)
+	assert.True(router.ContextWithFallback)
 
 	type ctxKey struct{}
 	router.Use(func(c *fox.Context) {
