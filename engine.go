@@ -114,6 +114,9 @@ func New() *Engine {
 		DefaultRenderErrorStatusCode: http.StatusBadRequest,
 	}
 
+	// recommend default use context.Context to store request-scoped values
+	engine.ContextWithFallback = true
+
 	engine.router = &engine.Engine.RouterGroup
 	engine.engine = engine
 

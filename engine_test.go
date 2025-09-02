@@ -2,6 +2,7 @@ package fox_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -332,4 +333,46 @@ func TestCustomErrorRendering(t *testing.T) {
 
 	assert.Equal(500, w.Code)
 	assert.JSONEq(`{"error":"custom error message"}`, w.Body.String())
+}
+
+func TestDefaultEnableContextWithFallback(t *testing.T) {
+	assert := assert.New(t)
+
+	router := fox.New()
+
+	assert.True(router.ContextWithFallback)
+
+	type ctxKey struct{}
+	router.Use(func(c *fox.Context) {
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ctxKey{}, "context value"))
+		c.Next()
+	})
+	router.GET("/test", func(c *fox.Context) {
+		val := c.Value(ctxKey{})
+		if val != nil {
+			c.String(200, val.(string))
+		} else {
+			c.String(200, "no context value")
+		}
+	})
+
+	t.Run("default with context value", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		router.ServeHTTP(w, req)
+
+		assert.Equal(200, w.Code)
+		assert.Equal("context value", w.Body.String())
+	})
+
+	t.Run("disable ContextWithFallback then without context value", func(t *testing.T) {
+		router.ContextWithFallback = false
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		router.ServeHTTP(w, req)
+
+		assert.Equal(200, w.Code)
+		assert.Equal("no context value", w.Body.String())
+	})
 }
