@@ -355,6 +355,14 @@ func TestDefaultEnableContextWithFallback(t *testing.T) {
 			c.String(200, "no context value")
 		}
 	})
+	router.GET("/testGin", func(c *fox.Context) {
+		val := c.Context.Value(ctxKey{})
+		if val != nil {
+			c.String(200, val.(string))
+		} else {
+			c.String(200, "no context value")
+		}
+	})
 
 	t.Run("default with context value", func(t *testing.T) {
 		w := httptest.NewRecorder()
@@ -369,7 +377,7 @@ func TestDefaultEnableContextWithFallback(t *testing.T) {
 		router.ContextWithFallback = false
 
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		req := httptest.NewRequest(http.MethodGet, "/testGin", nil)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(200, w.Code)

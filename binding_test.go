@@ -57,6 +57,7 @@ func TestBinding(t *testing.T) {
 		Context: &gin.Context{
 			Request: req,
 		},
+		Request: req,
 	}
 
 	ctx.Set("auth_info", &AuthInfo{Username: "binder"})
@@ -101,6 +102,7 @@ func TestBindingJSON(t *testing.T) {
 		Context: &gin.Context{
 			Request: req,
 		},
+		Request: req,
 	}
 
 	err := bind(ctx, &obj)
@@ -122,6 +124,7 @@ func TestBindingJSON(t *testing.T) {
 		Context: &gin.Context{
 			Request: req,
 		},
+		Request: req,
 	}
 
 	err = bind(ctx, &obj)
@@ -158,6 +161,7 @@ func TestIsValider(t *testing.T) {
 		Context: &gin.Context{
 			Request: req,
 		},
+		Request: req,
 	}
 
 	err := bind(ctx, &CreateUserArgs{})

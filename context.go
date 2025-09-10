@@ -3,6 +3,8 @@ package fox
 import (
 	"bytes"
 	"io"
+	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -15,6 +17,8 @@ type Context struct {
 
 	engine *Engine
 	Logger logger.Logger
+	// Request is the http request copy from gin.Context.
+	Request *http.Request
 }
 
 // RequestBody return request body bytes
@@ -63,4 +67,25 @@ func (c *Context) TraceID() string {
 	c.Set(logger.TraceID, id)
 
 	return id
+}
+
+func (c *Context) Done() <-chan struct{} {
+	return c.Request.Context().Done()
+}
+
+func (c *Context) Err() error {
+	return c.Request.Context().Err()
+}
+
+func (c *Context) Value(key any) any {
+	return c.Request.Context().Value(key)
+}
+
+func (c *Context) Deadline() (deadline time.Time, ok bool) {
+	return c.Request.Context().Deadline()
+}
+
+func (c *Context) Next() {
+	c.Context.Request = c.Request
+	c.Context.Next()
 }
