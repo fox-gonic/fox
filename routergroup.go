@@ -64,6 +64,9 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 					}
 					res = call(ctx, h)
 				)
+				// The Context.Request may be changed in middleware,
+				// so we need to update the gin.Context.Request at here
+				c.Request = ctx.Request
 
 				if ctx.IsAborted() {
 					return
