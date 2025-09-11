@@ -1,6 +1,7 @@
 package fox_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -56,5 +57,33 @@ func TestRouterGroupHandleInvalidHandler(t *testing.T) {
 
 	assert.Panics(t, func() {
 		router.Handle(http.MethodGet, "/invalid", func(i int) string { return "" })
+	})
+}
+
+func TestRouterGroup_Use(t *testing.T) {
+	router := fox.New()
+	type ctxKey struct{}
+	router.Use(func(c *fox.Context) {
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ctxKey{}, "context value"))
+		// do not call the c.Next()
+	})
+	router.GET("/test", func(c *fox.Context) {
+		val := c.Value(ctxKey{})
+		if val != nil {
+			c.String(200, val.(string))
+		} else {
+			c.String(200, "no context value")
+		}
+	})
+
+	t.Run("with context value", func(t *testing.T) {
+		assert := assert.New(t)
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		router.ServeHTTP(w, req)
+
+		assert.Equal(200, w.Code)
+		assert.Equal("context value", w.Body.String())
 	})
 }
