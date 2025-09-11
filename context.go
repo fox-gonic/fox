@@ -89,3 +89,14 @@ func (c *Context) Next() {
 	c.Context.Request = c.Request
 	c.Context.Next()
 }
+
+func (c *Context) Copy() *Context {
+	ginCtx := c.Context.Copy()
+	ginCtx.Request = c.Request
+	return &Context{
+		Context: ginCtx,
+		engine:  c.engine,
+		Logger:  c.Logger,
+		Request: c.Request,
+	}
+}
