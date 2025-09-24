@@ -104,11 +104,13 @@ type Engine struct {
 	RenderErrorFunc RenderErrorFunc
 }
 
-// New return engine instance.
-func New() *Engine {
+func init() {
 	// Change gin default validator.
 	binding.Validator = new(DefaultValidator)
+}
 
+// New return engine instance.
+func New() *Engine {
 	engine := &Engine{
 		Engine:                       gin.New(),
 		DefaultRenderErrorStatusCode: http.StatusBadRequest,
