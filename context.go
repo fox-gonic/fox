@@ -36,7 +36,7 @@ func (c *Context) RequestBody() (body []byte, err error) {
 			bodyR = io.TeeReader(c.Request.Body, &buf)
 		)
 		if body, err = io.ReadAll(bodyR); err != nil {
-			return
+			return body, err
 		}
 
 		c.Set(gin.BodyBytesKey, body)
@@ -44,7 +44,7 @@ func (c *Context) RequestBody() (body []byte, err error) {
 		// copy the request body to the next handler
 		c.Request.Body = io.NopCloser(&buf)
 	}
-	return
+	return body, err
 }
 
 // TraceID return request id

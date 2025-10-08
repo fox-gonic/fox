@@ -29,14 +29,14 @@ func MiddlewareFailed(c *fox.Context) (res any, err error) {
 	c.Logger.Info("MiddlewareFailed")
 	res = "Middleware"
 	err = httperrors.ErrInvalidArguments
-	return
+	return res, err
 }
 
 func MiddlewareSuccess(c *fox.Context) (res any, err error) {
 	c.Logger.Info("MiddlewareSuccess")
 	c.Set("user_id", int64(123))
 	c.Set("auth_info", &AuthInfo{Username: "binder"})
-	return
+	return res, err
 }
 
 type TestInput struct {
@@ -48,7 +48,7 @@ type TestInput struct {
 
 func HandleSuccess(c *fox.Context, in TestInput) (res any, err error) {
 	res = in
-	return
+	return res, err
 }
 
 func HandleFailed(c *fox.Context, in *TestInput) (any, error) {
@@ -67,7 +67,7 @@ func HandleFailed(c *fox.Context, in *TestInput) (any, error) {
 func Ping(c *fox.Context) (res any, err error) {
 	c.Logger.Info("PingHandler")
 	res = Foo{"a", "b"}
-	return
+	return res, err
 }
 
 type ContextBindingArgs struct {
@@ -79,7 +79,7 @@ type ContextBindingArgs struct {
 func ContextBinding(c *fox.Context, args ContextBindingArgs) (res any, err error) {
 	c.Logger.Info("ContextBinding", args)
 	res = args
-	return
+	return res, err
 }
 
 func TestEngine(t *testing.T) {

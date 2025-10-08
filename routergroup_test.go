@@ -13,12 +13,12 @@ import (
 
 func foo(c *fox.Context) (res any, err error) {
 	res = "foo"
-	return
+	return res, err
 }
 
 func boo(c *fox.Context) (res any, err error) {
 	res = "boo"
-	return
+	return res, err
 }
 
 func TestRouterGroup(t *testing.T) {
@@ -48,7 +48,7 @@ func TestRouterGroupHandleInvalidHandler(t *testing.T) {
 	router := fox.New()
 
 	assert.Panics(t, func() {
-		router.GET("too-many-values", func(c *fox.Context) (res any, other any, err error) { return })
+		router.GET("too-many-values", func(c *fox.Context) (res any, other any, err error) { return res, other, err })
 	})
 
 	assert.Panics(t, func() {
