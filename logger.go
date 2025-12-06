@@ -1,8 +1,9 @@
 package fox
 
 import (
-	"time"
 	"strings"
+	"time"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/fox-gonic/fox/logger"
