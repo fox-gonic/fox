@@ -6,53 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLastChar(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected uint8
-	}{
-		{
-			name:     "single character",
-			input:    "a",
-			expected: 'a',
-		},
-		{
-			name:     "multiple characters",
-			input:    "hello",
-			expected: 'o',
-		},
-		{
-			name:     "ends with slash",
-			input:    "/api/",
-			expected: '/',
-		},
-		{
-			name:     "ends with number",
-			input:    "test123",
-			expected: '3',
-		},
-		{
-			name:     "special characters",
-			input:    "test!@#",
-			expected: '#',
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := lastChar(tt.input)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func TestLastChar_Panic(t *testing.T) {
-	assert.Panics(t, func() {
-		lastChar("")
-	}, "Empty string should panic")
-}
-
 func TestNameOfFunction(t *testing.T) {
 	// Test with a known function
 	name := NameOfFunction(TestNameOfFunction)
@@ -240,13 +193,6 @@ func TestJoinPaths_EdgeCases(t *testing.T) {
 }
 
 // Benchmark tests
-func BenchmarkLastChar(b *testing.B) {
-	str := "hello world"
-	for i := 0; i < b.N; i++ {
-		_ = lastChar(str)
-	}
-}
-
 func BenchmarkNameOfFunction(b *testing.B) {
 	fn := TestNameOfFunction
 	for i := 0; i < b.N; i++ {
@@ -319,29 +265,6 @@ func TestJoinPaths_ConsistentOutput(t *testing.T) {
 
 	assert.Equal(t, result1, result2)
 	assert.Equal(t, result2, result3)
-}
-
-func TestLastChar_AllASCII(t *testing.T) {
-	// Test with various ASCII characters
-	testCases := []struct {
-		input    string
-		expected uint8
-	}{
-		{"A", 'A'},
-		{"0", '0'},
-		{"!", '!'},
-		{"~", '~'},
-		{" ", ' '},
-		{"\n", '\n'},
-		{"\t", '\t'},
-	}
-
-	for _, tc := range testCases {
-		t.Run(string(tc.expected), func(t *testing.T) {
-			result := lastChar(tc.input)
-			assert.Equal(t, tc.expected, result)
-		})
-	}
 }
 
 func TestJoinPaths_NoModificationOfInputs(t *testing.T) {

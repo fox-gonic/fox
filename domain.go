@@ -62,7 +62,7 @@ func (engine *DomainEngine) server(name string, isRegexp bool, engineFunc func(*
 	if isRegexp {
 		req, err := regexp.Compile(name)
 		if err != nil {
-			panic(err)
+			panic("fox: invalid domain regexp pattern: " + name + ": " + err.Error())
 		}
 
 		domain.Regexp = req

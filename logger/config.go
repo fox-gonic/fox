@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/natefinch/lumberjack"
 	"github.com/rs/zerolog"
+	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
 
 // DefaultLogTimeFormat default log time format
