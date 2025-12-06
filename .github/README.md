@@ -259,23 +259,58 @@ Fox adds minimal overhead to Gin's performance while providing significant devel
 
 ### Benchmark Comparison
 
+Tested on Apple M4 Pro, Go 1.25.4:
+
 ```
-BenchmarkGin_SimpleRoute         10000000    118 ns/op    0 B/op    0 allocs/op
-BenchmarkFox_SimpleRoute         10000000    125 ns/op    0 B/op    0 allocs/op
-BenchmarkFox_AutoBinding          5000000    312 ns/op  128 B/op    3 allocs/op
-BenchmarkFox_AutoRendering        8000000    187 ns/op   64 B/op    2 allocs/op
+Routing Benchmarks:
+BenchmarkEngine_SimpleRoute              1,700,000     656 ns/op    1554 B/op    20 allocs/op
+BenchmarkEngine_ParamRoute               1,700,000     633 ns/op    1554 B/op    20 allocs/op
+BenchmarkEngine_MultiParam               1,300,000     879 ns/op    2121 B/op    27 allocs/op
+BenchmarkEngine_WildcardRoute            1,900,000     611 ns/op    1579 B/op    20 allocs/op
+BenchmarkEngine_JSONResponse             1,600,000     732 ns/op    1767 B/op    21 allocs/op
+
+Binding Benchmarks:
+BenchmarkBinding_URIParam                  900,000    1283 ns/op    2717 B/op    36 allocs/op
+BenchmarkBinding_QueryParam                600,000    1653 ns/op    3010 B/op    40 allocs/op
+BenchmarkBinding_JSONBody                  500,000    1878 ns/op    3566 B/op    42 allocs/op
+BenchmarkBinding_WithValidation            500,000    2094 ns/op    3702 B/op    43 allocs/op
+BenchmarkBinding_NoBinding (baseline)    1,700,000     643 ns/op    1597 B/op    22 allocs/op
+
+Middleware Benchmarks:
+BenchmarkEngine_WithMiddleware             800,000    1163 ns/op    2675 B/op    35 allocs/op
+BenchmarkEngine_MultipleMiddlewares        500,000    2304 ns/op    4922 B/op    65 allocs/op
 ```
 
 ### Performance Characteristics
 
-| Feature | Overhead | Notes |
-|---------|----------|-------|
-| Simple routes (string return) | ~6% | One-time reflection cost per route registration |
-| Auto binding (struct params) | ~165% | Includes JSON parsing and validation |
-| Auto rendering (struct return) | ~58% | Includes JSON serialization |
-| Complex handlers | ~10-20% | Amortized across request processing |
+| Feature | Time (ns/op) | Overhead vs Baseline | Notes |
+|---------|--------------|---------------------|-------|
+| Simple string return | ~656 | Baseline | Direct response rendering |
+| Parameter binding (URI) | ~1283 | +95% | Reflection + struct allocation |
+| Parameter binding (JSON) | ~1878 | +186% | JSON parsing + validation |
+| JSON response | ~732 | +12% | JSON serialization |
+| Single middleware | ~1163 | +77% | Middleware chain execution |
+| Complex nested struct | ~2812 | +328% | Deep JSON parsing + validation |
 
 **Key Insight**: The overhead is primarily from JSON parsing/serialization, not Fox's reflection logic. For most real-world applications, this is negligible compared to database queries and business logic.
+
+### Running Benchmarks
+
+To run the benchmarks yourself:
+
+```bash
+# Run all benchmarks
+go test -bench=. -benchmem
+
+# Run specific benchmark
+go test -bench=BenchmarkEngine_SimpleRoute -benchmem
+
+# Run with more iterations for accurate results
+go test -bench=. -benchmem -benchtime=10s
+
+# Save results to file
+go test -bench=. -benchmem > benchmark_results.txt
+```
 
 ### When to Use Fox vs Gin
 

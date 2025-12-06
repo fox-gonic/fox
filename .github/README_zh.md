@@ -259,23 +259,58 @@ Fox 在 Gin 的性能基础上增加了最小开销，同时显著提升了开�
 
 ### 基准测试对比
 
+测试环境：Apple M4 Pro，Go 1.25.4：
+
 ```
-BenchmarkGin_SimpleRoute         10000000    118 ns/op    0 B/op    0 allocs/op
-BenchmarkFox_SimpleRoute         10000000    125 ns/op    0 B/op    0 allocs/op
-BenchmarkFox_AutoBinding          5000000    312 ns/op  128 B/op    3 allocs/op
-BenchmarkFox_AutoRendering        8000000    187 ns/op   64 B/op    2 allocs/op
+路由基准测试：
+BenchmarkEngine_SimpleRoute              1,700,000     656 ns/op    1554 B/op    20 allocs/op
+BenchmarkEngine_ParamRoute               1,700,000     633 ns/op    1554 B/op    20 allocs/op
+BenchmarkEngine_MultiParam               1,300,000     879 ns/op    2121 B/op    27 allocs/op
+BenchmarkEngine_WildcardRoute            1,900,000     611 ns/op    1579 B/op    20 allocs/op
+BenchmarkEngine_JSONResponse             1,600,000     732 ns/op    1767 B/op    21 allocs/op
+
+绑定基准测试：
+BenchmarkBinding_URIParam                  900,000    1283 ns/op    2717 B/op    36 allocs/op
+BenchmarkBinding_QueryParam                600,000    1653 ns/op    3010 B/op    40 allocs/op
+BenchmarkBinding_JSONBody                  500,000    1878 ns/op    3566 B/op    42 allocs/op
+BenchmarkBinding_WithValidation            500,000    2094 ns/op    3702 B/op    43 allocs/op
+BenchmarkBinding_NoBinding (基准)        1,700,000     643 ns/op    1597 B/op    22 allocs/op
+
+中间件基准测试：
+BenchmarkEngine_WithMiddleware             800,000    1163 ns/op    2675 B/op    35 allocs/op
+BenchmarkEngine_MultipleMiddlewares        500,000    2304 ns/op    4922 B/op    65 allocs/op
 ```
 
 ### 性能特征
 
-| 功能 | 开销 | 说明 |
-|------|------|------|
-| 简单路由 (字符串返回) | ~6% | 每次路由注册的一次性反射成本 |
-| 自动绑定 (结构体参数) | ~165% | 包括 JSON 解析和验证 |
-| 自动渲染 (结构体返回) | ~58% | 包括 JSON 序列化 |
-| 复杂 Handler | ~10-20% | 在请求处理过程中均摊 |
+| 功能 | 时间 (ns/op) | 相对基准开销 | 说明 |
+|------|-------------|-------------|------|
+| 简单字符串返回 | ~656 | 基准 | 直接响应渲染 |
+| 参数绑定 (URI) | ~1283 | +95% | 反射 + 结构体分配 |
+| 参数绑定 (JSON) | ~1878 | +186% | JSON 解析 + 验证 |
+| JSON 响应 | ~732 | +12% | JSON 序列化 |
+| 单个中间件 | ~1163 | +77% | 中间件链执行 |
+| 复杂嵌套结构 | ~2812 | +328% | 深度 JSON 解析 + 验证 |
 
 **关键洞察**: 开销主要来自 JSON 解析/序列化，而非 Fox 的反射逻辑。对于大多数实际应用，相比数据库查询和业务逻辑，这些开销可以忽略不计。
+
+### 运行基准测试
+
+您可以自己运行基准测试：
+
+```bash
+# 运行所有基准测试
+go test -bench=. -benchmem
+
+# 运行特定基准测试
+go test -bench=BenchmarkEngine_SimpleRoute -benchmem
+
+# 运行更多迭代以获得准确结果
+go test -bench=. -benchmem -benchtime=10s
+
+# 将结果保存到文件
+go test -bench=. -benchmem > benchmark_results.txt
+```
 
 ### 何时使用 Fox vs Gin
 
