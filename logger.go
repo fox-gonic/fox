@@ -1,6 +1,7 @@
 package fox
 
 import (
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -60,11 +61,17 @@ func Logger(config ...LoggerConfig) gin.HandlerFunc {
 			if raw := c.Request.URL.RawQuery; raw != "" {
 				path = path + "?" + raw
 			}
+			// Sanitize user-provided log fields (path, client_ip)
+			safePath := strings.ReplaceAll(path, "\n", "")
+			safePath = strings.ReplaceAll(safePath, "\r", "")
+			clientIP := c.ClientIP()
+			safeClientIP := strings.ReplaceAll(clientIP, "\n", "")
+			safeClientIP = strings.ReplaceAll(safeClientIP, "\r", "")
 
 			fields := map[string]any{
 				"method":    c.Request.Method,
-				"path":      path,
-				"client_ip": c.ClientIP(),
+				"path":      safePath,
+				"client_ip": safeClientIP,
 				"type":      "ENGINE",
 				"status":    c.Writer.Status(),
 				"latency":   time.Since(start).String(),
