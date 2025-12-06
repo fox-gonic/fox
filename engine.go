@@ -1,3 +1,4 @@
+// Package fox provides a lightweight web framework for building web applications.
 package fox
 
 import (
