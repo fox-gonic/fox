@@ -8,13 +8,12 @@ require (
 	github.com/go-playground/validator/v10 v10.28.0
 	github.com/json-iterator/go v1.1.12
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/rs/zerolog v1.34.0
 	github.com/stretchr/testify v1.11.1
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
 require (
-	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.14.1 // indirect
 	github.com/bytedance/sonic/loader v0.3.0 // indirect
@@ -50,7 +49,5 @@ require (
 	golang.org/x/text v0.31.0 // indirect
 	golang.org/x/tools v0.38.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
-	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

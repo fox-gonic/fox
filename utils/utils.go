@@ -6,13 +6,6 @@ import (
 	"runtime"
 )
 
-func lastChar(str string) uint8 {
-	if str == "" {
-		panic("The length of the string can't be 0")
-	}
-	return str[len(str)-1]
-}
-
 // NameOfFunction return function name
 func NameOfFunction(f any) string {
 	return runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
@@ -25,7 +18,9 @@ func JoinPaths(absolutePath, relativePath string) string {
 	}
 
 	finalPath := path.Join(absolutePath, relativePath)
-	if lastChar(relativePath) == '/' && lastChar(finalPath) != '/' {
+	// Check for trailing slash preservation
+	if len(relativePath) > 0 && relativePath[len(relativePath)-1] == '/' &&
+		len(finalPath) > 0 && finalPath[len(finalPath)-1] != '/' {
 		return finalPath + "/"
 	}
 	return finalPath

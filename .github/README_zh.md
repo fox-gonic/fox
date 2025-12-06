@@ -1,6 +1,6 @@
-# Fox Web Framework
+# Fox Web 框架
 
-English | [简体中文](README_zh.md)
+[English](README.md) | 简体中文
 
 [![Go Tests](https://github.com/fox-gonic/fox/actions/workflows/go.yml/badge.svg)](https://github.com/fox-gonic/fox/actions/workflows/go.yml)
 [![Security Scanning](https://github.com/fox-gonic/fox/actions/workflows/security.yml/badge.svg)](https://github.com/fox-gonic/fox/actions/workflows/security.yml)
@@ -8,59 +8,59 @@ English | [简体中文](README_zh.md)
 [![GoDoc](https://pkg.go.dev/badge/github.com/fox-gonic/fox?status.svg)](https://pkg.go.dev/github.com/fox-gonic/fox)
 [![codecov](https://codecov.io/gh/fox-gonic/fox/branch/main/graph/badge.svg)](https://codecov.io/gh/fox-gonic/fox)
 
-Fox is a powerful extension of the [Gin](https://github.com/gin-gonic/gin) web framework, offering automatic parameter binding, flexible response rendering, and enhanced features while maintaining full Gin compatibility.
+Fox 是 [Gin](https://github.com/gin-gonic/gin) Web 框架的强大扩展，提供自动参数绑定、灵活的响应渲染和增强功能，同时保持与 Gin 的完全兼容。
 
-## Features
+## 特性
 
-- 🚀 **Automatic Binding & Rendering**: Bind request parameters and render responses automatically
-- 🔧 **Handler Flexibility**: Support multiple handler signatures with automatic type detection
-- 🌐 **Multi-Domain Routing**: Route traffic based on domain names with exact and regex matching
-- ✅ **Custom Validation**: Implement `IsValider` interface for complex validation logic
-- 📊 **Structured Logging**: Built-in logger with TraceID, structured fields, and file rotation
-- ⚡ **High Performance**: Minimal overhead on top of Gin's already fast routing
-- 🔒 **Security First**: Built-in security scanning and best practices
-- 📦 **100% Gin Compatible**: Use any Gin middleware or feature seamlessly
+- 🚀 **自动绑定和渲染**: 自动绑定请求参数并渲染响应
+- 🔧 **Handler 灵活性**: 支持多种 Handler 签名，自动类型检测
+- 🌐 **多域名路由**: 基于域名的流量路由，支持精确匹配和正则表达式
+- ✅ **自定义验证**: 实现 `IsValider` 接口以支持复杂验证逻辑
+- 📊 **结构化日志**: 内置日志系统，支持 TraceID、结构化字段和文件轮转
+- ⚡ **高性能**: 在 Gin 快速路由基础上增加最小开销
+- 🔒 **安全优先**: 内置安全扫描和最佳实践
+- 📦 **100% Gin 兼容**: 无缝使用任何 Gin 中间件或功能
 
-## Table of Contents
+## 目录
 
-- [Installation](#installation)
-- [Quick Start](#quickstart)
-- [Architecture](#architecture)
-- [Performance](#performance)
-- [Examples](#examples)
-- [Best Practices](#best-practices)
-- [Troubleshooting](#troubleshooting)
-- [Security](#security)
-- [Contributing](#contributing)
-- [License](#license)
+- [安装](#安装)
+- [快速开始](#快速开始)
+- [架构](#架构)
+- [性能](#性能)
+- [示例](#示例)
+- [最佳实践](#最佳实践)
+- [故障排查](#故障排查)
+- [安全](#安全)
+- [贡献](#贡献)
+- [许可证](#许可证)
 
-## ⚠️ **Attention**
+## ⚠️ **注意**
 
-Fox is currently in beta and under active development. While it offers exciting new features, please note that it may not be stable for production use. If you choose to use, be prepared for potential bugs and breaking changes. Always check the official documentation and release notes for updates and proceed with caution. Happy coding!
+Fox 目前处于 beta 阶段，正在积极开发中。虽然它提供了令人兴奋的新功能，但请注意它可能不适合生产环境使用。如果您选择使用，请做好应对潜在 bug 和破坏性变更的准备。始终查看官方文档和发布说明以获取更新，并谨慎使用。祝编码愉快！
 
-## Installation
+## 安装
 
-Fox requires **Go version `1.24` or higher** to run. If you need to install or upgrade Go, visit the [official Go download page](https://go.dev/dl/). To start setting up your project. Create a new directory for your project and navigate into it. Then, initialize your project with Go modules by executing the following command in your terminal:
+Fox 需要 **Go 版本 `1.24` 或更高**。如果需要安装或升级 Go，请访问 [Go 官方下载页面](https://go.dev/dl/)。首先为您的项目创建一个新目录并进入该目录。然后，在终端中执行以下命令，使用 Go modules 初始化您的项目：
 
 ```bash
 go mod init github.com/your/repo
 ```
 
-To learn more about Go modules and how they work, you can check out the [Using Go Modules](https://go.dev/blog/using-go-modules) blog post.
+要了解更多关于 Go modules 的信息，可以查看 [使用 Go Modules](https://go.dev/blog/using-go-modules) 博客文章。
 
-After setting up your project, you can install fox with the `go get` command:
+设置好项目后，可以使用 `go get` 命令安装 Fox：
 
 ```bash
 go get -u github.com/fox-gonic/fox
 ```
 
-This command fetches the Fox package and adds it to your project's dependencies, allowing you to start building your web applications with Fox.
+此命令会获取 Fox 包并将其添加到项目依赖中，让您可以开始使用 Fox 构建 Web 应用程序。
 
-## Quickstart
+## 快速开始
 
-### Running fox Engine
+### 运行 Fox Engine
 
-First you need to import fox package for using fox engine, one simplest example likes the follow `example.go`:
+首先需要导入 fox 包以使用 fox engine，最简单的示例如下 `example.go`：
 
 ```go
 package main
@@ -74,18 +74,18 @@ func main() {
   router.GET("/ping", func(c *fox.Context) string {
     return "pong"
   })
-  router.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+  router.Run() // 监听并服务于 0.0.0.0:8080 (Windows 为 "localhost:8080")
 }
 ```
 
-And use the Go command to run the demo:
+使用 Go 命令运行示例：
 
 ```shell
-# run example.go and visit 0.0.0.0:8080/ping on browser
+# 运行 example.go 并在浏览器访问 0.0.0.0:8080/ping
 $ go run example.go
 ```
 
-### Automatically bind request data and render
+### 自动绑定请求数据并渲染
 
 ```go
 package main
@@ -124,7 +124,7 @@ func main() {
       CreatedAt: time.Now(),
       UpdatedAt: time.Now(),
     }
-    // Save article to database
+    // 保存文章到数据库
     return article, nil
   })
 
@@ -132,7 +132,7 @@ func main() {
 }
 ```
 
-#### Support custom IsValider for binding.
+#### 支持自定义 IsValider 进行绑定验证
 
 ```go
 package main
@@ -171,7 +171,7 @@ func main() {
       Username: args.Username,
       Email:    args.Email,
     }
-    // Hash password and save user to database
+    // 对密码进行哈希并保存用户到数据库
     return user, nil
   })
 
@@ -186,166 +186,166 @@ $ curl -X POST http://localhost:8080/users/signup \
 {"code":"PASSWORD_TOO_SHORT"}
 ```
 
-## Architecture
+## 架构
 
-Fox extends Gin's routing engine with automatic parameter binding and response rendering:
+Fox 扩展了 Gin 的路由引擎，增加了自动参数绑定和响应渲染功能：
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                         HTTP Request                         │
+│                         HTTP 请求                            │
 └────────────────────────────┬────────────────────────────────┘
                              │
                              ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                      Gin Router/Engine                       │
+│                      Gin 路由/引擎                           │
 │  ┌────────────────┐  ┌──────────────┐  ┌─────────────────┐ │
-│  │  Middleware 1  │─▶│ Middleware 2 │─▶│  Middleware N   │ │
+│  │   中间件 1     │─▶│   中间件 2   │─▶│   中间件 N     │ │
 │  └────────────────┘  └──────────────┘  └─────────────────┘ │
 └────────────────────────────┬────────────────────────────────┘
                              │
                              ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                     Fox Handler Wrapper                      │
+│                     Fox Handler 包装器                       │
 │  ┌──────────────────────────────────────────────────────┐  │
-│  │  1. Reflect Handler Signature                        │  │
-│  │     • Detect parameter types (Context, Request, etc) │  │
-│  │     • Detect return types (data, error, status)      │  │
+│  │  1. 反射 Handler 签名                                │  │
+│  │     • 检测参数类型 (Context, Request 等)             │  │
+│  │     • 检测返回类型 (data, error, status)             │  │
 │  └──────────────────────────────────────────────────────┘  │
 │                             │                                │
 │                             ▼                                │
 │  ┌──────────────────────────────────────────────────────┐  │
-│  │  2. Automatic Parameter Binding                      │  │
-│  │     • URI parameters (path variables)                │  │
-│  │     • Query parameters                               │  │
-│  │     • JSON/Form body                                 │  │
-│  │     • Custom validation (IsValider)                  │  │
+│  │  2. 自动参数绑定                                     │  │
+│  │     • URI 参数 (路径变量)                            │  │
+│  │     • Query 参数                                     │  │
+│  │     • JSON/Form 请求体                               │  │
+│  │     • 自定义验证 (IsValider)                         │  │
 │  └──────────────────────────────────────────────────────┘  │
 │                             │                                │
 │                             ▼                                │
 │  ┌──────────────────────────────────────────────────────┐  │
-│  │  3. Execute Handler Function                         │  │
-│  │     • Call with bound parameters                     │  │
-│  │     • Handle panics and errors                       │  │
+│  │  3. 执行 Handler 函数                                │  │
+│  │     • 使用绑定的参数调用                             │  │
+│  │     • 处理 panic 和错误                              │  │
 │  └──────────────────────────────────────────────────────┘  │
 │                             │                                │
 │                             ▼                                │
 │  ┌──────────────────────────────────────────────────────┐  │
-│  │  4. Automatic Response Rendering                     │  │
-│  │     • Detect response type                           │  │
-│  │     • Serialize to JSON                              │  │
-│  │     • Set appropriate HTTP status code               │  │
-│  │     • Handle httperrors.Error specially              │  │
+│  │  4. 自动响应渲染                                     │  │
+│  │     • 检测响应类型                                   │  │
+│  │     • 序列化为 JSON                                  │  │
+│  │     • 设置适当的 HTTP 状态码                         │  │
+│  │     • 特殊处理 httperrors.Error                      │  │
 │  └──────────────────────────────────────────────────────┘  │
 └────────────────────────────┬────────────────────────────────┘
                              │
                              ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                        HTTP Response                         │
+│                        HTTP 响应                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Key Components
+### 核心组件
 
-- **fox.Engine**: Wraps `gin.Engine` with enhanced handler registration
-- **fox.Context**: Extends `gin.Context` with additional methods (RequestBody, TraceID)
-- **call.go**: Core reflection-based handler invocation logic
-- **render.go**: Automatic response serialization and rendering
-- **validator.go**: Integration with go-playground/validator and custom IsValider
-- **DomainEngine**: Multi-domain routing with exact and regex pattern matching
+- **fox.Engine**: 包装 `gin.Engine` 并增强 Handler 注册
+- **fox.Context**: 扩展 `gin.Context` 并添加额外方法 (RequestBody, TraceID)
+- **call.go**: 基于反射的核心 Handler 调用逻辑
+- **render.go**: 自动响应序列化和渲染
+- **validator.go**: 集成 go-playground/validator 和自定义 IsValider
+- **DomainEngine**: 多域名路由，支持精确匹配和正则表达式模式
 
-## Performance
+## 性能
 
-Fox adds minimal overhead to Gin's performance while providing significant developer productivity gains:
+Fox 在 Gin 的性能基础上增加了最小开销，同时显著提升了开发效率：
 
-### Benchmark Comparison
+### 基准测试对比
 
-Tested on Apple M4 Pro, Go 1.25.4:
+测试环境：Apple M4 Pro，Go 1.25.4：
 
 ```
-Routing Benchmarks:
+路由基准测试：
 BenchmarkEngine_SimpleRoute              1,700,000     656 ns/op    1554 B/op    20 allocs/op
 BenchmarkEngine_ParamRoute               1,700,000     633 ns/op    1554 B/op    20 allocs/op
 BenchmarkEngine_MultiParam               1,300,000     879 ns/op    2121 B/op    27 allocs/op
 BenchmarkEngine_WildcardRoute            1,900,000     611 ns/op    1579 B/op    20 allocs/op
 BenchmarkEngine_JSONResponse             1,600,000     732 ns/op    1767 B/op    21 allocs/op
 
-Binding Benchmarks:
+绑定基准测试：
 BenchmarkBinding_URIParam                  900,000    1283 ns/op    2717 B/op    36 allocs/op
 BenchmarkBinding_QueryParam                600,000    1653 ns/op    3010 B/op    40 allocs/op
 BenchmarkBinding_JSONBody                  500,000    1878 ns/op    3566 B/op    42 allocs/op
 BenchmarkBinding_WithValidation            500,000    2094 ns/op    3702 B/op    43 allocs/op
-BenchmarkBinding_NoBinding (baseline)    1,700,000     643 ns/op    1597 B/op    22 allocs/op
+BenchmarkBinding_NoBinding (基准)        1,700,000     643 ns/op    1597 B/op    22 allocs/op
 
-Middleware Benchmarks:
+中间件基准测试：
 BenchmarkEngine_WithMiddleware             800,000    1163 ns/op    2675 B/op    35 allocs/op
 BenchmarkEngine_MultipleMiddlewares        500,000    2304 ns/op    4922 B/op    65 allocs/op
 ```
 
-### Performance Characteristics
+### 性能特征
 
-| Feature | Time (ns/op) | Overhead vs Baseline | Notes |
-|---------|--------------|---------------------|-------|
-| Simple string return | ~656 | Baseline | Direct response rendering |
-| Parameter binding (URI) | ~1283 | +95% | Reflection + struct allocation |
-| Parameter binding (JSON) | ~1878 | +186% | JSON parsing + validation |
-| JSON response | ~732 | +12% | JSON serialization |
-| Single middleware | ~1163 | +77% | Middleware chain execution |
-| Complex nested struct | ~2812 | +328% | Deep JSON parsing + validation |
+| 功能 | 时间 (ns/op) | 相对基准开销 | 说明 |
+|------|-------------|-------------|------|
+| 简单字符串返回 | ~656 | 基准 | 直接响应渲染 |
+| 参数绑定 (URI) | ~1283 | +95% | 反射 + 结构体分配 |
+| 参数绑定 (JSON) | ~1878 | +186% | JSON 解析 + 验证 |
+| JSON 响应 | ~732 | +12% | JSON 序列化 |
+| 单个中间件 | ~1163 | +77% | 中间件链执行 |
+| 复杂嵌套结构 | ~2812 | +328% | 深度 JSON 解析 + 验证 |
 
-**Key Insight**: The overhead is primarily from JSON parsing/serialization, not Fox's reflection logic. For most real-world applications, this is negligible compared to database queries and business logic.
+**关键洞察**: 开销主要来自 JSON 解析/序列化，而非 Fox 的反射逻辑。对于大多数实际应用，相比数据库查询和业务逻辑，这些开销可以忽略不计。
 
-### Running Benchmarks
+### 运行基准测试
 
-To run the benchmarks yourself:
+您可以自己运行基准测试：
 
 ```bash
-# Run all benchmarks
+# 运行所有基准测试
 go test -bench=. -benchmem
 
-# Run specific benchmark
+# 运行特定基准测试
 go test -bench=BenchmarkEngine_SimpleRoute -benchmem
 
-# Run with more iterations for accurate results
+# 运行更多迭代以获得准确结果
 go test -bench=. -benchmem -benchtime=10s
 
-# Save results to file
+# 将结果保存到文件
 go test -bench=. -benchmem > benchmark_results.txt
 ```
 
-### When to Use Fox vs Gin
+### 何时使用 Fox vs Gin
 
-**Use Fox when**:
-- Building REST APIs with many endpoints
-- Need automatic parameter validation
-- Want cleaner, more maintainable handler signatures
-- Working with JSON request/response bodies
+**使用 Fox 当**:
+- 构建具有多个端点的 REST API
+- 需要自动参数验证
+- 希望更简洁、更易维护的 Handler 签名
+- 处理 JSON 请求/响应体
 
-**Use Gin directly when**:
-- Every microsecond matters (high-frequency trading, etc.)
-- Need maximum control over request/response handling
-- Building static file servers or proxies
+**直接使用 Gin 当**:
+- 每一微秒都很重要（高频交易等）
+- 需要对请求/响应处理的最大控制
+- 构建静态文件服务器或代理
 
-## Examples
+## 示例
 
-Comprehensive examples are available in the [`examples/`](../examples/) directory:
+在 [`examples/`](../examples/) 目录中提供了全面的示例：
 
-| Example | Description |
-|---------|-------------|
-| [01-basic](../examples/01-basic) | Basic routing, path parameters, JSON responses |
-| [02-binding](../examples/02-binding) | Parameter binding (JSON/URI/Query) with validation |
-| [03-middleware](../examples/03-middleware) | Custom middleware, authentication, rate limiting |
-| [04-domain-routing](../examples/04-domain-routing) | Multi-domain and multi-tenant routing |
-| [05-custom-validator](../examples/05-custom-validator) | Complex validation with IsValider interface |
-| [06-error-handling](../examples/06-error-handling) | HTTP errors, custom error codes |
-| [07-logger-config](../examples/07-logger-config) | Logger configuration, file rotation, JSON logs |
+| 示例 | 描述 |
+|------|------|
+| [01-basic](../examples/01-basic) | 基础路由、路径参数、JSON 响应 |
+| [02-binding](../examples/02-binding) | 参数绑定 (JSON/URI/Query) 和验证 |
+| [03-middleware](../examples/03-middleware) | 自定义中间件、身份验证、限流 |
+| [04-domain-routing](../examples/04-domain-routing) | 多域名和多租户路由 |
+| [05-custom-validator](../examples/05-custom-validator) | 使用 IsValider 接口的复杂验证 |
+| [06-error-handling](../examples/06-error-handling) | HTTP 错误、自定义错误码 |
+| [07-logger-config](../examples/07-logger-config) | 日志配置、文件轮转、JSON 日志 |
 
-Each example includes a README with usage instructions and curl commands.
+每个示例都包含带有使用说明和 curl 命令的 README。
 
-## Best Practices
+## 最佳实践
 
-### 1. Error Handling
+### 1. 错误处理
 
-**Use httperrors.Error for API errors:**
+**使用 httperrors.Error 处理 API 错误：**
 
 ```go
 import "github.com/fox-gonic/fox/httperrors"
@@ -365,9 +365,9 @@ router.GET("/users/:id", func(ctx *fox.Context) (*User, error) {
 })
 ```
 
-### 2. Request Validation
+### 2. 请求验证
 
-**Combine struct tags with IsValider:**
+**结合结构体标签和 IsValider：**
 
 ```go
 type CreateUserRequest struct {
@@ -381,16 +381,16 @@ func (r *CreateUserRequest) IsValid() error {
         return &httperrors.Error{
             HTTPCode: http.StatusBadRequest,
             Code:     "INVALID_EMAIL_DOMAIN",
-            Err:      errors.New("disposable email addresses not allowed"),
+            Err:      errors.New("不允许使用一次性邮箱地址"),
         }
     }
     return nil
 }
 ```
 
-### 3. Structured Logging
+### 3. 结构化日志
 
-**Use logger with fields for better observability:**
+**使用带字段的 logger 以获得更好的可观测性：**
 
 ```go
 import "github.com/fox-gonic/fox/logger"
@@ -413,22 +413,22 @@ router.POST("/orders", func(ctx *fox.Context, req *CreateOrderRequest) (*Order, 
 })
 ```
 
-### 4. Handler Signatures
+### 4. Handler 签名
 
-**Choose the right signature for your use case:**
+**根据使用场景选择正确的签名：**
 
 ```go
-// Simple: No binding needed
+// 简单: 不需要绑定
 router.GET("/health", func(ctx *fox.Context) string {
     return "OK"
 })
 
-// With binding: Automatic parameter extraction
+// 带绑定: 自动参数提取
 router.GET("/users/:id", func(ctx *fox.Context, req *GetUserRequest) (*User, error) {
     return findUser(req.ID)
 })
 
-// Full control: Access context and return custom status
+// 完全控制: 访问上下文并返回自定义状态
 router.POST("/complex", func(ctx *fox.Context, req *Request) (interface{}, int, error) {
     result, err := process(req)
     if err != nil {
@@ -438,9 +438,9 @@ router.POST("/complex", func(ctx *fox.Context, req *Request) (interface{}, int, 
 })
 ```
 
-### 5. Production Configuration
+### 5. 生产环境配置
 
-**Configure logging for production:**
+**为生产环境配置日志：**
 
 ```go
 import "github.com/fox-gonic/fox/logger"
@@ -452,7 +452,7 @@ logger.SetConfig(&logger.Config{
     Filename:              "/var/log/myapp/app.log",
     MaxSize:               100,  // MB
     MaxBackups:            30,
-    MaxAge:                90,   // days
+    MaxAge:                90,   // 天数
     EncodeLogsAsJSON:      true,
 })
 
@@ -462,112 +462,112 @@ router.Use(fox.Logger(fox.LoggerConfig{
 }))
 ```
 
-### 6. Multi-Domain Routing
+### 6. 多域名路由
 
-**Organize routes by domain:**
+**按域名组织路由：**
 
 ```go
 de := fox.NewDomainEngine()
 
-// API subdomain
+// API 子域名
 de.Domain("api.example.com", func(apiRouter *fox.Engine) {
     apiRouter.GET("/v1/users", listUsers)
     apiRouter.POST("/v1/users", createUser)
 })
 
-// Admin subdomain
+// Admin 子域名
 de.Domain("admin.example.com", func(adminRouter *fox.Engine) {
     adminRouter.Use(AuthMiddleware())
     adminRouter.GET("/dashboard", showDashboard)
 })
 
-// Wildcard for tenant subdomains
+// 租户子域名通配符
 de.DomainRegexp(`^(?P<tenant>[a-z0-9-]+)\.example\.com$`, func(tenantRouter *fox.Engine) {
     tenantRouter.GET("/", func(ctx *fox.Context) string {
         tenant := ctx.Param("tenant")
-        return "Welcome, " + tenant
+        return "欢迎, " + tenant
     })
 })
 
 http.ListenAndServe(":8080", de)
 ```
 
-## Troubleshooting
+## 故障排查
 
-### Common Issues
+### 常见问题
 
-#### 1. Binding Validation Fails
+#### 1. 绑定验证失败
 
-**Problem**: Request validation fails with unclear error messages.
+**问题**: 请求验证失败，错误消息不清晰。
 
-**Solution**: Check struct tags and use `binding` tag correctly:
+**解决方案**: 检查结构体标签并正确使用 `binding` 标签：
 
 ```go
-// Incorrect
+// 错误
 type Request struct {
-    Email string `json:"email" validate:"email"`  // Wrong tag
+    Email string `json:"email" validate:"email"`  // 错误的标签
 }
 
-// Correct
+// 正确
 type Request struct {
     Email string `json:"email" binding:"required,email"`
 }
 ```
 
-#### 2. Handler Not Found / 404 Errors
+#### 2. Handler 未找到 / 404 错误
 
-**Problem**: Routes return 404 even though they're registered.
+**问题**: 即使已注册路由，仍然返回 404。
 
-**Solution**:
-- Ensure path parameters match: `/users/:id` vs `/users/:user_id`
-- Check HTTP method: `GET` vs `POST`
-- Verify domain routing configuration if using DomainEngine
-- Enable debug mode to see registered routes:
+**解决方案**:
+- 确保路径参数匹配: `/users/:id` vs `/users/:user_id`
+- 检查 HTTP 方法: `GET` vs `POST`
+- 如果使用 DomainEngine，验证域名路由配置
+- 启用调试模式查看已注册的路由:
 
 ```go
 fox.SetMode(fox.DebugMode)
 ```
 
-#### 3. JSON Parsing Errors
+#### 3. JSON 解析错误
 
-**Problem**: `invalid character` or `cannot unmarshal` errors.
+**问题**: `invalid character` 或 `cannot unmarshal` 错误。
 
-**Solution**:
-- Verify Content-Type header is `application/json`
-- Check JSON structure matches struct tags
-- Use proper field types (string vs int)
+**解决方案**:
+- 验证 Content-Type header 是 `application/json`
+- 检查 JSON 结构是否匹配结构体标签
+- 使用正确的字段类型 (string vs int)
 
 ```bash
-# Correct
+# 正确
 curl -H "Content-Type: application/json" -d '{"name":"Alice"}' http://localhost:8080/users
 
-# Missing header (may fail)
+# 缺少 header (可能失败)
 curl -d '{"name":"Alice"}' http://localhost:8080/users
 ```
 
-#### 4. Custom Validator Not Called
+#### 4. 自定义验证器未调用
 
-**Problem**: `IsValid()` method not being invoked.
+**问题**: `IsValid()` 方法未被调用。
 
-**Solution**: Ensure pointer receivers and correct interface:
+**解决方案**: 确保使用指针接收器和正确的接口：
 
 ```go
-// Correct
+// 正确
 func (r *CreateUserRequest) IsValid() error {
     return nil
 }
 
-// Incorrect (value receiver won't work)
+// 错误 (值接收器不起作用)
 func (r CreateUserRequest) IsValid() error {
     return nil
 }
 ```
 
-#### 5. Panic on Invalid Regex in Domain Routing
+#### 5. 域名路由中的正则表达式 Panic
 
-**Problem**: Application panics when registering domain with invalid regex.
+**问题**: 注册无效正则表达式的域名时应用程序 panic。
 
-**Solution**: Validate regex patterns before registration:
+**解决方案**: 在注册前验证正则表达式模式：
 
 ```go
 pattern := `^(?P<tenant>[a-z0-9-]+)\.example\.com$`
@@ -577,86 +577,86 @@ if _, err := regexp.Compile(pattern); err != nil {
 de.DomainRegexp(pattern, handler)
 ```
 
-#### 6. High Memory Usage
+#### 6. 内存占用过高
 
-**Problem**: Memory usage increases over time.
+**问题**: 内存使用随时间增长。
 
-**Possible causes**:
-- Logger file handles not being closed (check MaxBackups/MaxAge)
-- Large response bodies not being garbage collected
-- Middleware memory leaks
+**可能原因**:
+- 日志文件句柄未关闭 (检查 MaxBackups/MaxAge)
+- 大响应体未被垃圾回收
+- 中间件内存泄漏
 
-**Solution**:
+**解决方案**:
 ```go
-// Configure log rotation properly
+// 正确配置日志轮转
 logger.SetConfig(&logger.Config{
-    MaxBackups: 10,   // Keep only 10 old files
-    MaxAge:     30,   // Delete files older than 30 days
+    MaxBackups: 10,   // 仅保留 10 个旧文件
+    MaxAge:     30,   // 删除超过 30 天的文件
 })
 
-// Use context deadlines for long-running requests
+// 为长时间运行的请求使用上下文超时
 ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 defer cancel()
 ```
 
-### Debug Mode
+### 调试模式
 
-Enable debug mode to see detailed information:
+启用调试模式查看详细信息：
 
 ```go
-fox.SetMode(fox.DebugMode)  // Development
-fox.SetMode(fox.ReleaseMode)  // Production
+fox.SetMode(fox.DebugMode)  // 开发环境
+fox.SetMode(fox.ReleaseMode)  // 生产环境
 ```
 
-In debug mode, Fox will print:
-- Registered routes and their handlers
-- Request binding details
-- Middleware execution order
+在调试模式下，Fox 会打印：
+- 已注册的路由及其 Handler
+- 请求绑定详情
+- 中间件执行顺序
 
-### Getting Help
+### 获取帮助
 
-1. Check the [examples/](../examples/) directory
-2. Review [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines
-3. Search existing [GitHub Issues](https://github.com/fox-gonic/fox/issues)
-4. Open a new issue with:
-   - Fox and Go versions
-   - Minimal reproducible example
-   - Expected vs actual behavior
+1. 查看 [examples/](../examples/) 目录
+2. 阅读 [CONTRIBUTING.md](../CONTRIBUTING.md) 了解指南
+3. 搜索现有的 [GitHub Issues](https://github.com/fox-gonic/fox/issues)
+4. 提交新 issue 时包含:
+   - Fox 和 Go 版本
+   - 最小可复现示例
+   - 预期行为与实际行为对比
 
-## Security
+## 安全
 
-Fox takes security seriously. We implement multiple layers of security scanning:
+Fox 非常重视安全性。我们实施了多层安全扫描：
 
-### Automated Security Scanning
+### 自动化安全扫描
 
-- **govulncheck**: Scans for known vulnerabilities in Go dependencies
-- **CodeQL**: Static Application Security Testing (SAST) for code analysis
-- **Dependency Review**: Reviews dependency changes in pull requests
-- **Weekly Scans**: Automated security scans run every Monday
+- **govulncheck**: 扫描 Go 依赖中的已知漏洞
+- **CodeQL**: 静态应用安全测试 (SAST) 进行代码分析
+- **Dependency Review**: 审查 Pull Request 中的依赖变更
+- **每周扫描**: 每周一自动运行安全扫描
 
-### Running Security Scans Locally
+### 本地运行安全扫描
 
 ```bash
-# Install govulncheck
+# 安装 govulncheck
 go install golang.org/x/vuln/cmd/govulncheck@latest
 
-# Run vulnerability scan
+# 运行漏洞扫描
 govulncheck ./...
 ```
 
-### Security Documentation
+### 安全文档
 
-- [SECURITY.md](../SECURITY.md) - Security policy and vulnerability reporting
-- [SECURITY_SCAN.md](.github/SECURITY_SCAN.md) - Detailed security scanning documentation
+- [SECURITY.md](../SECURITY.md) - 安全策略和漏洞报告
+- [SECURITY_SCAN.md](.github/SECURITY_SCAN.md) - 详细的安全扫描文档
 
-### Reporting Security Issues
+### 报告安全问题
 
-If you discover a security vulnerability, please refer to [SECURITY.md](../SECURITY.md) for our responsible disclosure process. **Do not** open public GitHub issues for security vulnerabilities.
+如果您发现安全漏洞，请参阅 [SECURITY.md](../SECURITY.md) 了解我们的负责任披露流程。**不要**为安全漏洞提交公开的 GitHub issue。
 
-## Contributing
+## 贡献
 
-We welcome contributions! Please see [CONTRIBUTING.md](../CONTRIBUTING.md) for details on how to contribute to Fox.
+我们欢迎贡献！请查看 [CONTRIBUTING.md](../CONTRIBUTING.md) 了解如何为 Fox 做出贡献的详细信息。
 
-## License
+## 许可证
 
-Fox is released under the MIT License. See [LICENSE](../LICENSE) for details.
+Fox 使用 MIT 许可证发布。详见 [LICENSE](../LICENSE)。
