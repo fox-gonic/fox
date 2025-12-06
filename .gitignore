@@ -23,3 +23,8 @@ coverage.txt
 coverage.html
 
 TODO.md
+
+# Benchmark results
+benchmark*.txt
+benchmark*.out
+*_bench_results.txt
