@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/fox-gonic/fox"
@@ -66,7 +66,7 @@ func RequestIDMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		requestID := c.GetHeader("X-Request-ID")
 		if requestID == "" {
-			requestID = fmt.Sprintf("%d", time.Now().UnixNano())
+			requestID = strconv.FormatInt(time.Now().UnixNano(), 10)
 		}
 
 		c.Set("request_id", requestID)
@@ -80,17 +80,17 @@ func main() {
 	router := fox.New()
 
 	// Global middlewares
-	router.Use(fox.Logger())                // Request logging
-	router.Use(fox.NewXResponseTimer())     // Response time tracking
-	router.Use(RequestIDMiddleware())       // Request ID
-	router.Use(gin.Recovery())              // Panic recovery
+	router.Use(fox.Logger())            // Request logging
+	router.Use(fox.NewXResponseTimer()) // Response time tracking
+	router.Use(RequestIDMiddleware())   // Request ID
+	router.Use(gin.Recovery())          // Panic recovery
 
 	// Public routes (no authentication)
-	router.GET("/", func(ctx *fox.Context) string {
+	router.GET("/", func() string {
 		return "Welcome to Fox API"
 	})
 
-	router.GET("/health", func(ctx *fox.Context) map[string]string {
+	router.GET("/health", func() map[string]string {
 		return map[string]string{
 			"status": "healthy",
 		}
@@ -100,20 +100,20 @@ func main() {
 	protected := router.Group("/api")
 	protected.Use(AuthMiddleware())
 	{
-		protected.GET("/profile", func(ctx *fox.Context) map[string]interface{} {
+		protected.GET("/profile", func(ctx *fox.Context) map[string]any {
 			userID, _ := ctx.Get("user_id")
 			username, _ := ctx.Get("username")
 
-			return map[string]interface{}{
+			return map[string]any{
 				"user_id":  userID,
 				"username": username,
 			}
 		})
 
-		protected.GET("/data", func(ctx *fox.Context) map[string]interface{} {
+		protected.GET("/data", func(ctx *fox.Context) map[string]any {
 			requestID, _ := ctx.Get("request_id")
 
-			return map[string]interface{}{
+			return map[string]any{
 				"request_id": requestID,
 				"data":       []string{"item1", "item2", "item3"},
 			}
@@ -124,7 +124,7 @@ func main() {
 	limited := router.Group("/limited")
 	limited.Use(RateLimitMiddleware())
 	{
-		limited.GET("/resource", func(ctx *fox.Context) string {
+		limited.GET("/resource", func() string {
 			return "Rate limited resource"
 		})
 	}
@@ -133,9 +133,9 @@ func main() {
 	router.GET("/special", func(c *gin.Context) {
 		c.Set("special", true)
 		c.Next()
-	}, func(ctx *fox.Context) map[string]interface{} {
+	}, func(ctx *fox.Context) map[string]any {
 		special, _ := ctx.Get("special")
-		return map[string]interface{}{
+		return map[string]any{
 			"special": special,
 			"message": "This route has custom middleware",
 		}
@@ -151,5 +151,7 @@ func main() {
 		return "Logged"
 	})
 
-	router.Run(":8080")
+	if err := router.Run(":8080"); err != nil {
+		panic(err)
+	}
 }

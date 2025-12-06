@@ -18,7 +18,7 @@ func BenchmarkEngine_SimpleRoute(b *testing.B) {
 		return "pong"
 	})
 
-	req := httptest.NewRequest("GET", "/ping", nil)
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
 	w := httptest.NewRecorder()
 
 	b.ResetTimer()
@@ -35,7 +35,7 @@ func BenchmarkEngine_ParamRoute(b *testing.B) {
 		return c.Param("id")
 	})
 
-	req := httptest.NewRequest("GET", "/users/123", nil)
+	req := httptest.NewRequest(http.MethodGet, "/users/123", nil)
 	w := httptest.NewRecorder()
 
 	b.ResetTimer()
@@ -55,7 +55,7 @@ func BenchmarkEngine_MultiParam(b *testing.B) {
 		}
 	})
 
-	req := httptest.NewRequest("GET", "/users/123/posts/456", nil)
+	req := httptest.NewRequest(http.MethodGet, "/users/123/posts/456", nil)
 	w := httptest.NewRecorder()
 
 	b.ResetTimer()
@@ -72,7 +72,7 @@ func BenchmarkEngine_WildcardRoute(b *testing.B) {
 		return c.Param("filepath")
 	})
 
-	req := httptest.NewRequest("GET", "/files/path/to/file.txt", nil)
+	req := httptest.NewRequest(http.MethodGet, "/files/path/to/file.txt", nil)
 	w := httptest.NewRecorder()
 
 	b.ResetTimer()
@@ -91,7 +91,7 @@ func BenchmarkEngine_StaticRoutes(b *testing.B) {
 	router.GET("/products", func(c *Context) string { return "products" })
 	router.GET("/services", func(c *Context) string { return "services" })
 
-	req := httptest.NewRequest("GET", "/products", nil)
+	req := httptest.NewRequest(http.MethodGet, "/products", nil)
 	w := httptest.NewRecorder()
 
 	b.ResetTimer()
@@ -118,7 +118,7 @@ func BenchmarkEngine_JSONResponse(b *testing.B) {
 		}
 	})
 
-	req := httptest.NewRequest("GET", "/user", nil)
+	req := httptest.NewRequest(http.MethodGet, "/user", nil)
 	w := httptest.NewRecorder()
 
 	b.ResetTimer()
@@ -142,7 +142,7 @@ func BenchmarkEngine_WithMiddleware(b *testing.B) {
 		return "pong"
 	})
 
-	req := httptest.NewRequest("GET", "/ping", nil)
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
 	w := httptest.NewRecorder()
 
 	b.ResetTimer()
@@ -174,7 +174,7 @@ func BenchmarkEngine_MultipleMiddlewares(b *testing.B) {
 		return "pong"
 	})
 
-	req := httptest.NewRequest("GET", "/ping", nil)
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
 	w := httptest.NewRecorder()
 
 	b.ResetTimer()
@@ -197,7 +197,7 @@ func BenchmarkEngine_GroupRoutes(b *testing.B) {
 		}
 	}
 
-	req := httptest.NewRequest("GET", "/api/v1/users", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/users", nil)
 	w := httptest.NewRecorder()
 
 	b.ResetTimer()
@@ -214,7 +214,7 @@ func BenchmarkEngine_POST(b *testing.B) {
 		return "received"
 	})
 
-	req := httptest.NewRequest("POST", "/data", nil)
+	req := httptest.NewRequest(http.MethodPost, "/data", nil)
 	w := httptest.NewRecorder()
 
 	b.ResetTimer()
@@ -259,7 +259,7 @@ func BenchmarkEngine_LargeRouteTable(b *testing.B) {
 		router.GET(path, func(c *Context) string { return "ok" })
 	}
 
-	req := httptest.NewRequest("GET", "/route/e/0", nil)
+	req := httptest.NewRequest(http.MethodGet, "/route/e/0", nil)
 	w := httptest.NewRecorder()
 
 	b.ResetTimer()
@@ -282,7 +282,7 @@ func BenchmarkBinding_URIParam(b *testing.B) {
 		return req.ID
 	})
 
-	req := httptest.NewRequest("GET", "/users/123", nil)
+	req := httptest.NewRequest(http.MethodGet, "/users/123", nil)
 	w := httptest.NewRecorder()
 
 	b.ResetTimer()
@@ -301,15 +301,15 @@ func BenchmarkBinding_QueryParam(b *testing.B) {
 	}
 
 	router := New()
-	router.GET("/search", func(c *Context, req *Request) map[string]interface{} {
-		return map[string]interface{}{
+	router.GET("/search", func(c *Context, req *Request) map[string]any {
+		return map[string]any{
 			"page":      req.Page,
 			"page_size": req.PageSize,
 			"keyword":   req.Keyword,
 		}
 	})
 
-	req := httptest.NewRequest("GET", "/search?page=1&page_size=10&keyword=test", nil)
+	req := httptest.NewRequest(http.MethodGet, "/search?page=1&page_size=10&keyword=test", nil)
 	w := httptest.NewRecorder()
 
 	b.ResetTimer()
@@ -333,7 +333,7 @@ func BenchmarkBinding_JSONBody(b *testing.B) {
 	})
 
 	body := `{"username":"john","email":"john@example.com","age":30}`
-	req := httptest.NewRequest("POST", "/users", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/users", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -365,7 +365,7 @@ func BenchmarkBinding_FormData(b *testing.B) {
 	formData.Set("age", "30")
 	body := formData.Encode()
 
-	req := httptest.NewRequest("POST", "/login", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
 
@@ -392,7 +392,7 @@ func BenchmarkBinding_MixedParams(b *testing.B) {
 	})
 
 	body := `{"username":"john","email":"john@example.com"}`
-	req := httptest.NewRequest("POST", "/users/123/update?page=1", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/users/123/update?page=1", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -419,7 +419,7 @@ func BenchmarkBinding_WithValidation(b *testing.B) {
 	})
 
 	body := `{"username":"john","email":"john@example.com","password":"password123","age":30}`
-	req := httptest.NewRequest("POST", "/register", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/register", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -444,7 +444,7 @@ func BenchmarkBinding_SimpleStruct(b *testing.B) {
 	})
 
 	body := `{"name":"test","value":42}`
-	req := httptest.NewRequest("POST", "/data", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/data", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -478,7 +478,7 @@ func BenchmarkBinding_ComplexStruct(b *testing.B) {
 	})
 
 	body := `{"username":"john","email":"john@example.com","age":30,"address":{"street":"Main St","city":"NYC","country":"USA"},"tags":["developer","go"]}`
-	req := httptest.NewRequest("POST", "/users", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/users", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -498,7 +498,7 @@ func BenchmarkBinding_NoBinding(b *testing.B) {
 	})
 
 	body := `{"username":"john","email":"john@example.com"}`
-	req := httptest.NewRequest("POST", "/data", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/data", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -522,7 +522,7 @@ func BenchmarkBinding_ArrayParam(b *testing.B) {
 		return req
 	})
 
-	req := httptest.NewRequest("GET", "/filter?ids=1&ids=2&ids=3&names=a&names=b", nil)
+	req := httptest.NewRequest(http.MethodGet, "/filter?ids=1&ids=2&ids=3&names=a&names=b", nil)
 	w := httptest.NewRecorder()
 
 	b.ResetTimer()
@@ -553,7 +553,7 @@ func BenchmarkBinding_ReflectionOverhead(b *testing.B) {
 	})
 
 	body := `{"field1":"a","field2":1,"field3":1.1,"field4":true,"field5":"b","field6":2,"field7":2.2,"field8":false,"field9":"c","field10":3}`
-	req := httptest.NewRequest("POST", "/reflect", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/reflect", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 

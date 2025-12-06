@@ -42,7 +42,7 @@ func main() {
 	router := fox.New()
 
 	// POST: Create user with JSON body binding
-	router.POST("/users", func(ctx *fox.Context, req *CreateUserRequest) (*User, error) {
+	router.POST("/users", func(_ *fox.Context, req *CreateUserRequest) (*User, error) {
 		// In real application, save to database
 		user := &User{
 			ID:       1,
@@ -54,7 +54,7 @@ func main() {
 	})
 
 	// PUT: Update user with URI and JSON binding
-	router.PUT("/users/:id", func(ctx *fox.Context, req *UpdateUserRequest) (*User, error) {
+	router.PUT("/users/:id", func(_ *fox.Context, req *UpdateUserRequest) (*User, error) {
 		// In real application, update in database
 		user := &User{
 			ID:       req.ID,
@@ -65,7 +65,7 @@ func main() {
 	})
 
 	// GET: Query users with query parameters
-	router.GET("/users", func(ctx *fox.Context, req *QueryUsersRequest) (map[string]interface{}, error) {
+	router.GET("/users", func(_ *fox.Context, req *QueryUsersRequest) (map[string]any, error) {
 		// Set defaults
 		if req.Page == 0 {
 			req.Page = 1
@@ -75,7 +75,7 @@ func main() {
 		}
 
 		// In real application, query from database
-		return map[string]interface{}{
+		return map[string]any{
 			"page":      req.Page,
 			"page_size": req.PageSize,
 			"keyword":   req.Keyword,
@@ -101,7 +101,7 @@ func main() {
 	})
 
 	// Custom validation example
-	router.POST("/validate", func(ctx *fox.Context, req *CreateUserRequest) (string, error) {
+	router.POST("/validate", func(_ *fox.Context, req *CreateUserRequest) (string, error) {
 		// Additional custom validation
 		if req.Username == "admin" {
 			return "", &httperrors.Error{
@@ -114,5 +114,7 @@ func main() {
 		return "Validation passed", nil
 	})
 
-	router.Run(":8080")
+	if err := router.Run(":8080"); err != nil {
+		panic(err)
+	}
 }

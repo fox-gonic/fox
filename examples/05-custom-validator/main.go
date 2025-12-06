@@ -168,13 +168,13 @@ func main() {
 	router := fox.New()
 
 	// Password validation endpoint
-	router.POST("/validate-password", func(ctx *fox.Context, req *StrongPassword) (string, error) {
+	router.POST("/validate-password", func(_ *fox.Context, _ *StrongPassword) (string, error) {
 		return "Password is strong!", nil
 	})
 
 	// Signup with comprehensive validation
-	router.POST("/signup", func(ctx *fox.Context, req *SignupRequest) (map[string]interface{}, error) {
-		return map[string]interface{}{
+	router.POST("/signup", func(_ *fox.Context, req *SignupRequest) (map[string]any, error) {
+		return map[string]any{
 			"message":  "Account created successfully",
 			"username": req.Username,
 			"email":    req.Email,
@@ -182,10 +182,10 @@ func main() {
 	})
 
 	// Create post with content validation
-	router.POST("/posts", func(ctx *fox.Context, req *CreatePostRequest) (map[string]interface{}, error) {
-		return map[string]interface{}{
+	router.POST("/posts", func(_ *fox.Context, req *CreatePostRequest) (map[string]any, error) {
+		return map[string]any{
 			"message": "Post created successfully",
-			"post": map[string]interface{}{
+			"post": map[string]any{
 				"title":   req.Title,
 				"content": req.Content,
 				"tags":    req.Tags,
@@ -193,5 +193,7 @@ func main() {
 		}, nil
 	})
 
-	router.Run(":8080")
+	if err := router.Run(":8080"); err != nil {
+		panic(err)
+	}
 }

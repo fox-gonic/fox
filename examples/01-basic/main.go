@@ -9,7 +9,7 @@ func main() {
 	router := fox.New()
 
 	// Simple GET endpoint
-	router.GET("/ping", func(ctx *fox.Context) string {
+	router.GET("/ping", func() string {
 		return "pong"
 	})
 
@@ -20,12 +20,14 @@ func main() {
 	})
 
 	// POST endpoint returning JSON
-	router.POST("/echo", func(ctx *fox.Context) map[string]string {
+	router.POST("/echo", func() map[string]string {
 		return map[string]string{
 			"message": "Echo service is working",
 		}
 	})
 
 	// Start server on port 8080
-	router.Run(":8080")
+	if err := router.Run(":8080"); err != nil {
+		panic(err)
+	}
 }

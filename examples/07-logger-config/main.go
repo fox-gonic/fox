@@ -53,9 +53,9 @@ func example2FileLogging() {
 		ConsoleLoggingEnabled: false,
 		FileLoggingEnabled:    true,
 		Filename:              "./logs/app.log",
-		MaxSize:               10,   // megabytes
-		MaxBackups:            3,    // number of backups
-		MaxAge:                7,    // days
+		MaxSize:               10, // megabytes
+		MaxBackups:            3,  // number of backups
+		MaxAge:                7,  // days
 		EncodeLogsAsJSON:      false,
 	})
 
@@ -79,9 +79,9 @@ func example3BothOutputs() {
 		ConsoleLoggingEnabled: true,
 		FileLoggingEnabled:    true,
 		Filename:              "./logs/production.log",
-		MaxSize:               50,  // 50MB before rotation
-		MaxBackups:            10,  // Keep 10 backup files
-		MaxAge:                30,  // Keep logs for 30 days
+		MaxSize:               50,   // 50MB before rotation
+		MaxBackups:            10,   // Keep 10 backup files
+		MaxAge:                30,   // Keep logs for 30 days
 		EncodeLogsAsJSON:      true, // JSON format for parsing
 	})
 
@@ -109,16 +109,16 @@ func example4JSONLogs() {
 	router := fox.New()
 	router.Use(fox.Logger())
 
-	router.GET("/json", func(ctx *fox.Context) map[string]interface{} {
+	router.GET("/json", func(ctx *fox.Context) map[string]any {
 		log := logger.NewWithContext(ctx.Context)
 
 		log.Info("User action logged")
-		log.WithFields(map[string]interface{}{
+		log.WithFields(map[string]any{
 			"user_id": 123,
 			"action":  "view_profile",
 		}).Info("Structured logging example")
 
-		return map[string]interface{}{
+		return map[string]any{
 			"message": "Check console for JSON logs",
 		}
 	})
@@ -154,7 +154,7 @@ func example5LogLevels() {
 		return "Check console for different log levels"
 	})
 
-	router.GET("/health", func(ctx *fox.Context) string {
+	router.GET("/health", func() string {
 		return "OK" // This endpoint won't be logged
 	})
 
@@ -163,6 +163,8 @@ func example5LogLevels() {
 }
 
 // Complete production example
+//
+//nolint:unused
 func productionExample() {
 	// Production configuration
 	logger.SetConfig(&logger.Config{
@@ -189,18 +191,18 @@ func productionExample() {
 	router.Use(fox.NewXResponseTimer())
 
 	// Business routes
-	router.POST("/api/users", func(ctx *fox.Context) (map[string]interface{}, error) {
+	router.POST("/api/users", func(ctx *fox.Context) (map[string]any, error) {
 		log := logger.NewWithContext(ctx.Context)
 
 		log.Info("Creating new user")
 
 		// Structured logging with fields
-		log.WithFields(map[string]interface{}{
+		log.WithFields(map[string]any{
 			"user_id":   123,
 			"user_type": "premium",
 		}).Info("User created successfully")
 
-		return map[string]interface{}{
+		return map[string]any{
 			"id":      123,
 			"message": "User created",
 		}, nil
@@ -216,5 +218,7 @@ func productionExample() {
 		return "", err
 	})
 
-	router.Run(":8080")
+	if err := router.Run(":8080"); err != nil {
+		panic(err)
+	}
 }

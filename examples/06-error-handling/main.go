@@ -47,12 +47,12 @@ func main() {
 	router := fox.New()
 
 	// Simple error return
-	router.GET("/error/simple", func(ctx *fox.Context) (string, error) {
+	router.GET("/error/simple", func() (string, error) {
 		return "", errors.New("something went wrong")
 	})
 
 	// HTTP error with code
-	router.GET("/error/http", func(ctx *fox.Context) (string, error) {
+	router.GET("/error/http", func() (string, error) {
 		return "", &httperrors.Error{
 			HTTPCode: http.StatusBadRequest,
 			Code:     "BAD_REQUEST",
@@ -78,7 +78,7 @@ func main() {
 	})
 
 	// Conditional error handling
-	router.POST("/transfer", func(ctx *fox.Context) (map[string]interface{}, error) {
+	router.POST("/transfer", func(ctx *fox.Context) (map[string]any, error) {
 		var req struct {
 			FromUserID int64   `json:"from_user_id" binding:"required"`
 			ToUserID   int64   `json:"to_user_id" binding:"required"`
@@ -104,7 +104,7 @@ func main() {
 			}
 		}
 
-		return map[string]interface{}{
+		return map[string]any{
 			"status":      "success",
 			"from_user":   req.FromUserID,
 			"to_user":     req.ToUserID,
@@ -114,7 +114,7 @@ func main() {
 	})
 
 	// Login with error handling
-	router.POST("/login", func(ctx *fox.Context) (map[string]interface{}, error) {
+	router.POST("/login", func(ctx *fox.Context) (map[string]any, error) {
 		var req struct {
 			Email    string `json:"email" binding:"required,email"`
 			Password string `json:"password" binding:"required"`
@@ -129,14 +129,14 @@ func main() {
 			return nil, ErrInvalidCredentials
 		}
 
-		return map[string]interface{}{
+		return map[string]any{
 			"token":   "fake-jwt-token",
 			"user_id": 1,
 		}, nil
 	})
 
 	// Signup with duplicate check
-	router.POST("/signup", func(ctx *fox.Context) (map[string]interface{}, error) {
+	router.POST("/signup", func(ctx *fox.Context) (map[string]any, error) {
 		var req struct {
 			Email    string `json:"email" binding:"required,email"`
 			Password string `json:"password" binding:"required,min=6"`
@@ -152,9 +152,9 @@ func main() {
 			return nil, ErrDuplicateEmail
 		}
 
-		return map[string]interface{}{
+		return map[string]any{
 			"message": "Account created successfully",
-			"user": map[string]interface{}{
+			"user": map[string]any{
 				"email": req.Email,
 				"name":  req.Name,
 			},
@@ -185,7 +185,7 @@ func main() {
 	})
 
 	// Error with additional details
-	router.GET("/detailed-error", func(ctx *fox.Context) (string, error) {
+	router.GET("/detailed-error", func() (string, error) {
 		return "", &httperrors.Error{
 			HTTPCode: http.StatusBadRequest,
 			Code:     "VALIDATION_FAILED",
@@ -199,9 +199,11 @@ func main() {
 	})
 
 	// Panic recovery example
-	router.GET("/panic", func(ctx *fox.Context) string {
+	router.GET("/panic", func() string {
 		panic("something went wrong!")
 	})
 
-	router.Run(":8080")
+	if err := router.Run(":8080"); err != nil {
+		panic(err)
+	}
 }
