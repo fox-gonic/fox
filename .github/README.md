@@ -1,5 +1,7 @@
 # Fox Web Framework
 
+English | [简体中文](README_zh.md)
+
 [![Go Tests](https://github.com/fox-gonic/fox/actions/workflows/go.yml/badge.svg)](https://github.com/fox-gonic/fox/actions/workflows/go.yml)
 [![Security Scanning](https://github.com/fox-gonic/fox/actions/workflows/security.yml/badge.svg)](https://github.com/fox-gonic/fox/actions/workflows/security.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/fox-gonic/fox)](https://goreportcard.com/report/github.com/fox-gonic/fox)
