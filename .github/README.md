@@ -1,5 +1,10 @@
 # Fox Web Framework
 
+[![Go Tests](https://github.com/fox-gonic/fox/actions/workflows/go.yml/badge.svg)](https://github.com/fox-gonic/fox/actions/workflows/go.yml)
+[![Security Scanning](https://github.com/fox-gonic/fox/actions/workflows/security.yml/badge.svg)](https://github.com/fox-gonic/fox/actions/workflows/security.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/fox-gonic/fox)](https://goreportcard.com/report/github.com/fox-gonic/fox)
+[![GoDoc](https://pkg.go.dev/badge/github.com/fox-gonic/fox?status.svg)](https://pkg.go.dev/github.com/fox-gonic/fox)
+
 The fox is an extension of the [gin](https://github.com/gin-gonic/gin) framework
 
 ## ⚠️ **Attention**
@@ -151,3 +156,41 @@ $ curl -X POST http://localhost:8080/users/signup \
     -d '{"username": "George", "email": "george@vandaley.com"}'
 {"code":"PASSWORD_TOO_SHORT"}
 ```
+
+## Security
+
+Fox takes security seriously. We implement multiple layers of security scanning:
+
+### Automated Security Scanning
+
+- **govulncheck**: Scans for known vulnerabilities in Go dependencies
+- **CodeQL**: Static Application Security Testing (SAST) for code analysis
+- **Dependency Review**: Reviews dependency changes in pull requests
+- **Weekly Scans**: Automated security scans run every Monday
+
+### Running Security Scans Locally
+
+```bash
+# Install govulncheck
+go install golang.org/x/vuln/cmd/govulncheck@latest
+
+# Run vulnerability scan
+govulncheck ./...
+```
+
+### Security Documentation
+
+- [SECURITY.md](../SECURITY.md) - Security policy and vulnerability reporting
+- [SECURITY_SCAN.md](.github/SECURITY_SCAN.md) - Detailed security scanning documentation
+
+### Reporting Security Issues
+
+If you discover a security vulnerability, please refer to [SECURITY.md](../SECURITY.md) for our responsible disclosure process. **Do not** open public GitHub issues for security vulnerabilities.
+
+## Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](../CONTRIBUTING.md) for details on how to contribute to Fox.
+
+## License
+
+Fox is released under the MIT License. See [LICENSE](../LICENSE) for details.
