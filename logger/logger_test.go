@@ -613,13 +613,13 @@ func TestNewLogger_FileLoggingHumanReadable(t *testing.T) {
 
 	// Verify file was created
 	_, err := os.Stat(tmpFile)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Read and verify content
 	content, err := os.ReadFile(tmpFile)
-	if err == nil {
-		output := string(content)
-		// Should contain the message in human-readable format
-		assert.Contains(t, output, "test human readable message")
-	}
+	require.NoError(t, err)
+
+	output := string(content)
+	// Should contain the message in human-readable format
+	assert.Contains(t, output, "test human readable message")
 }
