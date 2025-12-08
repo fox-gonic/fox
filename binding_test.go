@@ -410,3 +410,79 @@ func TestBind_PointerToPointer(t *testing.T) {
 	require.NotNil(t, *obj.Data)
 	assert.Equal(t, "test", (*obj.Data).Name)
 }
+
+// TestBind_NonStructTarget tests bind with non-struct target
+func TestBind_NonStructTarget(t *testing.T) {
+	type StringAlias string
+
+	req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBufferString(`"test"`))
+	req.Header.Set("Content-Type", "application/json")
+
+	ctx := &Context{
+		Context: &gin.Context{
+			Request: req,
+		},
+		Request: req,
+	}
+
+	var obj StringAlias
+	err := bind(ctx, &obj)
+	require.NoError(t, err)
+	assert.Equal(t, StringAlias("test"), obj)
+}
+
+// TestBind_RequestBodyError tests bind with request body read error
+func TestBind_RequestBodyError(t *testing.T) {
+	type TestBody struct {
+		Name string `json:"name"`
+	}
+
+	// Create a request with a body that will cause an error when reading
+	req, _ := http.NewRequest(http.MethodPost, "/", errReader(0))
+	req.Header.Set("Content-Type", "application/json")
+
+	ctx := &Context{
+		Context: &gin.Context{
+			Request: req,
+		},
+		Request: req,
+	}
+
+	var obj TestBody
+	err := bind(ctx, &obj)
+	require.Error(t, err)
+}
+
+// errReader is a reader that always returns an error
+type errReader int
+
+func (errReader) Read(p []byte) (n int, err error) {
+	return 0, errors.New("read error")
+}
+
+// TestBind_ContextFieldConversion tests context field type conversion
+func TestBind_ContextFieldConversion(t *testing.T) {
+	type TestStruct struct {
+		IntValue   int64 `context:"int_value"`
+		FloatValue int   `context:"float_value"`
+	}
+
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+
+	ctx := &Context{
+		Context: &gin.Context{
+			Request: req,
+		},
+		Request: req,
+	}
+
+	// Set context values with compatible types
+	ctx.Set("int_value", int64(123))
+	ctx.Set("float_value", int(456))
+
+	var obj TestStruct
+	err := bind(ctx, &obj)
+	require.NoError(t, err)
+	assert.Equal(t, int64(123), obj.IntValue)
+	assert.Equal(t, 456, obj.FloatValue)
+}

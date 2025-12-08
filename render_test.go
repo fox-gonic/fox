@@ -179,6 +179,51 @@ func TestRenderError_PlainError(t *testing.T) {
 	assert.Equal(t, "plain error", w.Body.String())
 }
 
+// testRenderError implements both error and render.Render interfaces
+type testRenderError struct {
+	message string
+	code    int
+}
+
+func (e *testRenderError) Error() string {
+	return e.message
+}
+
+func (e *testRenderError) StatusCode() int {
+	return e.code
+}
+
+func (e *testRenderError) Render(w http.ResponseWriter) error {
+	_, err := w.Write([]byte("rendered: " + e.message))
+	return err
+}
+
+func (e *testRenderError) WriteContentType(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+}
+
+func TestRenderError_RenderInterface(t *testing.T) {
+	engine := New()
+	w := httptest.NewRecorder()
+	ginCtx, _ := gin.CreateTestContext(w)
+
+	ctx := &Context{
+		Context: ginCtx,
+		engine:  engine,
+	}
+
+	err := &testRenderError{
+		message: "test render error",
+		code:    http.StatusBadRequest,
+	}
+
+	ctx.renderError(err)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, "rendered: test render error", w.Body.String())
+	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
 func TestRenderError_HTTPError(t *testing.T) {
 	engine := New()
 	w := httptest.NewRecorder()
