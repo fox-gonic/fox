@@ -13,10 +13,18 @@ func main() {
 		return "pong"
 	})
 
-	// GET with path parameter
+	// GET with path parameter - using ctx.Param()
 	router.GET("/hello/:name", func(ctx *fox.Context) string {
 		name := ctx.Param("name")
 		return "Hello, " + name + "!"
+	})
+
+	// GET with path parameter - using struct binding
+	type UserParams struct {
+		Name string `uri:"name" binding:"required"`
+	}
+	router.GET("/greet/:name", func(params UserParams) string {
+		return "Greetings, " + params.Name + "!"
 	})
 
 	// POST endpoint returning JSON
