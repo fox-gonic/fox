@@ -585,3 +585,41 @@ func TestLogger_ConsoleWriterFormatting(t *testing.T) {
 	// In console format, should contain the message
 	assert.True(t, strings.Contains(output, "formatted console message") || output == "")
 }
+
+// TestNewLogger_FileLoggingHumanReadable tests file logging with non-JSON format
+func TestNewLogger_FileLoggingHumanReadable(t *testing.T) {
+	tmpFile := os.TempDir() + "/fox-test-human.log"
+	defer os.Remove(tmpFile)
+
+	cfg := Config{
+		LogLevel:              InfoLevel,
+		ConsoleLoggingEnabled: false,
+		FileLoggingEnabled:    true,
+		EncodeLogsAsJSON:      false, // Human-readable format for file
+		Filename:              tmpFile,
+		MaxSize:               10,
+		MaxBackups:            3,
+		MaxAge:                7,
+	}
+
+	// Set config to initialize rollingWrite
+	SetConfig(&cfg)
+
+	// Use config variable which has rollingWrite initialized
+	logger := newLogger(config, "file-human-test")
+	require.NotNil(t, logger)
+
+	logger.Info("test human readable message")
+
+	// Verify file was created
+	_, err := os.Stat(tmpFile)
+	assert.NoError(t, err)
+
+	// Read and verify content
+	content, err := os.ReadFile(tmpFile)
+	if err == nil {
+		output := string(content)
+		// Should contain the message in human-readable format
+		assert.Contains(t, output, "test human readable message")
+	}
+}
