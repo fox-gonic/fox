@@ -527,3 +527,91 @@ func TestBind_ContextFieldConversion(t *testing.T) {
 	assert.Equal(t, int64(123), obj.IntValue)
 	assert.Equal(t, 456, obj.FloatValue)
 }
+
+// TestBind_ContextFieldNotConvertible tests context field with incompatible type
+func TestBind_ContextFieldNotConvertible(t *testing.T) {
+	type TestStruct struct {
+		IntValue int `context:"int_value"`
+	}
+
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+
+	ctx := &Context{
+		Context: &gin.Context{
+			Request: req,
+		},
+		Request: req,
+	}
+
+	// Set context value with incompatible type (string to int)
+	ctx.Set("int_value", "not-convertible")
+
+	var obj TestStruct
+	err := bind(ctx, &obj)
+	// Should not error, just skip the field
+	require.NoError(t, err)
+	assert.Equal(t, 0, obj.IntValue) // Should remain zero value
+}
+
+// TestBind_WithBindingError tests bind with body binding error
+func TestBind_WithBindingError(t *testing.T) {
+	type TestStruct struct {
+		Name string `json:"name" binding:"required"`
+	}
+
+	req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBufferString(`{"invalid json`))
+	req.Header.Set("Content-Type", "application/json")
+
+	ctx := &Context{
+		Context: &gin.Context{
+			Request: req,
+		},
+		Request: req,
+	}
+
+	var obj TestStruct
+	err := bind(ctx, &obj)
+	// Should return JSON parsing error
+	require.Error(t, err)
+}
+
+// errorBinder is a custom binder that always returns an error
+type errorBinder struct{}
+
+func (errorBinder) Name() string { return "custom" }
+func (errorBinder) Bind(req *http.Request, obj any) error {
+	return errors.New("custom binder error")
+}
+
+// TestBind_CustomBinder tests bind with custom binder in binders map
+func TestBind_CustomBinder(t *testing.T) {
+	// Save original binders
+	originalBinders := binders
+	defer func() {
+		binders = originalBinders
+	}()
+
+	// Add custom binder to binders map
+	binders = map[string]binding.Binding{
+		"application/custom": errorBinder{},
+	}
+
+	type TestBody struct {
+		Name string `json:"name"`
+	}
+
+	req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBufferString(`{"name":"test"}`))
+	req.Header.Set("Content-Type", "application/custom")
+
+	ctx := &Context{
+		Context: &gin.Context{
+			Request: req,
+		},
+		Request: req,
+	}
+
+	var obj TestBody
+	err := bind(ctx, &obj)
+	require.Error(t, err)
+	assert.Equal(t, "custom binder error", err.Error())
+}

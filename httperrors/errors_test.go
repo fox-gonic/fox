@@ -308,3 +308,64 @@ func TestMarshalJSON_MetaErrorInStruct(t *testing.T) {
 	r.Equal("meta error message", obj["error"])
 	r.Equal("details", obj["details"])
 }
+
+// TestMarshalJSON_MetaWithMap tests MarshalJSON with map as Meta
+func TestMarshalJSON_MetaWithMap(t *testing.T) {
+	r := require.New(t)
+
+	err := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("test error"),
+		Code:     "TEST_CODE",
+		Meta: map[string]any{
+			"key1": "value1",
+			"key2": 123,
+			"key3": true,
+		},
+	}
+
+	data, e := json.Marshal(err)
+	r.NoError(e)
+
+	var obj map[string]any
+	e = json.Unmarshal(data, &obj)
+	r.NoError(e)
+	r.Equal("value1", obj["key1"])
+	r.InEpsilon(123, obj["key2"].(float64), 0.001)
+	r.True(obj["key3"].(bool))
+	r.Equal("TEST_CODE", obj["code"])
+}
+
+// TestMarshalJSON_MetaWithPrimitiveType tests MarshalJSON with primitive type as Meta
+func TestMarshalJSON_MetaWithPrimitiveType(t *testing.T) {
+	r := require.New(t)
+
+	// Test with string
+	err1 := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("test error"),
+		Meta:     "simple string meta",
+	}
+
+	data, e := json.Marshal(err1)
+	r.NoError(e)
+
+	var obj map[string]any
+	e = json.Unmarshal(data, &obj)
+	r.NoError(e)
+	r.Equal("simple string meta", obj["meta"])
+
+	// Test with number
+	err2 := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("test error"),
+		Meta:     42,
+	}
+
+	data, e = json.Marshal(err2)
+	r.NoError(e)
+
+	e = json.Unmarshal(data, &obj)
+	r.NoError(e)
+	r.InEpsilon(42, obj["meta"].(float64), 0.001)
+}
