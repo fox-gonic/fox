@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -262,4 +263,355 @@ func TestQueryBinding_Bind(t *testing.T) {
 		assert.Equal(t, 20, args.PageSize)
 		assert.Empty(t, args.Keyword)
 	})
+
+	t.Run("binding with nil validator", func(t *testing.T) {
+		// Save original validator
+		originalValidator := binding.Validator
+		defer func() {
+			binding.Validator = originalValidator
+		}()
+
+		// Set validator to nil
+		binding.Validator = nil
+
+		req, _ := http.NewRequest(http.MethodGet, "/?page=1&page_size=20", nil)
+
+		var args QueryArgs
+		qb := queryBinding{}
+		err := qb.Bind(req, &args)
+
+		require.NoError(t, err)
+		assert.Equal(t, 1, args.Page)
+		assert.Equal(t, 20, args.PageSize)
+	})
+
+	t.Run("binding with MapFormWithTag error", func(t *testing.T) {
+		type InvalidArgs struct {
+			Number int `query:"number"`
+		}
+
+		req, _ := http.NewRequest(http.MethodGet, "/?number=not-a-number", nil)
+
+		var args InvalidArgs
+		qb := queryBinding{}
+		err := qb.Bind(req, &args)
+
+		// MapFormWithTag will attempt to parse "not-a-number" as int, which should fail
+		require.Error(t, err)
+	})
+}
+
+// TestBind_DefaultBinder tests bind function with DefaultBinder
+func TestBind_DefaultBinder(t *testing.T) {
+	// Save original binders
+	originalBinders := binders
+	originalBodyBinders := bodyBinders
+	originalDefaultBinder := DefaultBinder
+	defer func() {
+		binders = originalBinders
+		bodyBinders = originalBodyBinders
+		DefaultBinder = originalDefaultBinder
+	}()
+
+	t.Run("DefaultBinder as BindingBody", func(t *testing.T) {
+		// Clear binders to force DefaultBinder usage
+		binders = make(map[string]binding.Binding)
+		bodyBinders = make(map[string]binding.BindingBody)
+		DefaultBinder = binding.JSON
+
+		type TestBody struct {
+			Name string `json:"name"`
+		}
+
+		req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBufferString(`{"name":"test"}`))
+		req.Header.Set("Content-Type", "application/custom")
+
+		ctx := &Context{
+			Context: &gin.Context{
+				Request: req,
+			},
+			Request: req,
+		}
+
+		var obj TestBody
+		err := bind(ctx, &obj)
+		require.NoError(t, err)
+		assert.Equal(t, "test", obj.Name)
+	})
+
+	t.Run("DefaultBinder with empty body", func(t *testing.T) {
+		// Clear binders to force DefaultBinder usage
+		binders = make(map[string]binding.Binding)
+		bodyBinders = make(map[string]binding.BindingBody)
+		DefaultBinder = binding.JSON
+
+		type TestBody struct {
+			Name string `json:"name"`
+		}
+
+		req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBufferString(""))
+		req.Header.Set("Content-Type", "application/custom")
+
+		ctx := &Context{
+			Context: &gin.Context{
+				Request: req,
+			},
+			Request: req,
+		}
+
+		var obj TestBody
+		err := bind(ctx, &obj)
+		require.NoError(t, err)
+		assert.Empty(t, obj.Name)
+	})
+
+	t.Run("DefaultBinder as regular Binding", func(t *testing.T) {
+		// Clear binders to force DefaultBinder usage
+		binders = make(map[string]binding.Binding)
+		bodyBinders = make(map[string]binding.BindingBody)
+		DefaultBinder = binding.Form
+
+		type TestBody struct {
+			Name string `form:"name"`
+		}
+
+		req, _ := http.NewRequest(http.MethodPost, "/?name=test", bytes.NewBufferString("name=formtest"))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		ctx := &Context{
+			Context: &gin.Context{
+				Request: req,
+			},
+			Request: req,
+		}
+
+		var obj TestBody
+		err := bind(ctx, &obj)
+		require.NoError(t, err)
+		assert.Equal(t, "formtest", obj.Name)
+	})
+}
+
+// TestBind_BodyBinder tests bind function with bodyBinders
+func TestBind_BodyBinder(t *testing.T) {
+	// Save original binders
+	originalBinders := binders
+	originalBodyBinders := bodyBinders
+	defer func() {
+		binders = originalBinders
+		bodyBinders = originalBodyBinders
+	}()
+
+	t.Run("BodyBinder with empty body", func(t *testing.T) {
+		type TestBody struct {
+			Name string `json:"name"`
+		}
+
+		req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBufferString(""))
+		req.Header.Set("Content-Type", "application/json")
+
+		ctx := &Context{
+			Context: &gin.Context{
+				Request: req,
+			},
+			Request: req,
+		}
+
+		var obj TestBody
+		err := bind(ctx, &obj)
+		require.NoError(t, err)
+		assert.Empty(t, obj.Name)
+	})
+}
+
+// TestBind_PointerToPointer tests bind with pointer to pointer
+func TestBind_PointerToPointer(t *testing.T) {
+	type Inner struct {
+		Name string `json:"name"`
+	}
+
+	type TestBody struct {
+		Data **Inner `json:"data"`
+	}
+
+	req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBufferString(`{"data":{"name":"test"}}`))
+	req.Header.Set("Content-Type", "application/json")
+
+	ctx := &Context{
+		Context: &gin.Context{
+			Request: req,
+		},
+		Request: req,
+	}
+
+	var obj TestBody
+	err := bind(ctx, &obj)
+	require.NoError(t, err)
+	require.NotNil(t, obj.Data)
+	require.NotNil(t, *obj.Data)
+	assert.Equal(t, "test", (*obj.Data).Name)
+}
+
+// TestBind_NonStructTarget tests bind with non-struct target
+func TestBind_NonStructTarget(t *testing.T) {
+	type StringAlias string
+
+	req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBufferString(`"test"`))
+	req.Header.Set("Content-Type", "application/json")
+
+	ctx := &Context{
+		Context: &gin.Context{
+			Request: req,
+		},
+		Request: req,
+	}
+
+	var obj StringAlias
+	err := bind(ctx, &obj)
+	require.NoError(t, err)
+	assert.Equal(t, StringAlias("test"), obj)
+}
+
+// TestBind_RequestBodyError tests bind with request body read error
+func TestBind_RequestBodyError(t *testing.T) {
+	type TestBody struct {
+		Name string `json:"name"`
+	}
+
+	// Create a request with a body that will cause an error when reading
+	req, _ := http.NewRequest(http.MethodPost, "/", errReader(0))
+	req.Header.Set("Content-Type", "application/json")
+
+	ctx := &Context{
+		Context: &gin.Context{
+			Request: req,
+		},
+		Request: req,
+	}
+
+	var obj TestBody
+	err := bind(ctx, &obj)
+	require.Error(t, err)
+}
+
+// errReader is a reader that always returns an error
+type errReader int
+
+func (errReader) Read(p []byte) (n int, err error) {
+	return 0, errors.New("read error")
+}
+
+// TestBind_ContextFieldConversion tests context field type conversion
+func TestBind_ContextFieldConversion(t *testing.T) {
+	type TestStruct struct {
+		IntValue   int64 `context:"int_value"`
+		FloatValue int   `context:"float_value"`
+	}
+
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+
+	ctx := &Context{
+		Context: &gin.Context{
+			Request: req,
+		},
+		Request: req,
+	}
+
+	// Set context values with compatible types
+	ctx.Set("int_value", int64(123))
+	ctx.Set("float_value", int(456))
+
+	var obj TestStruct
+	err := bind(ctx, &obj)
+	require.NoError(t, err)
+	assert.Equal(t, int64(123), obj.IntValue)
+	assert.Equal(t, 456, obj.FloatValue)
+}
+
+// TestBind_ContextFieldNotConvertible tests context field with incompatible type
+func TestBind_ContextFieldNotConvertible(t *testing.T) {
+	type TestStruct struct {
+		IntValue int `context:"int_value"`
+	}
+
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+
+	ctx := &Context{
+		Context: &gin.Context{
+			Request: req,
+		},
+		Request: req,
+	}
+
+	// Set context value with incompatible type (string to int)
+	ctx.Set("int_value", "not-convertible")
+
+	var obj TestStruct
+	err := bind(ctx, &obj)
+	// Should not error, just skip the field
+	require.NoError(t, err)
+	assert.Equal(t, 0, obj.IntValue) // Should remain zero value
+}
+
+// TestBind_WithBindingError tests bind with body binding error
+func TestBind_WithBindingError(t *testing.T) {
+	type TestStruct struct {
+		Name string `json:"name" binding:"required"`
+	}
+
+	req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBufferString(`{"invalid json`))
+	req.Header.Set("Content-Type", "application/json")
+
+	ctx := &Context{
+		Context: &gin.Context{
+			Request: req,
+		},
+		Request: req,
+	}
+
+	var obj TestStruct
+	err := bind(ctx, &obj)
+	// Should return JSON parsing error
+	require.Error(t, err)
+}
+
+// errorBinder is a custom binder that always returns an error
+type errorBinder struct{}
+
+func (errorBinder) Name() string { return "custom" }
+func (errorBinder) Bind(req *http.Request, obj any) error {
+	return errors.New("custom binder error")
+}
+
+// TestBind_CustomBinder tests bind with custom binder in binders map
+func TestBind_CustomBinder(t *testing.T) {
+	// Save original binders
+	originalBinders := binders
+	defer func() {
+		binders = originalBinders
+	}()
+
+	// Add custom binder to binders map
+	binders = map[string]binding.Binding{
+		"application/custom": errorBinder{},
+	}
+
+	type TestBody struct {
+		Name string `json:"name"`
+	}
+
+	req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBufferString(`{"name":"test"}`))
+	req.Header.Set("Content-Type", "application/custom")
+
+	ctx := &Context{
+		Context: &gin.Context{
+			Request: req,
+		},
+		Request: req,
+	}
+
+	var obj TestBody
+	err := bind(ctx, &obj)
+	require.Error(t, err)
+	assert.Equal(t, "custom binder error", err.Error())
 }

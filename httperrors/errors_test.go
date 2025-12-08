@@ -185,3 +185,187 @@ func TestError(t *testing.T) {
 		r.NotEqual(err, e)
 	}
 }
+
+// TestMarshalJSON_MetaNil tests MarshalJSON with nil Meta
+func TestMarshalJSON_MetaNil(t *testing.T) {
+	r := require.New(t)
+
+	err := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("test error"),
+		Code:     "TEST_ERROR",
+		Meta:     nil, // Explicitly set to nil
+	}
+
+	data, e := json.Marshal(err)
+	r.NoError(e)
+
+	var obj map[string]any
+	e = json.Unmarshal(data, &obj)
+	r.NoError(e)
+	r.Equal("TEST_ERROR", obj["code"])
+	r.Equal("(400): test error", obj["error"])
+	r.Equal("test error", obj["meta"])
+}
+
+// TestMarshalJSON_CodeEmpty tests MarshalJSON with empty Code
+func TestMarshalJSON_CodeEmpty(t *testing.T) {
+	r := require.New(t)
+
+	err := &Error{
+		HTTPCode: 404,
+		Err:      errors.New("not found"),
+		Code:     "", // Empty code
+	}
+
+	data, e := json.Marshal(err)
+	r.NoError(e)
+
+	var obj map[string]any
+	e = json.Unmarshal(data, &obj)
+	r.NoError(e)
+	r.Equal("404", obj["code"]) // Should use HTTPCode as code
+}
+
+// TestMarshalJSON_ErrorEmpty tests MarshalJSON with empty error message
+func TestMarshalJSON_ErrorEmpty(t *testing.T) {
+	r := require.New(t)
+
+	err := &Error{
+		HTTPCode: 500,
+		Err:      nil,
+		Code:     "INTERNAL_ERROR",
+	}
+
+	data, e := json.Marshal(err)
+	r.NoError(e)
+
+	var obj map[string]any
+	e = json.Unmarshal(data, &obj)
+	r.NoError(e)
+	r.Equal("INTERNAL_ERROR", obj["code"])
+	// error field should not exist or be empty
+	_, hasError := obj["error"]
+	r.False(hasError)
+}
+
+// TestMarshalJSON_MetaCodeInStruct tests MarshalJSON with code already in Meta struct
+func TestMarshalJSON_MetaCodeInStruct(t *testing.T) {
+	r := require.New(t)
+
+	type MetaWithCode struct {
+		Code    string `json:"code"`
+		Message string `json:"message"`
+	}
+
+	err := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("test error"),
+		Code:     "DEFAULT_CODE",
+		Meta: MetaWithCode{
+			Code:    "META_CODE",
+			Message: "test message",
+		},
+	}
+
+	data, e := json.Marshal(err)
+	r.NoError(e)
+
+	var obj map[string]any
+	e = json.Unmarshal(data, &obj)
+	r.NoError(e)
+	// Should use code from Meta struct, not from Error.Code
+	r.Equal("META_CODE", obj["code"])
+	r.Equal("test message", obj["message"])
+}
+
+// TestMarshalJSON_MetaErrorInStruct tests MarshalJSON with error already in Meta struct
+func TestMarshalJSON_MetaErrorInStruct(t *testing.T) {
+	r := require.New(t)
+
+	type MetaWithError struct {
+		Error   string `json:"error"`
+		Details string `json:"details"`
+	}
+
+	err := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("original error"),
+		Code:     "TEST_CODE",
+		Meta: MetaWithError{
+			Error:   "meta error message",
+			Details: "details",
+		},
+	}
+
+	data, e := json.Marshal(err)
+	r.NoError(e)
+
+	var obj map[string]any
+	e = json.Unmarshal(data, &obj)
+	r.NoError(e)
+	// Should use error from Meta struct
+	r.Equal("meta error message", obj["error"])
+	r.Equal("details", obj["details"])
+}
+
+// TestMarshalJSON_MetaWithMap tests MarshalJSON with map as Meta
+func TestMarshalJSON_MetaWithMap(t *testing.T) {
+	r := require.New(t)
+
+	err := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("test error"),
+		Code:     "TEST_CODE",
+		Meta: map[string]any{
+			"key1": "value1",
+			"key2": 123,
+			"key3": true,
+		},
+	}
+
+	data, e := json.Marshal(err)
+	r.NoError(e)
+
+	var obj map[string]any
+	e = json.Unmarshal(data, &obj)
+	r.NoError(e)
+	r.Equal("value1", obj["key1"])
+	r.InEpsilon(123, obj["key2"].(float64), 0.001)
+	r.True(obj["key3"].(bool))
+	r.Equal("TEST_CODE", obj["code"])
+}
+
+// TestMarshalJSON_MetaWithPrimitiveType tests MarshalJSON with primitive type as Meta
+func TestMarshalJSON_MetaWithPrimitiveType(t *testing.T) {
+	r := require.New(t)
+
+	// Test with string
+	err1 := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("test error"),
+		Meta:     "simple string meta",
+	}
+
+	data, e := json.Marshal(err1)
+	r.NoError(e)
+
+	var obj map[string]any
+	e = json.Unmarshal(data, &obj)
+	r.NoError(e)
+	r.Equal("simple string meta", obj["meta"])
+
+	// Test with number
+	err2 := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("test error"),
+		Meta:     42,
+	}
+
+	data, e = json.Marshal(err2)
+	r.NoError(e)
+
+	e = json.Unmarshal(data, &obj)
+	r.NoError(e)
+	r.InEpsilon(42, obj["meta"].(float64), 0.001)
+}

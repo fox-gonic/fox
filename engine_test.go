@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gin-contrib/cors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -531,4 +532,123 @@ func TestHandlersChain_Last(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestSetMode tests SetMode function
+func TestSetMode(t *testing.T) {
+	tests := []struct {
+		name string
+		mode string
+	}{
+		{
+			name: "debug mode",
+			mode: fox.DebugMode,
+		},
+		{
+			name: "release mode",
+			mode: fox.ReleaseMode,
+		},
+		{
+			name: "test mode",
+			mode: fox.TestMode,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fox.SetMode(tt.mode)
+			assert.Equal(t, tt.mode, fox.Mode())
+		})
+	}
+}
+
+// TestMode tests Mode function
+func TestMode(t *testing.T) {
+	// Set to a known mode
+	fox.SetMode(fox.DebugMode)
+	assert.Equal(t, fox.DebugMode, fox.Mode())
+
+	// Change mode
+	fox.SetMode(fox.ReleaseMode)
+	assert.Equal(t, fox.ReleaseMode, fox.Mode())
+
+	// Change to test mode
+	fox.SetMode(fox.TestMode)
+	assert.Equal(t, fox.TestMode, fox.Mode())
+}
+
+// TestEngine_CORS tests CORS configuration
+func TestEngine_CORS(t *testing.T) {
+	t.Run("valid CORS config", func(t *testing.T) {
+		router := fox.New()
+
+		// Configure CORS with valid settings - must be called before routes
+		router.CORS(cors.Config{
+			AllowOrigins:     []string{"http://example.com"},
+			AllowMethods:     []string{"GET", "POST"},
+			AllowHeaders:     []string{"Origin", "Content-Type"},
+			AllowCredentials: true,
+		})
+
+		router.GET("/test", func() string {
+			return "test"
+		})
+
+		// CORS middleware should process requests
+		assert.NotPanics(t, func() {
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/test", nil)
+			req.Header.Set("Origin", "http://example.com")
+			router.ServeHTTP(w, req)
+			assert.Equal(t, 200, w.Code)
+		})
+	})
+
+	t.Run("invalid CORS config should not panic", func(t *testing.T) {
+		// Test that invalid CORS config doesn't cause panic
+		assert.NotPanics(t, func() {
+			router := fox.New()
+
+			// Configure CORS with invalid settings (this should not apply CORS middleware)
+			router.CORS(cors.Config{
+				AllowAllOrigins:  true,
+				AllowOrigins:     []string{"http://example.com"}, // Invalid: can't set both
+				AllowCredentials: true,
+			})
+
+			router.GET("/test", func() string {
+				return "test"
+			})
+
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/test", nil)
+			req.Header.Set("Origin", "http://example.com")
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, 200, w.Code)
+		})
+	})
+
+	t.Run("CORS with wildcard origin", func(t *testing.T) {
+		router := fox.New()
+
+		router.CORS(cors.Config{
+			AllowAllOrigins: true,
+			AllowMethods:    []string{"GET", "POST", "PUT", "DELETE"},
+		})
+
+		router.GET("/test", func() string {
+			return "test"
+		})
+
+		// Should not panic
+		assert.NotPanics(t, func() {
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/test", nil)
+			req.Header.Set("Origin", "http://anywhere.com")
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, 200, w.Code)
+		})
+	})
 }

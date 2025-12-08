@@ -88,6 +88,48 @@ func TestRouterGroup_Use(t *testing.T) {
 	})
 }
 
+// TestRouterGroup_PresetLogger tests handler with preset logger in context
+func TestRouterGroup_PresetLogger(t *testing.T) {
+	router := fox.New()
+
+	// Middleware that sets a custom logger
+	router.Use(func(c *fox.Context) {
+		// Preset a custom logger in context
+		c.Set(fox.LoggerContextKey, c.Logger)
+	})
+
+	router.GET("/test", func(c *fox.Context) string {
+		// Logger should be available from context
+		return "test"
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "test", w.Body.String())
+}
+
+// TestRouterGroup_WithTraceID tests handler with existing trace ID
+func TestRouterGroup_WithTraceID(t *testing.T) {
+	router := fox.New()
+
+	router.GET("/test", func(c *fox.Context) string {
+		return "test"
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+
+	// Pre-set a trace ID in the response writer
+	w.Header().Set("X-Request-Id", "preset-trace-id")
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, 200, w.Code)
+}
+
 // TestHTTPMethods tests all HTTP method shortcuts
 func TestHTTPMethods(t *testing.T) {
 	router := fox.New()

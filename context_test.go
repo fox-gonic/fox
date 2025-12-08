@@ -62,6 +62,30 @@ func TestContext_RequestBody_CachedRead(t *testing.T) {
 	assert.Equal(t, cachedBody, result)
 }
 
+func TestContext_RequestBody_CachedValueNotByteSlice(t *testing.T) {
+	engine := New()
+	body := "test body"
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
+	w := httptest.NewRecorder()
+
+	ginCtx, _ := gin.CreateTestContext(w)
+	ginCtx.Request = req
+
+	ctx := &Context{
+		Context: ginCtx,
+		engine:  engine,
+		Request: req,
+	}
+
+	// Set cached value that is not []byte
+	ctx.Set(gin.BodyBytesKey, "not a byte slice")
+
+	// Should read from request body since cached value is not []byte
+	result, err := ctx.RequestBody()
+	require.NoError(t, err)
+	assert.Equal(t, body, string(result))
+}
+
 func TestContext_RequestBody_MultipleReads(t *testing.T) {
 	engine := New()
 	body := "test body"
