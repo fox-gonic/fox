@@ -284,6 +284,36 @@ func TestQueryBinding_Bind(t *testing.T) {
 		assert.Equal(t, 1, args.Page)
 		assert.Equal(t, 20, args.PageSize)
 	})
+
+	t.Run("binding with validation error", func(t *testing.T) {
+		type ValidatedArgs struct {
+			Email string `query:"email" binding:"required,email"`
+		}
+
+		req, _ := http.NewRequest(http.MethodGet, "/?email=invalid", nil)
+
+		var args ValidatedArgs
+		qb := queryBinding{}
+		err := qb.Bind(req, &args)
+
+		// Should return validation error for invalid email
+		require.Error(t, err)
+	})
+
+	t.Run("binding with MapFormWithTag error", func(t *testing.T) {
+		type InvalidArgs struct {
+			Number int `query:"number"`
+		}
+
+		req, _ := http.NewRequest(http.MethodGet, "/?number=not-a-number", nil)
+
+		var args InvalidArgs
+		qb := queryBinding{}
+		err := qb.Bind(req, &args)
+
+		// Should return error for invalid number format
+		require.Error(t, err)
+	})
 }
 
 // TestBind_DefaultBinder tests bind function with DefaultBinder
@@ -348,6 +378,32 @@ func TestBind_DefaultBinder(t *testing.T) {
 		err := bind(ctx, &obj)
 		require.NoError(t, err)
 		assert.Empty(t, obj.Name)
+	})
+
+	t.Run("DefaultBinder as regular Binding", func(t *testing.T) {
+		// Clear binders to force DefaultBinder usage
+		binders = make(map[string]binding.Binding)
+		bodyBinders = make(map[string]binding.BindingBody)
+		DefaultBinder = binding.Form
+
+		type TestBody struct {
+			Name string `form:"name"`
+		}
+
+		req, _ := http.NewRequest(http.MethodPost, "/?name=test", bytes.NewBufferString("name=formtest"))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		ctx := &Context{
+			Context: &gin.Context{
+				Request: req,
+			},
+			Request: req,
+		}
+
+		var obj TestBody
+		err := bind(ctx, &obj)
+		require.NoError(t, err)
+		assert.Equal(t, "formtest", obj.Name)
 	})
 }
 

@@ -248,3 +248,63 @@ func TestMarshalJSON_ErrorEmpty(t *testing.T) {
 	_, hasError := obj["error"]
 	r.False(hasError)
 }
+
+// TestMarshalJSON_MetaCodeInStruct tests MarshalJSON with code already in Meta struct
+func TestMarshalJSON_MetaCodeInStruct(t *testing.T) {
+	r := require.New(t)
+
+	type MetaWithCode struct {
+		Code    string `json:"code"`
+		Message string `json:"message"`
+	}
+
+	err := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("test error"),
+		Code:     "DEFAULT_CODE",
+		Meta: MetaWithCode{
+			Code:    "META_CODE",
+			Message: "test message",
+		},
+	}
+
+	data, e := json.Marshal(err)
+	r.NoError(e)
+
+	var obj map[string]any
+	e = json.Unmarshal(data, &obj)
+	r.NoError(e)
+	// Should use code from Meta struct, not from Error.Code
+	r.Equal("META_CODE", obj["code"])
+	r.Equal("test message", obj["message"])
+}
+
+// TestMarshalJSON_MetaErrorInStruct tests MarshalJSON with error already in Meta struct
+func TestMarshalJSON_MetaErrorInStruct(t *testing.T) {
+	r := require.New(t)
+
+	type MetaWithError struct {
+		Error   string `json:"error"`
+		Details string `json:"details"`
+	}
+
+	err := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("original error"),
+		Code:     "TEST_CODE",
+		Meta: MetaWithError{
+			Error:   "meta error message",
+			Details: "details",
+		},
+	}
+
+	data, e := json.Marshal(err)
+	r.NoError(e)
+
+	var obj map[string]any
+	e = json.Unmarshal(data, &obj)
+	r.NoError(e)
+	// Should use error from Meta struct
+	r.Equal("meta error message", obj["error"])
+	r.Equal("details", obj["details"])
+}
