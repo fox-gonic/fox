@@ -260,6 +260,6 @@ func TestQueryBinding_Bind(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 1, args.Page)
 		assert.Equal(t, 20, args.PageSize)
-		assert.Equal(t, "", args.Keyword)
+		assert.Empty(t, args.Keyword)
 	})
 }
