@@ -185,3 +185,66 @@ func TestError(t *testing.T) {
 		r.NotEqual(err, e)
 	}
 }
+
+// TestMarshalJSON_MetaNil tests MarshalJSON with nil Meta
+func TestMarshalJSON_MetaNil(t *testing.T) {
+	r := require.New(t)
+
+	err := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("test error"),
+		Code:     "TEST_ERROR",
+		Meta:     nil, // Explicitly set to nil
+	}
+
+	data, e := json.Marshal(err)
+	r.NoError(e)
+
+	var obj map[string]any
+	e = json.Unmarshal(data, &obj)
+	r.NoError(e)
+	r.Equal("TEST_ERROR", obj["code"])
+	r.Equal("(400): test error", obj["error"])
+	r.Equal("test error", obj["meta"])
+}
+
+// TestMarshalJSON_CodeEmpty tests MarshalJSON with empty Code
+func TestMarshalJSON_CodeEmpty(t *testing.T) {
+	r := require.New(t)
+
+	err := &Error{
+		HTTPCode: 404,
+		Err:      errors.New("not found"),
+		Code:     "", // Empty code
+	}
+
+	data, e := json.Marshal(err)
+	r.NoError(e)
+
+	var obj map[string]any
+	e = json.Unmarshal(data, &obj)
+	r.NoError(e)
+	r.Equal("404", obj["code"]) // Should use HTTPCode as code
+}
+
+// TestMarshalJSON_ErrorEmpty tests MarshalJSON with empty error message
+func TestMarshalJSON_ErrorEmpty(t *testing.T) {
+	r := require.New(t)
+
+	err := &Error{
+		HTTPCode: 500,
+		Err:      nil,
+		Code:     "INTERNAL_ERROR",
+	}
+
+	data, e := json.Marshal(err)
+	r.NoError(e)
+
+	var obj map[string]any
+	e = json.Unmarshal(data, &obj)
+	r.NoError(e)
+	r.Equal("INTERNAL_ERROR", obj["code"])
+	// error field should not exist or be empty
+	_, hasError := obj["error"]
+	r.False(hasError)
+}

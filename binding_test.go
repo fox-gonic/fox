@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -262,4 +263,150 @@ func TestQueryBinding_Bind(t *testing.T) {
 		assert.Equal(t, 20, args.PageSize)
 		assert.Empty(t, args.Keyword)
 	})
+
+	t.Run("binding with nil validator", func(t *testing.T) {
+		// Save original validator
+		originalValidator := binding.Validator
+		defer func() {
+			binding.Validator = originalValidator
+		}()
+
+		// Set validator to nil
+		binding.Validator = nil
+
+		req, _ := http.NewRequest(http.MethodGet, "/?page=1&page_size=20", nil)
+
+		var args QueryArgs
+		qb := queryBinding{}
+		err := qb.Bind(req, &args)
+
+		require.NoError(t, err)
+		assert.Equal(t, 1, args.Page)
+		assert.Equal(t, 20, args.PageSize)
+	})
+}
+
+// TestBind_DefaultBinder tests bind function with DefaultBinder
+func TestBind_DefaultBinder(t *testing.T) {
+	// Save original binders
+	originalBinders := binders
+	originalBodyBinders := bodyBinders
+	originalDefaultBinder := DefaultBinder
+	defer func() {
+		binders = originalBinders
+		bodyBinders = originalBodyBinders
+		DefaultBinder = originalDefaultBinder
+	}()
+
+	t.Run("DefaultBinder as BindingBody", func(t *testing.T) {
+		// Clear binders to force DefaultBinder usage
+		binders = make(map[string]binding.Binding)
+		bodyBinders = make(map[string]binding.BindingBody)
+		DefaultBinder = binding.JSON
+
+		type TestBody struct {
+			Name string `json:"name"`
+		}
+
+		req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBufferString(`{"name":"test"}`))
+		req.Header.Set("Content-Type", "application/custom")
+
+		ctx := &Context{
+			Context: &gin.Context{
+				Request: req,
+			},
+			Request: req,
+		}
+
+		var obj TestBody
+		err := bind(ctx, &obj)
+		require.NoError(t, err)
+		assert.Equal(t, "test", obj.Name)
+	})
+
+	t.Run("DefaultBinder with empty body", func(t *testing.T) {
+		// Clear binders to force DefaultBinder usage
+		binders = make(map[string]binding.Binding)
+		bodyBinders = make(map[string]binding.BindingBody)
+		DefaultBinder = binding.JSON
+
+		type TestBody struct {
+			Name string `json:"name"`
+		}
+
+		req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBufferString(""))
+		req.Header.Set("Content-Type", "application/custom")
+
+		ctx := &Context{
+			Context: &gin.Context{
+				Request: req,
+			},
+			Request: req,
+		}
+
+		var obj TestBody
+		err := bind(ctx, &obj)
+		require.NoError(t, err)
+		assert.Empty(t, obj.Name)
+	})
+}
+
+// TestBind_BodyBinder tests bind function with bodyBinders
+func TestBind_BodyBinder(t *testing.T) {
+	// Save original binders
+	originalBinders := binders
+	originalBodyBinders := bodyBinders
+	defer func() {
+		binders = originalBinders
+		bodyBinders = originalBodyBinders
+	}()
+
+	t.Run("BodyBinder with empty body", func(t *testing.T) {
+		type TestBody struct {
+			Name string `json:"name"`
+		}
+
+		req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBufferString(""))
+		req.Header.Set("Content-Type", "application/json")
+
+		ctx := &Context{
+			Context: &gin.Context{
+				Request: req,
+			},
+			Request: req,
+		}
+
+		var obj TestBody
+		err := bind(ctx, &obj)
+		require.NoError(t, err)
+		assert.Empty(t, obj.Name)
+	})
+}
+
+// TestBind_PointerToPointer tests bind with pointer to pointer
+func TestBind_PointerToPointer(t *testing.T) {
+	type Inner struct {
+		Name string `json:"name"`
+	}
+
+	type TestBody struct {
+		Data **Inner `json:"data"`
+	}
+
+	req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBufferString(`{"data":{"name":"test"}}`))
+	req.Header.Set("Content-Type", "application/json")
+
+	ctx := &Context{
+		Context: &gin.Context{
+			Request: req,
+		},
+		Request: req,
+	}
+
+	var obj TestBody
+	err := bind(ctx, &obj)
+	require.NoError(t, err)
+	require.NotNil(t, obj.Data)
+	require.NotNil(t, *obj.Data)
+	assert.Equal(t, "test", (*obj.Data).Name)
 }
