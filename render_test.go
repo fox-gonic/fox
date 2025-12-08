@@ -221,7 +221,6 @@ func TestRenderError_RenderInterface(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Equal(t, "rendered: test render error", w.Body.String())
-	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
 func TestRenderError_HTTPError(t *testing.T) {

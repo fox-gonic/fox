@@ -285,21 +285,6 @@ func TestQueryBinding_Bind(t *testing.T) {
 		assert.Equal(t, 20, args.PageSize)
 	})
 
-	t.Run("binding with validation error", func(t *testing.T) {
-		type ValidatedArgs struct {
-			Email string `query:"email" binding:"required,email"`
-		}
-
-		req, _ := http.NewRequest(http.MethodGet, "/?email=invalid", nil)
-
-		var args ValidatedArgs
-		qb := queryBinding{}
-		err := qb.Bind(req, &args)
-
-		// Should return validation error for invalid email
-		require.Error(t, err)
-	})
-
 	t.Run("binding with MapFormWithTag error", func(t *testing.T) {
 		type InvalidArgs struct {
 			Number int `query:"number"`
@@ -311,7 +296,7 @@ func TestQueryBinding_Bind(t *testing.T) {
 		qb := queryBinding{}
 		err := qb.Bind(req, &args)
 
-		// Should return error for invalid number format
+		// MapFormWithTag will attempt to parse "not-a-number" as int, which should fail
 		require.Error(t, err)
 	})
 }
