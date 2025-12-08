@@ -68,6 +68,16 @@ jobs:
       - name: Run Tests
         run: make test
 
+      - name: Filter coverage to exclude examples
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          if [ -f coverage.txt ]; then
+            grep -v "examples/" coverage.txt > coverage_filtered.txt || true
+            if [ -s coverage_filtered.txt ]; then
+              mv coverage_filtered.txt coverage.txt
+            fi
+          fi
+
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v5
