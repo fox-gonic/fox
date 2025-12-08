@@ -44,6 +44,8 @@ golangci-lint:
 test:
 	@echo "Running tests..."
 	@FOX_MODE=test GIN_MODE=test go test -v -coverprofile=coverage.txt -covermode=atomic ./...
+	@echo "Filtering coverage to exclude examples..."
+	@grep -v "examples/" coverage.txt > coverage_filtered.txt && mv coverage_filtered.txt coverage.txt || true
 	@echo "✓ Tests passed"
 
 # Show coverage in terminal
