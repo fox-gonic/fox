@@ -180,3 +180,86 @@ func TestIsValider(t *testing.T) {
 	})
 	require.NoError(t, err)
 }
+
+// TestFilterFlags tests the filterFlags function
+func TestFilterFlags(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "no flags",
+			input:    "application/json",
+			expected: "application/json",
+		},
+		{
+			name:     "with space",
+			input:    "application/json charset=utf-8",
+			expected: "application/json",
+		},
+		{
+			name:     "with semicolon",
+			input:    "application/json; charset=utf-8",
+			expected: "application/json",
+		},
+		{
+			name:     "space at start",
+			input:    " application/json",
+			expected: "",
+		},
+		{
+			name:     "empty string",
+			input:    "",
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := filterFlags(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// TestQueryBinding_Name tests queryBinding Name method
+func TestQueryBinding_Name(t *testing.T) {
+	qb := queryBinding{}
+	assert.Equal(t, "query", qb.Name())
+}
+
+// TestQueryBinding_Bind tests queryBinding Bind method
+func TestQueryBinding_Bind(t *testing.T) {
+	type QueryArgs struct {
+		Page     int    `query:"page"`
+		PageSize int    `query:"page_size"`
+		Keyword  string `query:"keyword"`
+	}
+
+	t.Run("successful binding", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, "/?page=1&page_size=20&keyword=test", nil)
+
+		var args QueryArgs
+		qb := queryBinding{}
+		err := qb.Bind(req, &args)
+
+		require.NoError(t, err)
+		assert.Equal(t, 1, args.Page)
+		assert.Equal(t, 20, args.PageSize)
+		assert.Equal(t, "test", args.Keyword)
+	})
+
+	t.Run("binding without keyword", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, "/?page=1&page_size=20", nil)
+
+		var args QueryArgs
+		qb := queryBinding{}
+		err := qb.Bind(req, &args)
+
+		require.NoError(t, err)
+		assert.Equal(t, 1, args.Page)
+		assert.Equal(t, 20, args.PageSize)
+		assert.Equal(t, "", args.Keyword)
+	})
+}

@@ -3,6 +3,7 @@ package fox_test
 import (
 	"bytes"
 	"context"
+	"embed"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -383,4 +384,151 @@ func TestDefaultEnableContextWithFallback(t *testing.T) {
 		assert.Equal(200, w.Code)
 		assert.Equal("no context value", w.Body.String())
 	})
+}
+
+// TestEngine_NotFound tests custom 404 handler
+func TestEngine_NotFound(t *testing.T) {
+	router := fox.New()
+
+	router.NotFound(func(c *fox.Context) {
+		c.JSON(404, map[string]string{
+			"error": "custom not found",
+		})
+	})
+
+	router.GET("/exists", func() string {
+		return "exists"
+	})
+
+	t.Run("existing route", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/exists", nil)
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, 200, w.Code)
+		assert.Equal(t, "exists", w.Body.String())
+	})
+
+	t.Run("not found route", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/not-exists", nil)
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, 404, w.Code)
+		assert.JSONEq(t, `{"error":"custom not found"}`, w.Body.String())
+	})
+}
+
+// TestEngine_NoRoute tests NoRoute handler
+func TestEngine_NoRoute(t *testing.T) {
+	router := fox.New()
+
+	router.NoRoute(func(c *fox.Context) {
+		c.JSON(404, map[string]string{
+			"message": "route not found",
+		})
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/undefined", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, 404, w.Code)
+	assert.JSONEq(t, `{"message":"route not found"}`, w.Body.String())
+}
+
+// TestEngine_NoMethod tests NoMethod handler
+func TestEngine_NoMethod(t *testing.T) {
+	router := fox.New()
+	router.HandleMethodNotAllowed = true
+
+	router.NoMethod(func(c *fox.Context) {
+		c.JSON(405, map[string]string{
+			"error": "method not allowed",
+		})
+	})
+
+	router.GET("/test", func() string {
+		return "get"
+	})
+
+	t.Run("allowed method", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, 200, w.Code)
+		assert.Equal(t, "get", w.Body.String())
+	})
+
+	t.Run("not allowed method", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/test", nil)
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, 405, w.Code)
+		assert.JSONEq(t, `{"error":"method not allowed"}`, w.Body.String())
+	})
+}
+
+// TestEngine_Load tests Load router config func
+func TestEngine_Load(t *testing.T) {
+	router := fox.New()
+
+	configFunc := func(r *fox.Engine, embedFS ...embed.FS) {
+		r.GET("/loaded", func() string {
+			return "loaded"
+		})
+	}
+
+	router.Load(configFunc)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/loaded", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "loaded", w.Body.String())
+}
+
+// TestHandlersChain_Last tests Last() method with edge cases
+func TestHandlersChain_Last(t *testing.T) {
+	tests := []struct {
+		name     string
+		chain    fox.HandlersChain
+		expected fox.HandlerFunc
+	}{
+		{
+			name:     "empty chain",
+			chain:    fox.HandlersChain{},
+			expected: nil,
+		},
+		{
+			name: "single handler",
+			chain: fox.HandlersChain{
+				func() string { return "first" },
+			},
+			expected: func() string { return "first" },
+		},
+		{
+			name: "multiple handlers",
+			chain: fox.HandlersChain{
+				func() string { return "first" },
+				func() string { return "second" },
+				func() string { return "third" },
+			},
+			expected: func() string { return "third" },
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.chain.Last()
+			if tt.expected == nil {
+				assert.Nil(t, result)
+			} else {
+				assert.NotNil(t, result)
+			}
+		})
+	}
 }

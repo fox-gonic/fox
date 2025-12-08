@@ -87,3 +87,66 @@ func TestRouterGroup_Use(t *testing.T) {
 		assert.Equal("context value", w.Body.String())
 	})
 }
+
+// TestHTTPMethods tests all HTTP method shortcuts
+func TestHTTPMethods(t *testing.T) {
+	router := fox.New()
+
+	// Test DELETE
+	router.DELETE("/delete", func() string {
+		return "deleted"
+	})
+
+	// Test PUT
+	router.PUT("/put", func() string {
+		return "updated"
+	})
+
+	// Test PATCH
+	router.PATCH("/patch", func() string {
+		return "patched"
+	})
+
+	// Test OPTIONS
+	router.OPTIONS("/options", func() string {
+		return "options"
+	})
+
+	// Test HEAD
+	router.HEAD("/head", func() {})
+
+	// Test Any
+	router.Any("/any", func() string {
+		return "any method"
+	})
+
+	tests := []struct {
+		name           string
+		method         string
+		path           string
+		expectedStatus int
+		expectedBody   string
+	}{
+		{"DELETE method", http.MethodDelete, "/delete", 200, "deleted"},
+		{"PUT method", http.MethodPut, "/put", 200, "updated"},
+		{"PATCH method", http.MethodPatch, "/patch", 200, "patched"},
+		{"OPTIONS method", http.MethodOptions, "/options", 200, "options"},
+		{"HEAD method", http.MethodHead, "/head", 200, ""},
+		{"Any - GET", http.MethodGet, "/any", 200, "any method"},
+		{"Any - POST", http.MethodPost, "/any", 200, "any method"},
+		{"Any - PUT", http.MethodPut, "/any", 200, "any method"},
+		{"Any - DELETE", http.MethodDelete, "/any", 200, "any method"},
+		{"Any - PATCH", http.MethodPatch, "/any", 200, "any method"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest(tt.method, tt.path, nil)
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			assert.Equal(t, tt.expectedBody, w.Body.String())
+		})
+	}
+}
