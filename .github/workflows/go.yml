@@ -22,18 +22,18 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: "1.24.11"
+          go-version: "1.25.x"
       - name: Setup golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.1.6
+          version: v2.4.0
           args: --verbose
   test:
     needs: lint
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        go: ["1.24"]
+        go: ["1.25.x"]
         include:
           - os: ubuntu-latest
             go-build: ~/.cache/go-build

@@ -56,6 +56,31 @@ func TestLogger_ExistingTraceID(t *testing.T) {
 	assert.Equal(t, existingID, traceID)
 }
 
+func TestLogger_AttachesTraceIDToRequestContext(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	var contextTraceID string
+	var loggerTraceID string
+
+	router := gin.New()
+	router.Use(Logger())
+	router.GET("/test", func(c *gin.Context) {
+		contextTraceID, _ = c.Request.Context().Value(logger.TraceIDKey).(string)
+		loggerTraceID = logger.NewWithContext(c.Request.Context()).TraceID()
+		c.String(http.StatusOK, "test")
+	})
+
+	existingID := "context-trace-123"
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req.Header.Set(logger.TraceID, existingID)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, existingID, contextTraceID)
+	assert.Equal(t, existingID, loggerTraceID)
+}
+
 func TestLogger_GeneratedTraceID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
