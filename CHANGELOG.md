@@ -7,12 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.10] - 2026-04-30
+
 ### Added
+- Added struct binding examples for URL and query parameters.
 - Comprehensive unit tests for `logger` package (90.8% coverage)
 - Comprehensive unit tests for `utils` package (100% coverage)
 - CHANGELOG.md file for tracking project changes
+- Added Codecov integration and expanded test coverage across core packages.
+
+### Changed
+- Upgraded the module and GitHub Actions toolchain to Go 1.25.
+- Aligned Gin ecosystem dependencies with Gin upstream, including `github.com/gin-gonic/gin` v1.12.0 and `github.com/gin-contrib/cors` v1.7.7.
+- Updated `github.com/rs/zerolog` to v1.35.1.
+- Updated GitHub Actions dependencies, including `codecov/codecov-action` v6.
 
 ### Fixed
+- Attached trace IDs to the request context in logger middleware.
 - Renamed `reponse_time.go` to `response_time.go` (typo correction)
 
 ## [0.1.0-beta] - 2024-12-06
@@ -59,28 +70,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Dependencies
 
 ### Core Dependencies
-- github.com/gin-gonic/gin v1.11.0
-- github.com/gin-contrib/cors v1.7.6
-- github.com/go-playground/validator/v10 v10.28.0
+- github.com/gin-gonic/gin v1.12.0
+- github.com/gin-contrib/cors v1.7.7
+- github.com/go-playground/validator/v10 v10.30.1
 - github.com/json-iterator/go v1.1.12
 - github.com/mitchellh/mapstructure v1.5.0
-- github.com/natefinch/lumberjack v2.0.0+incompatible
-- github.com/rs/zerolog v1.34.0
+- gopkg.in/natefinch/lumberjack.v2 v2.2.1
+- github.com/rs/zerolog v1.35.1
 - github.com/stretchr/testify v1.11.1
 
 ### Indirect Dependencies
-- golang.org/x/crypto v0.45.0
-- golang.org/x/net v0.47.0
-- golang.org/x/sys v0.38.0
-- golang.org/x/text v0.31.0
-- golang.org/x/tools v0.38.0
-- google.golang.org/protobuf v1.36.10
+- golang.org/x/crypto v0.49.0
+- golang.org/x/net v0.52.0
+- golang.org/x/sys v0.42.0
+- golang.org/x/text v0.35.0
+- google.golang.org/protobuf v1.36.11
 
 ## Development
 
 ### CI/CD
 - GitHub Actions for automated testing
-- golangci-lint v2.1.6 for code quality checks
+- golangci-lint v2.4.0 for code quality checks
 - Dependabot for automatic dependency updates (weekly)
 - Multi-platform testing (Ubuntu, macOS)
 - Race condition detection enabled
