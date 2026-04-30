@@ -51,6 +51,7 @@ func Logger(config ...LoggerConfig) gin.HandlerFunc {
 		}
 
 		log := logger.New(xRequestID)
+		c.Request = c.Request.WithContext(log.WithContext(c.Request.Context()))
 		c.Set(LoggerContextKey, log)
 
 		c.Header(logger.TraceID, xRequestID)
