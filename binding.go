@@ -3,6 +3,7 @@ package fox
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"reflect"
@@ -12,6 +13,11 @@ import (
 
 // ErrBindNonPointerValue is required bind pointer
 var ErrBindNonPointerValue = errors.New("can not bind to non-pointer value")
+
+// ErrBindContextTypeMismatch is returned when a value retrieved from the
+// request context via a `context:"key"` tag cannot be converted to the
+// destination field type.
+var ErrBindContextTypeMismatch = errors.New("context value type mismatch")
 
 // DefaultBinder default binder
 var DefaultBinder binding.Binding = binding.JSON
@@ -33,7 +39,8 @@ var bodyBinders = map[string]binding.BindingBody{
 	binding.MIMETOML:     binding.TOML,     // toml
 }
 
-// bind request arguments
+// bind populates obj from the request: body (per Content-Type), then any
+// `context`, `query`, `uri`, and `header` tagged fields, in that order.
 func bind(ctx *Context, obj any) error {
 	vPtr := reflect.ValueOf(obj)
 
@@ -110,13 +117,8 @@ func bind(ctx *Context, obj any) error {
 			hasHeaderField = true
 		}
 		if tag := field.Tag.Get("context"); tag != "" && tag != "-" {
-			if value, exists := ctx.Get(tag); exists {
-				if fieldValue := vPtr.Field(i); fieldValue.CanSet() {
-					// convert context value to field type and set
-					if val := reflect.ValueOf(value); val.Type().ConvertibleTo(fieldValue.Type()) {
-						fieldValue.Set(val.Convert(fieldValue.Type()))
-					}
-				}
+			if err := bindContextField(ctx, vPtr.Field(i), field.Name, tag); err != nil {
+				return err
 			}
 		}
 	}
@@ -150,6 +152,26 @@ func bind(ctx *Context, obj any) error {
 		return valider.IsValid()
 	}
 
+	return nil
+}
+
+// bindContextField copies a value stored on ctx into a struct field tagged
+// with `context:"key"`. Missing keys, unexported fields and nil values are
+// no-ops; an unconvertible stored type returns ErrBindContextTypeMismatch.
+func bindContextField(ctx *Context, fieldValue reflect.Value, fieldName, key string) error {
+	value, exists := ctx.Get(key)
+	if !exists || value == nil {
+		return nil
+	}
+	if !fieldValue.CanSet() {
+		return nil
+	}
+	val := reflect.ValueOf(value)
+	if !val.Type().ConvertibleTo(fieldValue.Type()) {
+		return fmt.Errorf("%w: key %q (%T) -> field %s (%s)",
+			ErrBindContextTypeMismatch, key, value, fieldName, fieldValue.Type())
+	}
+	fieldValue.Set(val.Convert(fieldValue.Type()))
 	return nil
 }
 

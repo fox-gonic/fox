@@ -548,9 +548,32 @@ func TestBind_ContextFieldNotConvertible(t *testing.T) {
 
 	var obj TestStruct
 	err := bind(ctx, &obj)
-	// Should not error, just skip the field
+	require.Error(t, err)
+	require.ErrorIs(t, err, ErrBindContextTypeMismatch)
+	assert.Contains(t, err.Error(), "int_value")
+	assert.Equal(t, 0, obj.IntValue)
+}
+
+// TestBind_ContextFieldMissing verifies that a missing or nil context value
+// leaves the destination field at its zero value without raising an error.
+func TestBind_ContextFieldMissing(t *testing.T) {
+	type TestStruct struct {
+		Missing string `context:"missing_key"`
+		Nilled  string `context:"nilled_key"`
+	}
+
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	ctx := &Context{
+		Context: &gin.Context{Request: req},
+		Request: req,
+	}
+	ctx.Set("nilled_key", nil)
+
+	var obj TestStruct
+	err := bind(ctx, &obj)
 	require.NoError(t, err)
-	assert.Equal(t, 0, obj.IntValue) // Should remain zero value
+	assert.Empty(t, obj.Missing)
+	assert.Empty(t, obj.Nilled)
 }
 
 // TestBind_WithBindingError tests bind with body binding error
