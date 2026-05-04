@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"sync"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -103,6 +104,20 @@ type Engine struct {
 	DefaultRenderErrorStatusCode int
 
 	RenderErrorFunc RenderErrorFunc
+
+	handlerRoutesMu       sync.RWMutex
+	handlerRoutes         map[handlerRouteKey]RouteInfo
+	handlerRoutesDisabled bool
+}
+
+// DisableRouteRegistry stops collecting handler reflection metadata for new
+// routes. Existing entries are dropped. Use when you do not run any tooling
+// (such as openapi generation) and want to free the per-route memory.
+func (engine *Engine) DisableRouteRegistry() {
+	engine.handlerRoutesMu.Lock()
+	defer engine.handlerRoutesMu.Unlock()
+	engine.handlerRoutesDisabled = true
+	engine.handlerRoutes = nil
 }
 
 func init() {
