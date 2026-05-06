@@ -187,3 +187,8 @@ See [LICENSE](LICENSE) file for details.
 ---
 
 For more information, visit the [GitHub repository](https://github.com/fox-gonic/fox).
+
+[Unreleased]: https://github.com/fox-gonic/fox/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/fox-gonic/fox/compare/v0.0.10...v0.1.0
+[0.0.10]: https://github.com/fox-gonic/fox/compare/v0.1.0-beta...v0.0.10
+[0.1.0-beta]: https://github.com/fox-gonic/fox/releases/tag/v0.1.0-beta
