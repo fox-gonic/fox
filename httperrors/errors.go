@@ -153,16 +153,11 @@ func (e Error) MarshalJSON() ([]byte, error) {
 			}
 			switch value.Kind() {
 			case reflect.Struct:
-				decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+				decoder, _ := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 					TagName: "json",
 					Result:  &jsonData,
 				})
-				if err != nil {
-					return nil, err
-				}
-				if err := decoder.Decode(value.Interface()); err != nil {
-					return nil, err
-				}
+				_ = decoder.Decode(value.Interface())
 			case reflect.Map:
 				for _, key := range value.MapKeys() {
 					jsonData[key.String()] = value.MapIndex(key).Interface()
