@@ -81,7 +81,7 @@ with a migration note), test coverage backfill across `examples/` and
 
 ## [0.1.0-beta] - 2024-12-06
 
-> Note: This pre-release tag is superseded by `[0.1.0]`. The interim
+> Note: This pre-release entry is superseded by `[0.1.0]`. The interim
 > `0.0.x` releases (see `[0.0.10]` above) carried incremental fixes; the
 > `[0.1.0]` entry above marks the project's graduation to the `0.1.x` line.
 
@@ -190,5 +190,4 @@ For more information, visit the [GitHub repository](https://github.com/fox-gonic
 
 [Unreleased]: https://github.com/fox-gonic/fox/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/fox-gonic/fox/compare/v0.0.10...v0.1.0
-[0.0.10]: https://github.com/fox-gonic/fox/compare/v0.1.0-beta...v0.0.10
-[0.1.0-beta]: https://github.com/fox-gonic/fox/releases/tag/v0.1.0-beta
+[0.0.10]: https://github.com/fox-gonic/fox/compare/v0.0.9...v0.0.10
