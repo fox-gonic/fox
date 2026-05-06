@@ -8,6 +8,7 @@ import (
 	"os"
 	"reflect"
 	"sync"
+	"sync/atomic"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -49,8 +50,8 @@ var DefaultWriter io.Writer = os.Stdout
 // DefaultErrorWriter is the default io.Writer used by Gin to debug errors.
 var DefaultErrorWriter io.Writer = os.Stderr
 
-// ErrInvalidHandlerType is the error message for invalid handler type.
-var ErrInvalidHandlerType = "invalid handler type: %s\n" +
+// MsgInvalidHandlerType is the panic message format for invalid handler types.
+var MsgInvalidHandlerType = "invalid handler type: %s\n" +
 	"handler signature: %s\n" +
 	"Supported handler types:\n" +
 	"1. func()\n" +
@@ -62,6 +63,9 @@ var ErrInvalidHandlerType = "invalid handler type: %s\n" +
 	"- S can be struct or map type, S will be auto binding from request body\n" +
 	"- T can be any type, T will be auto render to response body\n" +
 	"- error can be any type that implements error interface"
+
+// Deprecated: Use MsgInvalidHandlerType. This alias will be removed in v0.1.0.
+var ErrInvalidHandlerType = MsgInvalidHandlerType
 
 // HandlerFunc is a function that can be registered to a route to handle HTTP requests.
 // Like http.HandlerFunc, but support auto binding and auto render.
@@ -77,6 +81,11 @@ var ErrInvalidHandlerType = "invalid handler type: %s\n" +
 //   - S can be struct or map type, S will be auto binding from request body
 //   - T can be any type, T will be auto render to response body
 //   - error can be any type that implements error interface
+//
+// IMPORTANT: When a handler with a non-nil return value is used as middleware
+// through Use, the chain is aborted after the value is rendered. For middleware
+// that should pass through, use a signature without return values or use
+// gin.HandlerFunc directly.
 type HandlerFunc any
 
 // HandlersChain defines a HandlerFunc slice.
@@ -107,16 +116,16 @@ type Engine struct {
 
 	handlerRoutesMu       sync.RWMutex
 	handlerRoutes         map[handlerRouteKey]RouteInfo
-	handlerRoutesDisabled bool
+	handlerRoutesDisabled atomic.Bool
 }
 
 // DisableRouteRegistry stops collecting handler reflection metadata for new
 // routes. Existing entries are dropped. Use when you do not run any tooling
 // (such as openapi generation) and want to free the per-route memory.
 func (engine *Engine) DisableRouteRegistry() {
+	engine.handlerRoutesDisabled.Store(true)
 	engine.handlerRoutesMu.Lock()
 	defer engine.handlerRoutesMu.Unlock()
-	engine.handlerRoutesDisabled = true
 	engine.handlerRoutes = nil
 }
 
@@ -221,7 +230,7 @@ func IsValidHandlerFunc(handler HandlerFunc) bool {
 			secondParam = secondParam.Elem()
 		}
 		// Check if it's a struct or map type
-		if secondParam.Kind() != reflect.Struct && secondParam.Kind() != reflect.Map && secondParam.Kind() != reflect.Interface {
+		if secondParam.Kind() != reflect.Struct && secondParam.Kind() != reflect.Map {
 			return false
 		}
 	}

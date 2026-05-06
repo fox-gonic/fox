@@ -481,6 +481,7 @@ func TestBind_RequestBodyError(t *testing.T) {
 	// Create a request with a body that will cause an error when reading
 	req, _ := http.NewRequest(http.MethodPost, "/", errReader(0))
 	req.Header.Set("Content-Type", "application/json")
+	req.ContentLength = -1
 
 	ctx := &Context{
 		Context: &gin.Context{
@@ -637,4 +638,26 @@ func TestBind_CustomBinder(t *testing.T) {
 	err := bind(ctx, &obj)
 	require.Error(t, err)
 	assert.Equal(t, "custom binder error", err.Error())
+}
+
+func BenchmarkBinding_NoBody_QueryOnly(b *testing.B) {
+	type QueryRequest struct {
+		Name string `query:"name"`
+	}
+
+	req, _ := http.NewRequest(http.MethodGet, "/?name=fox", nil)
+	req.ContentLength = 0
+	ctx := &Context{
+		Context: &gin.Context{Request: req},
+		Request: req,
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		var obj QueryRequest
+		if err := bind(ctx, &obj); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

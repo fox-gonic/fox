@@ -1,7 +1,7 @@
 package fox
 
 import (
-	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -18,7 +18,11 @@ type XResponseTimer struct {
 
 // WriteHeader implement http.ResponseWriter
 func (w *XResponseTimer) WriteHeader(statusCode int) {
-	w.Header().Set(w.key, fmt.Sprintf("%d, %d", w.start.UnixMilli(), time.Since(w.start).Nanoseconds()))
+	buf := make([]byte, 0, 40)
+	buf = strconv.AppendInt(buf, w.start.UnixMilli(), 10)
+	buf = append(buf, ',', ' ')
+	buf = strconv.AppendInt(buf, time.Since(w.start).Nanoseconds(), 10)
+	w.Header().Set(w.key, string(buf))
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 

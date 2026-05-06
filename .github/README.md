@@ -183,7 +183,7 @@ func main() {
 $ curl -X POST http://localhost:8080/users/signup \
     -H 'content-type: application/json' \
     -d '{"username": "George", "email": "george@vandaley.com"}'
-{"code":"PASSWORD_TOO_SHORT"}
+{"code":"PASSWORD_TOO_SHORT","error":"(400): password too short","meta":"password too short"}
 ```
 
 ## Architecture
@@ -259,7 +259,8 @@ Fox adds minimal overhead to Gin's performance while providing significant devel
 
 ### Benchmark Comparison
 
-Tested on Apple M4 Pro, Go 1.25.4:
+Example run: Apple M1 Pro / macOS / Go 1.26.2 / `GIN_MODE=release` / GOMAXPROCS=8.
+Reproduce with: `make benchmark`.
 
 ```
 Routing Benchmarks:
@@ -268,6 +269,8 @@ BenchmarkEngine_ParamRoute               1,700,000     633 ns/op    1554 B/op   
 BenchmarkEngine_MultiParam               1,300,000     879 ns/op    2121 B/op    27 allocs/op
 BenchmarkEngine_WildcardRoute            1,900,000     611 ns/op    1579 B/op    20 allocs/op
 BenchmarkEngine_JSONResponse             1,600,000     732 ns/op    1767 B/op    21 allocs/op
+BenchmarkGin_Baseline_SimpleRoute       15,273,523      71 ns/op      56 B/op     1 allocs/op
+BenchmarkGin_Baseline_JSONResponse       5,003,542     290 ns/op     342 B/op     3 allocs/op
 
 Binding Benchmarks:
 BenchmarkBinding_URIParam                  900,000    1283 ns/op    2717 B/op    36 allocs/op
@@ -428,15 +431,21 @@ router.GET("/users/:id", func(ctx *fox.Context, req *GetUserRequest) (*User, err
     return findUser(req.ID)
 })
 
-// Full control: Access context and return custom status
-router.POST("/complex", func(ctx *fox.Context, req *Request) (interface{}, int, error) {
+// Full control: Access context and set custom status
+router.POST("/complex", func(ctx *fox.Context, req *Request) (interface{}, error) {
     result, err := process(req)
     if err != nil {
-        return nil, http.StatusInternalServerError, err
+        ctx.Status(http.StatusInternalServerError)
+        return nil, err
     }
-    return result, http.StatusCreated, nil
+    ctx.Status(http.StatusCreated)
+    return result, nil
 })
 ```
+
+When a Fox handler with a non-nil return value is used as middleware via `Use`,
+the chain is aborted after the value is rendered. Middleware that should pass
+through should use a no-return Fox signature or `gin.HandlerFunc` directly.
 
 ### 5. Production Configuration
 

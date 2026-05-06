@@ -47,7 +47,12 @@ func (c *Context) RequestBody() (body []byte, err error) {
 	return body, err
 }
 
-// TraceID return request id
+// TraceID returns the request trace ID. It checks the gin context, request
+// header, and response header in order, falling back to generating a new ID
+// which is then written to both the response header and gin context.
+//
+// Note: This method has a side effect when no trace ID exists. If you only
+// want to read without generating, check c.GetHeader(logger.TraceID) directly.
 func (c *Context) TraceID() string {
 	if id, exists := c.Get(logger.TraceID); exists {
 		return id.(string)

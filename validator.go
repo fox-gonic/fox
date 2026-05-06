@@ -8,7 +8,9 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-// Validate global validator
+// Validate is the global validator instance used by Fox's DefaultValidator.
+// Register custom validations on this instance before request handling begins,
+// for example in init() or main().
 var Validate = validator.New()
 
 // DefaultValidator is the default implementation of Validator.
@@ -41,9 +43,7 @@ func (v *DefaultValidator) Engine() any {
 
 func (v *DefaultValidator) lazyinit() {
 	v.once.Do(func() {
-		v.validate = validator.New()
-
-		// add any custom validations etc. here
+		v.validate = Validate
 	})
 }
 

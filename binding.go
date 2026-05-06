@@ -56,14 +56,18 @@ func bind(ctx *Context, obj any) error {
 		err         error
 	)
 
-	if body, err = ctx.RequestBody(); err != nil {
-		return err
-	}
+	shouldReadBody := ctx.Request.ContentLength != 0 ||
+		len(ctx.Request.TransferEncoding) > 0
+	if shouldReadBody {
+		if body, err = ctx.RequestBody(); err != nil {
+			return err
+		}
 
-	defer func() {
-		// copy the request body to the next handler
-		ctx.Request.Body = io.NopCloser(bytes.NewBuffer(body))
-	}()
+		defer func() {
+			// copy the request body to the next handler
+			ctx.Request.Body = io.NopCloser(bytes.NewBuffer(body))
+		}()
+	}
 
 	if ctx.Request.Method == http.MethodGet {
 		err = binding.Form.Bind(ctx.Request, obj)
@@ -150,6 +154,11 @@ func bind(ctx *Context, obj any) error {
 
 	if valider, ok := obj.(IsValider); ok {
 		return valider.IsValid()
+	}
+	if vPtr.CanAddr() {
+		if valider, ok := vPtr.Addr().Interface().(IsValider); ok {
+			return valider.IsValid()
+		}
 	}
 
 	return nil

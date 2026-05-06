@@ -23,6 +23,10 @@ type RouteInfo struct {
 }
 
 func (engine *Engine) registerHandlerRoute(method, path string, handlers HandlersChain) {
+	if engine.handlerRoutesDisabled.Load() {
+		return
+	}
+
 	handler := handlers.Last()
 	if handler == nil {
 		return
@@ -39,7 +43,7 @@ func (engine *Engine) registerHandlerRoute(method, path string, handlers Handler
 	engine.handlerRoutesMu.Lock()
 	defer engine.handlerRoutesMu.Unlock()
 
-	if engine.handlerRoutesDisabled {
+	if engine.handlerRoutesDisabled.Load() {
 		return
 	}
 

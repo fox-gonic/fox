@@ -80,7 +80,7 @@ router.POST("/users", func(ctx *fox.Context, req *CreateUserRequest) (*User, err
 var ErrNotFound = &httperrors.Error{
     HTTPCode: http.StatusNotFound,
     Code:     "NOT_FOUND",
-    Message:  "Resource not found",
+    Err:      errors.New("resource not found"),
 }
 
 router.GET("/user/:id", func(ctx *fox.Context) (*User, error) {
@@ -121,7 +121,7 @@ func (sr *SignupRequest) IsValid() error {
         return &httperrors.Error{
             HTTPCode: http.StatusBadRequest,
             Code:     "WEAK_PASSWORD",
-            Message:  "Password must be at least 8 characters",
+            Err:      errors.New("password must be at least 8 characters"),
         }
     }
     return nil

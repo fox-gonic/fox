@@ -36,7 +36,6 @@ func (c *Context) renderError(err error) {
 		return
 	}
 
-	// TODO(m): render by writer content-type
 	if e, ok := err.(json.Marshaler); ok {
 		c.JSON(code, e)
 	} else {
@@ -60,7 +59,6 @@ func (c *Context) render(res any) {
 	case render.Render:
 		c.Render(http.StatusOK, r)
 	default:
-		// TODO(m): render by writer content-type
 		c.JSON(http.StatusOK, r)
 	}
 

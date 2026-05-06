@@ -1,6 +1,7 @@
 package fox
 
 import (
+	"errors"
 	"net/http"
 	"reflect"
 
@@ -33,6 +34,10 @@ func call(ctx *Context, handler HandlerFunc) any {
 			// Bind handler params
 			parameter := reflect.New(funcType.In(i)).Interface()
 			if err := bind(ctx, parameter); err != nil {
+				var httpErr *httperrors.Error
+				if errors.As(err, &httpErr) {
+					return httpErr
+				}
 				msg := &httperrors.Error{
 					HTTPCode: http.StatusBadRequest,
 					Err:      err,

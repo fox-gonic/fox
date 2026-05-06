@@ -53,12 +53,12 @@ func TestNewContext(t *testing.T) {
 }
 
 func TestNewWithContext(t *testing.T) {
-	t.Run("with TraceID", func(t *testing.T) {
-		//nolint:staticcheck // TraceID is a package-level constant used as context key
+	t.Run("ignores TraceID string context key", func(t *testing.T) {
+		//nolint:staticcheck // Verifies the deprecated string-key path is ignored.
 		ctx := context.WithValue(context.Background(), TraceID, "trace-123")
 		logger := NewWithContext(ctx)
 		assert.NotNil(t, logger)
-		assert.Equal(t, "trace-123", logger.TraceID())
+		assert.Empty(t, logger.TraceID())
 	})
 
 	t.Run("with TraceIDKey", func(t *testing.T) {
@@ -74,6 +74,87 @@ func TestNewWithContext(t *testing.T) {
 		assert.NotNil(t, logger)
 		assert.Empty(t, logger.TraceID())
 	})
+}
+
+type captureLogger struct {
+	last []any
+}
+
+func (l *captureLogger) capture(arguments ...any) {
+	l.last = append([]any(nil), arguments...)
+}
+
+func (l *captureLogger) Debug(arguments ...any) { l.capture(arguments...) }
+func (l *captureLogger) Info(arguments ...any)  { l.capture(arguments...) }
+func (l *captureLogger) Warn(arguments ...any)  { l.capture(arguments...) }
+func (l *captureLogger) Error(arguments ...any) { l.capture(arguments...) }
+func (l *captureLogger) Fatal(arguments ...any) { l.capture(arguments...) }
+func (l *captureLogger) Panic(arguments ...any) { l.capture(arguments...) }
+func (l *captureLogger) Debugf(format string, arguments ...any) {
+	l.capture(append([]any{format}, arguments...)...)
+}
+
+func (l *captureLogger) Infof(format string, arguments ...any) {
+	l.capture(append([]any{format}, arguments...)...)
+}
+
+func (l *captureLogger) Warnf(format string, arguments ...any) {
+	l.capture(append([]any{format}, arguments...)...)
+}
+
+func (l *captureLogger) Errorf(format string, arguments ...any) {
+	l.capture(append([]any{format}, arguments...)...)
+}
+
+func (l *captureLogger) Fatalf(format string, arguments ...any) {
+	l.capture(append([]any{format}, arguments...)...)
+}
+
+func (l *captureLogger) Panicf(format string, arguments ...any) {
+	l.capture(append([]any{format}, arguments...)...)
+}
+func (l *captureLogger) WithField(key string, value any) Logger  { return l }
+func (l *captureLogger) WithFields(fields map[string]any) Logger { return l }
+func (l *captureLogger) WithError(err error) Logger              { return l }
+func (l *captureLogger) SetLevel(level Level) Logger             { return l }
+func (l *captureLogger) Caller(frame int) Logger                 { return l }
+func (l *captureLogger) TraceID() string                         { return "" }
+func (l *captureLogger) WithContext(ctx ...context.Context) context.Context {
+	if len(ctx) > 0 {
+		return ctx[0]
+	}
+	return context.Background()
+}
+
+func TestPackageLevelVariadicFunctionsSpreadArguments(t *testing.T) {
+	oldStd := std
+	defer func() {
+		std = oldStd
+	}()
+
+	tests := []struct {
+		name string
+		log  func(...any)
+	}{
+		{name: "Debug", log: Debug},
+		{name: "Info", log: Info},
+		{name: "Warn", log: Warn},
+		{name: "Error", log: Error},
+		{name: "Fatal", log: Fatal},
+		{name: "Panic", log: Panic},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			capture := &captureLogger{}
+			std = capture
+
+			tt.log("user", 42, "login")
+
+			require.Equal(t, []any{"user", 42, "login"}, capture.last)
+			require.NotEqual(t, []any{[]any{"user", 42, "login"}}, capture.last)
+		})
+	}
 }
 
 func TestDefaultGenRequestID(t *testing.T) {

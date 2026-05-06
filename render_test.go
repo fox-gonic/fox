@@ -525,6 +525,23 @@ func TestRender_Pointer(t *testing.T) {
 	assert.True(t, ctx.IsAborted())
 }
 
+func TestRender_ReturningMiddlewareAbortsChain(t *testing.T) {
+	engine := New()
+	engine.Use(func(c *Context) string {
+		return "stopped"
+	})
+	engine.GET("/next", func(c *Context) string {
+		return "next"
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/next", nil)
+	w := httptest.NewRecorder()
+	engine.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "stopped", w.Body.String())
+}
+
 // Benchmark tests
 
 func BenchmarkRenderError_Plain(b *testing.B) {

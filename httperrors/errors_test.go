@@ -24,6 +24,12 @@ type ErrorInfo struct {
 	IgnoreField    string   `json:"-"`
 }
 
+type arrayJSONMeta struct{}
+
+func (arrayJSONMeta) MarshalJSON() ([]byte, error) {
+	return []byte(`[]`), nil
+}
+
 func TestError(t *testing.T) {
 	r := require.New(t)
 	err := New(400, "invalid arguments")
@@ -80,8 +86,8 @@ func TestError(t *testing.T) {
 		}, obj["details"])
 		r.Equal("400", fmt.Sprintf("%v", obj["code"]))
 		r.Equal("invalid_arguments", obj["error_code"])
-		r.Empty(obj["omit_empty_field"])
-		r.Empty(obj["ignore_field"])
+		r.NotContains(obj, "omit_empty_field")
+		r.NotContains(obj, "ignore_field")
 		r.Equal("hvnmjnCVyvQ3aOIX", obj["x-request-id"])
 		r.Equal("1.799868", fmt.Sprintf("%v", obj["latency"]))
 		r.Equal("HANDLER", obj["ftype"])
@@ -206,6 +212,7 @@ func TestMarshalJSON_MetaNil(t *testing.T) {
 	r.Equal("TEST_ERROR", obj["code"])
 	r.Equal("(400): test error", obj["error"])
 	r.Equal("test error", obj["meta"])
+	r.Nil(err.Meta)
 }
 
 // TestMarshalJSON_CodeEmpty tests MarshalJSON with empty Code
@@ -336,6 +343,56 @@ func TestMarshalJSON_MetaWithMap(t *testing.T) {
 	r.Equal("TEST_CODE", obj["code"])
 }
 
+func TestMarshalJSON_MetaWithNonStringMapKeys(t *testing.T) {
+	r := require.New(t)
+
+	err := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("test error"),
+		Code:     "TEST_CODE",
+		Meta: map[int]string{
+			1: "one",
+			2: "two",
+		},
+	}
+
+	data, e := json.Marshal(err)
+	r.NoError(e)
+
+	var obj map[string]any
+	r.NoError(json.Unmarshal(data, &obj))
+	r.Equal("one", obj["1"])
+	r.Equal("two", obj["2"])
+	r.Equal("TEST_CODE", obj["code"])
+}
+
+func TestMarshalJSON_MetaStructHonorsJSONTags(t *testing.T) {
+	r := require.New(t)
+
+	err := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("test error"),
+		Meta: struct {
+			Visible string `json:"visible"`
+			Empty   string `json:"empty,omitempty"`
+			Ignored string `json:"-"`
+		}{
+			Visible: "yes",
+			Ignored: "no",
+		},
+	}
+
+	data, e := json.Marshal(err)
+	r.NoError(e)
+
+	var obj map[string]any
+	r.NoError(json.Unmarshal(data, &obj))
+	r.Equal("yes", obj["visible"])
+	r.NotContains(obj, "empty")
+	r.NotContains(obj, "Ignored")
+	r.NotContains(obj, "ignored")
+}
+
 // TestMarshalJSON_MetaWithPrimitiveType tests MarshalJSON with primitive type as Meta
 func TestMarshalJSON_MetaWithPrimitiveType(t *testing.T) {
 	r := require.New(t)
@@ -368,4 +425,114 @@ func TestMarshalJSON_MetaWithPrimitiveType(t *testing.T) {
 	e = json.Unmarshal(data, &obj)
 	r.NoError(e)
 	r.InEpsilon(42, obj["meta"].(float64), 0.001)
+}
+
+// TestMarshalJSON_MetaPointerToStruct ensures that a pointer to a struct is
+// flattened like a value struct, instead of landing in the default branch.
+func TestMarshalJSON_MetaPointerToStruct(t *testing.T) {
+	r := require.New(t)
+
+	type Details struct {
+		Field string `json:"field"`
+		Count int    `json:"count"`
+	}
+
+	err := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("validation failed"),
+		Code:     "TEST_CODE",
+		Meta:     &Details{Field: "value", Count: 3},
+	}
+
+	data, e := json.Marshal(err)
+	r.NoError(e)
+
+	var obj map[string]any
+	r.NoError(json.Unmarshal(data, &obj))
+
+	r.Equal("value", obj["field"])
+	r.InDelta(3, obj["count"].(float64), 0.001)
+	r.NotContains(obj, "meta")
+}
+
+func TestMarshalJSON_MetaPointerToPointerToStruct(t *testing.T) {
+	r := require.New(t)
+
+	type Details struct {
+		Field string `json:"field"`
+		Count int    `json:"count"`
+	}
+
+	details := &Details{Field: "value", Count: 3}
+
+	err := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("validation failed"),
+		Code:     "TEST_CODE",
+		Meta:     &details,
+	}
+
+	data, e := json.Marshal(err)
+	r.NoError(e)
+
+	var obj map[string]any
+	r.NoError(json.Unmarshal(data, &obj))
+
+	r.Equal("value", obj["field"])
+	r.InDelta(3, obj["count"].(float64), 0.001)
+	r.NotContains(obj, "meta")
+}
+
+// TestMarshalJSON_ValueReceiver ensures that MarshalJSON is invoked when
+// Error is used as a value (e.g. in slices), not only through a pointer.
+func TestMarshalJSON_ValueReceiver(t *testing.T) {
+	r := require.New(t)
+
+	errs := []Error{
+		{
+			HTTPCode: 400,
+			Err:      errors.New("first"),
+			Code:     "FIRST",
+		},
+	}
+
+	data, e := json.Marshal(errs)
+	r.NoError(e)
+
+	var arr []map[string]any
+	r.NoError(json.Unmarshal(data, &arr))
+	r.Len(arr, 1)
+	r.Equal("FIRST", arr[0]["code"])
+	r.Equal("(400): first", arr[0]["error"])
+	// Ensure internal fields are not exposed via default struct marshaling.
+	r.NotContains(arr[0], "HTTPCode")
+	r.NotContains(arr[0], "Err")
+}
+
+func TestMarshalJSON_MetaJSONMarshalError(t *testing.T) {
+	r := require.New(t)
+
+	err := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("validation failed"),
+		Meta: struct {
+			Invalid func() `json:"invalid"`
+		}{Invalid: func() {}},
+	}
+
+	_, e := json.Marshal(err)
+	r.ErrorContains(e, "unsupported type")
+}
+
+func TestMarshalJSON_MetaJSONUnmarshalError(t *testing.T) {
+	r := require.New(t)
+
+	err := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("validation failed"),
+		Meta:     arrayJSONMeta{},
+	}
+
+	_, e := json.Marshal(err)
+	r.ErrorContains(e, "expect { or n")
 }
