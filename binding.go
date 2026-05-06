@@ -57,8 +57,7 @@ func bind(ctx *Context, obj any) error {
 	)
 
 	shouldReadBody := ctx.Request.ContentLength != 0 ||
-		len(ctx.Request.TransferEncoding) > 0 ||
-		ctx.Request.Header.Get("Transfer-Encoding") != ""
+		len(ctx.Request.TransferEncoding) > 0
 	if shouldReadBody {
 		if body, err = ctx.RequestBody(); err != nil {
 			return err
