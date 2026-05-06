@@ -51,10 +51,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Deprecated
 - `ErrInvalidHandlerType`; use `MsgInvalidHandlerType`.
 
-### Removed
-- `logger.NewWithContext` no longer reads trace IDs from the `logger.TraceID` string context key. Use `TraceIDKey`.
-- `IsValidHandlerFunc` no longer accepts `interface` as the second parameter type.
-
 ## [0.0.10] - 2026-04-30
 
 ### Added
