@@ -240,6 +240,31 @@ func TestCall_BindingError(t *testing.T) {
 	})
 }
 
+func TestCall_IsValiderHTTPError_PreservesCode(t *testing.T) {
+	engine := New()
+	engine.POST("/signup", func(c *Context, args *CreateUserArgs) string {
+		return "ok"
+	})
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/signup",
+		strings.NewReader(`{"username":"George","email":"george@example.com"}`),
+	)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	engine.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
+
+	var resp map[string]any
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, "PASSWORD_TOO_SHORT", resp["code"])
+	assert.Equal(t, "(400): password too short", resp["error"])
+	assert.NotEqual(t, "BIND_ERROR", resp["code"])
+}
+
 func TestCall_MultipleParameters(t *testing.T) {
 	engine := New()
 	body := `{"name":"John","age":30}`

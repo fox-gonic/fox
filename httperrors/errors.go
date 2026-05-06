@@ -128,15 +128,16 @@ func (e *Error) Is(target error) bool {
 }
 
 // MarshalJSON implements the json.Marshaler interface.
-func (e Error) MarshalJSON() ([]byte, error) {
+func (e *Error) MarshalJSON() ([]byte, error) {
 	jsonData := map[string]any{}
 
-	if e.Meta == nil {
-		e.Meta = e.Err
+	meta := e.Meta
+	if meta == nil {
+		meta = e.Err
 	}
 
-	if e.Meta != nil {
-		value := reflect.ValueOf(e.Meta)
+	if meta != nil {
+		value := reflect.ValueOf(meta)
 		switch value.Kind() {
 		case reflect.Struct:
 			decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
@@ -146,7 +147,7 @@ func (e Error) MarshalJSON() ([]byte, error) {
 			if err != nil {
 				return nil, err
 			}
-			if err := decoder.Decode(e.Meta); err != nil {
+			if err := decoder.Decode(meta); err != nil {
 				return nil, err
 			}
 		case reflect.Map:
@@ -154,10 +155,10 @@ func (e Error) MarshalJSON() ([]byte, error) {
 				jsonData[key.String()] = value.MapIndex(key).Interface()
 			}
 		default:
-			if err, ok := e.Meta.(error); ok {
+			if err, ok := meta.(error); ok {
 				jsonData["meta"] = err.Error()
 			} else {
-				jsonData["meta"] = e.Meta
+				jsonData["meta"] = meta
 			}
 		}
 	}

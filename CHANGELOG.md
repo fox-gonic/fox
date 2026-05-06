@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `examples/*/main_test.go` smoke tests for all examples.
+- `render` package smoke test.
+- Gin baseline benchmarks for performance comparison.
+
+### Changed
+- `httperrors.Error.MarshalJSON` now uses a pointer receiver.
+- `bind` skips body reads when `Content-Length` is 0 and no transfer encoding is present.
+- `DefaultValidator` now reuses the package-level `Validate` instance.
+- Documentation now uses the actual `httperrors.Error` fields and JSON response keys.
+- Documentation now aligns Go version, security policy, performance reproduction notes, and release history.
+
+### Fixed
+- Package-level `logger.Debug`, `Info`, `Warn`, `Error`, `Fatal`, and `Panic` now spread variadic arguments correctly.
+- `*httperrors.Error` returned from `IsValid()` is passed through without being wrapped as `BIND_ERROR`, preserving user-defined `Code` and `HTTPCode`.
+- `IsValid()` is now called for pointer handler parameters after binding.
+
+### Deprecated
+- `ErrInvalidHandlerType`; use `MsgInvalidHandlerType`.
+
+### Removed
+- `logger.NewWithContext` no longer reads trace IDs from the `logger.TraceID` string context key. Use `TraceIDKey`.
+- `IsValidHandlerFunc` no longer accepts `interface` as the second parameter type.
+
 ## [0.0.10] - 2026-04-30
 
 ### Added
@@ -27,6 +51,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Renamed `reponse_time.go` to `response_time.go` (typo correction)
 
 ## [0.1.0-beta] - 2024-12-06
+
+> Note: This pre-release tag has been deprecated. Subsequent releases follow the `0.0.x` track (see `[0.0.10]` above) and will continue until the project graduates to `0.1.0` stable.
 
 ### Added
 - Smart handler signature support with automatic parameter binding and rendering
@@ -105,7 +131,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **⚠️ Beta Status**: This project is currently in beta. APIs may change without notice. Not recommended for production use until v1.0.0 release.
 
 ### Known Issues
-- TODO: Implement render by writer content-type (render.go:39, render.go:63)
+- Content negotiation by `Accept` header is pending and should be tracked in a GitHub issue before release.
 - lumberjack dependency uses +incompatible version
 
 ### Upcoming Features

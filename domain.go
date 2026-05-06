@@ -42,12 +42,20 @@ func NewDefaultDomainEngine() *DomainEngine {
 	return NewDomainEngine(Default)
 }
 
-// Domain add domain handler
+// Domain registers an exact-match domain handler.
+//
+// Domains are matched in registration order. The first match wins, regardless
+// of whether it is exact or regexp. Register regexp patterns after exact
+// domains to avoid accidental shadowing.
 func (engine *DomainEngine) Domain(name string, engineFunc func(subEngine *Engine)) {
 	engine.server(name, false, engineFunc)
 }
 
-// DomainRegexp add domain handler
+// DomainRegexp registers a regexp domain handler.
+//
+// Domains are matched in registration order. The first match wins, regardless
+// of whether it is exact or regexp. Register regexp patterns after exact
+// domains to avoid accidental shadowing.
 func (engine *DomainEngine) DomainRegexp(name string, engineFunc func(subEngine *Engine)) {
 	engine.server(name, true, engineFunc)
 }

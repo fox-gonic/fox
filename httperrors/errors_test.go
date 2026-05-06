@@ -206,6 +206,7 @@ func TestMarshalJSON_MetaNil(t *testing.T) {
 	r.Equal("TEST_ERROR", obj["code"])
 	r.Equal("(400): test error", obj["error"])
 	r.Equal("test error", obj["meta"])
+	r.Nil(err.Meta)
 }
 
 // TestMarshalJSON_CodeEmpty tests MarshalJSON with empty Code

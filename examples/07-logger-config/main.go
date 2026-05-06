@@ -24,6 +24,21 @@ func main() {
 	example5LogLevels()
 }
 
+func newRouter() *fox.Engine {
+	logger.SetConfig(&logger.Config{
+		LogLevel:              logger.InfoLevel,
+		ConsoleLoggingEnabled: false,
+		EncodeLogsAsJSON:      true,
+	})
+
+	router := fox.New()
+	router.Use(fox.Logger(fox.LoggerConfig{SkipPaths: []string{"/health"}}))
+	router.GET("/health", func() string {
+		return "OK"
+	})
+	return router
+}
+
 // Example 1: Console logging only (development mode)
 func example1ConsoleOnly() {
 	logger.SetConfig(&logger.Config{

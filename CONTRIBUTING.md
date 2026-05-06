@@ -21,7 +21,7 @@ This project and everyone participating in it is governed by our Code of Conduct
 
 ### Prerequisites
 
-- Go 1.24.0 or later
+- Go 1.25.0 or later
 - Git
 - golangci-lint v2.7.1 or later (for linting)
 - Make (optional, but recommended)
@@ -72,7 +72,7 @@ Unsure where to begin? You can start by looking through issues labeled:
 
 - `good first issue` - Simple issues suitable for newcomers
 - `help wanted` - Issues where we need community help
-- Check the [TODO.md](TODO.md) for a list of planned improvements
+- Check the [GitHub Issues](https://github.com/fox-gonic/fox/issues) for planned improvements
 
 ### Pull Requests
 
@@ -560,7 +560,7 @@ git push origin feat/my-new-feature
 ## Getting Help
 
 - 📖 Check the [README](.github/README.md)
-- 📝 Review [TODO.md](TODO.md) for planned work
+- 📝 Review [GitHub Issues](https://github.com/fox-gonic/fox/issues) for planned work
 - 💬 Open a [Discussion](https://github.com/fox-gonic/fox/discussions)
 - 🐛 Open an [Issue](https://github.com/fox-gonic/fox/issues)
 - 📧 Email: [miclle.zheng@gmail.com](mailto:miclle.zheng@gmail.com)

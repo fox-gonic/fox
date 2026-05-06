@@ -50,3 +50,15 @@ func TestRegisterHandlerRouteIgnoresEmptyHandlerChain(t *testing.T) {
 	engine.registerHandlerRoute("GET", "/empty", nil)
 	require.Empty(t, engine.HandlerRoutes())
 }
+
+func BenchmarkRegisterHandlerRoute_Disabled(b *testing.B) {
+	engine := New()
+	engine.DisableRouteRegistry()
+	handlers := HandlersChain{registeredRouteHandler}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		engine.registerHandlerRoute("GET", "/x", handlers)
+	}
+}

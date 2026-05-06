@@ -263,10 +263,26 @@ func TestDefaultValidator_Engine(t *testing.T) {
 	validate, ok := engine.(*validator.Validate)
 	assert.True(t, ok)
 	assert.NotNil(t, validate)
+	assert.Same(t, Validate, validate)
 
 	// Calling Engine multiple times should return the same instance
 	engine2 := v.Engine()
 	assert.Same(t, engine, engine2)
+}
+
+func TestDefaultValidator_UsesGlobalValidate(t *testing.T) {
+	const tag = "global_foo"
+
+	require.NoError(t, Validate.RegisterValidation(tag, func(fl validator.FieldLevel) bool {
+		return fl.Field().String() == "foo"
+	}))
+
+	type request struct {
+		Value string `validate:"global_foo"`
+	}
+
+	err := (&DefaultValidator{}).ValidateStruct(request{Value: "bar"})
+	require.Error(t, err)
 }
 
 func TestDefaultValidator_LazyInit(t *testing.T) {

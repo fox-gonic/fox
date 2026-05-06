@@ -32,7 +32,8 @@ func NewContext(ctx context.Context, reqID string) context.Context {
 
 var pid = uint32(time.Now().UnixNano() % 4294967291)
 
-// TraceID is the key for the x-request-id header.
+// TraceID is the HTTP header name used for trace correlation. It is not a
+// context key; use NewContext or WithContext to propagate trace IDs.
 var TraceID = "x-request-id"
 
 // DefaultGenRequestID default generate request id
@@ -89,16 +90,9 @@ func NewWithoutCaller(reqID ...string) Logger {
 
 // NewWithContext return logger with context
 func NewWithContext(ctx context.Context) Logger {
-	traceID := ""
-
-	if id, ok := ctx.Value(TraceID).(string); ok {
+	var traceID string
+	if id, ok := ctx.Value(TraceIDKey).(string); ok {
 		traceID = id
-	}
-
-	if traceID == "" {
-		if id, ok := ctx.Value(TraceIDKey).(string); ok {
-			traceID = id
-		}
 	}
 
 	log := newLogger(config, traceID)
@@ -277,32 +271,32 @@ func (l *Log) TraceID() string {
 
 // Debug debug level
 func Debug(arguments ...any) {
-	std.Debug(arguments)
+	std.Debug(arguments...)
 }
 
 // Info info level
 func Info(arguments ...any) {
-	std.Info(arguments)
+	std.Info(arguments...)
 }
 
 // Warn warn level
 func Warn(arguments ...any) {
-	std.Warn(arguments)
+	std.Warn(arguments...)
 }
 
 // Error error level
 func Error(arguments ...any) {
-	std.Error(arguments)
+	std.Error(arguments...)
 }
 
 // Fatal fatal level
 func Fatal(arguments ...any) {
-	std.Fatal(arguments)
+	std.Fatal(arguments...)
 }
 
 // Panic panic level
 func Panic(arguments ...any) {
-	std.Panic(arguments)
+	std.Panic(arguments...)
 }
 
 // Debugf debug format

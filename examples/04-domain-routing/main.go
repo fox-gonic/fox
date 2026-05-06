@@ -5,6 +5,15 @@ import (
 )
 
 func main() {
+	de := newRouter()
+
+	// Start server
+	if err := de.Run(":8080"); err != nil {
+		panic(err)
+	}
+}
+
+func newRouter() *fox.DomainEngine {
 	// Create domain engine
 	de := fox.NewDomainEngine()
 
@@ -118,8 +127,5 @@ func main() {
 		}
 	})
 
-	// Start server
-	if err := de.Run(":8080"); err != nil {
-		panic(err)
-	}
+	return de
 }

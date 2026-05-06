@@ -5,6 +5,15 @@ import (
 )
 
 func main() {
+	router := newRouter()
+
+	// Start server on port 8080
+	if err := router.Run(":8080"); err != nil {
+		panic(err)
+	}
+}
+
+func newRouter() *fox.Engine {
 	// Create a new Fox engine
 	router := fox.New()
 
@@ -23,7 +32,7 @@ func main() {
 	type UserParams struct {
 		Name string `uri:"name" binding:"required"`
 	}
-	router.GET("/greet/:name", func(params UserParams) string {
+	router.GET("/greet/:name", func(_ *fox.Context, params UserParams) string {
 		return "Greetings, " + params.Name + "!"
 	})
 
@@ -34,8 +43,5 @@ func main() {
 		}
 	})
 
-	// Start server on port 8080
-	if err := router.Run(":8080"); err != nil {
-		panic(err)
-	}
+	return router
 }

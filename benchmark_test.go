@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/gin-gonic/gin"
 )
 
 // ==================== Engine/Routing Benchmarks ====================
@@ -116,6 +118,48 @@ func BenchmarkEngine_JSONResponse(b *testing.B) {
 			Username: "john",
 			Email:    "john@example.com",
 		}
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/user", nil)
+	w := httptest.NewRecorder()
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		router.ServeHTTP(w, req)
+	}
+}
+
+func BenchmarkGin_Baseline_SimpleRoute(b *testing.B) {
+	router := gin.New()
+	router.GET("/ping", func(c *gin.Context) {
+		c.String(http.StatusOK, "pong")
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+	w := httptest.NewRecorder()
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		router.ServeHTTP(w, req)
+	}
+}
+
+func BenchmarkGin_Baseline_JSONResponse(b *testing.B) {
+	type User struct {
+		ID       int64  `json:"id"`
+		Username string `json:"username"`
+		Email    string `json:"email"`
+	}
+
+	router := gin.New()
+	router.GET("/user", func(c *gin.Context) {
+		c.JSON(http.StatusOK, &User{
+			ID:       123,
+			Username: "john",
+			Email:    "john@example.com",
+		})
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/user", nil)

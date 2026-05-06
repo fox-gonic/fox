@@ -39,6 +39,14 @@ type QueryUsersRequest struct {
 }
 
 func main() {
+	router := newRouter()
+
+	if err := router.Run(":8080"); err != nil {
+		panic(err)
+	}
+}
+
+func newRouter() *fox.Engine {
 	router := fox.New()
 
 	// POST: Create user with JSON body binding
@@ -114,7 +122,5 @@ func main() {
 		return "Validation passed", nil
 	})
 
-	if err := router.Run(":8080"); err != nil {
-		panic(err)
-	}
+	return router
 }

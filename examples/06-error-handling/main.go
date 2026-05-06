@@ -44,6 +44,14 @@ type User struct {
 }
 
 func main() {
+	router := newRouter()
+
+	if err := router.Run(":8080"); err != nil {
+		panic(err)
+	}
+}
+
+func newRouter() *fox.Engine {
 	router := fox.New()
 
 	// Simple error return
@@ -203,7 +211,5 @@ func main() {
 		panic("something went wrong!")
 	})
 
-	if err := router.Run(":8080"); err != nil {
-		panic(err)
-	}
+	return router
 }

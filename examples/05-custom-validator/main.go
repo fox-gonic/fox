@@ -165,6 +165,14 @@ func (cpr *CreatePostRequest) IsValid() error {
 }
 
 func main() {
+	router := newRouter()
+
+	if err := router.Run(":8080"); err != nil {
+		panic(err)
+	}
+}
+
+func newRouter() *fox.Engine {
 	router := fox.New()
 
 	// Password validation endpoint
@@ -193,7 +201,5 @@ func main() {
 		}, nil
 	})
 
-	if err := router.Run(":8080"); err != nil {
-		panic(err)
-	}
+	return router
 }

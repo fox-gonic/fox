@@ -6,8 +6,8 @@ We release patches for security vulnerabilities. Currently, the following versio
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.1.x (beta)   | :white_check_mark: |
-| < 0.1.0 | :x:                |
+| 0.0.x (>= 0.0.10) | :white_check_mark: |
+| < 0.0.10 | :x:                |
 
 **Note**: Fox is currently in beta. While we take security seriously, please be aware that the API may change and the framework is not yet recommended for production use.
 

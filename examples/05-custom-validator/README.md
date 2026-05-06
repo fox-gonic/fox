@@ -180,7 +180,7 @@ func (sr *SignupRequest) IsValid() error {
         return &httperrors.Error{
             HTTPCode: http.StatusBadRequest,
             Code:     "RESERVED_USERNAME",
-            Message:  "Username is reserved",
+            Err:      errors.New("username is reserved"),
         }
     }
     return nil
@@ -193,10 +193,10 @@ Custom validators should return `*httperrors.Error` for consistent error handlin
 
 ```go
 return &httperrors.Error{
-    HTTPCode: http.StatusBadRequest,  // HTTP status code
-    Code:     "ERROR_CODE",            // Machine-readable code
-    Message:  "Human-readable message", // User-friendly message
-    Err:      errors.New("internal error"), // Internal error (optional)
+    HTTPCode: http.StatusBadRequest,        // HTTP status code
+    Code:     "ERROR_CODE",                 // Machine-readable code
+    Err:      errors.New("human-readable message"), // Error message
+    Meta:     map[string]any{"field": "value"},     // Optional metadata
 }
 ```
 

@@ -43,7 +43,7 @@ Expected response:
 ```json
 {
   "code": "BAD_REQUEST",
-  "message": "The request was invalid"
+  "error": "(400): the request was invalid"
 }
 ```
 
@@ -153,12 +153,10 @@ Expected response:
 ```json
 {
   "code": "VALIDATION_FAILED",
-  "message": "Request validation failed",
-  "details": {
-    "field": "email",
-    "reason": "invalid format",
-    "value": "not-an-email"
-  }
+  "error": "(400): request validation failed",
+  "field": "email",
+  "reason": "invalid format",
+  "value": "not-an-email"
 }
 ```
 
@@ -189,7 +187,7 @@ Response:
 return "", &httperrors.Error{
     HTTPCode: http.StatusBadRequest,
     Code:     "ERROR_CODE",
-    Message:  "Error message",
+    Err:      errors.New("error message"),
 }
 ```
 
@@ -197,7 +195,7 @@ Response (400):
 ```json
 {
   "code": "ERROR_CODE",
-  "message": "Error message"
+  "error": "(400): error message"
 }
 ```
 
@@ -207,8 +205,8 @@ Response (400):
 return "", &httperrors.Error{
     HTTPCode: http.StatusBadRequest,
     Code:     "ERROR_CODE",
-    Message:  "Error message",
-    Details:  map[string]interface{}{"field": "value"},
+    Err:      errors.New("error message"),
+    Fields:   map[string]any{"field": "value"},
 }
 ```
 
@@ -216,8 +214,8 @@ Response (400):
 ```json
 {
   "code": "ERROR_CODE",
-  "message": "Error message",
-  "details": {"field": "value"}
+  "error": "(400): error message",
+  "field": "value"
 }
 ```
 
@@ -230,7 +228,6 @@ var ErrUserNotFound = &httperrors.Error{
     HTTPCode: http.StatusNotFound,
     Err:      errors.New("user not found"),
     Code:     "USER_NOT_FOUND",
-    Message:  "The requested user does not exist",
 }
 
 // Use in handler
