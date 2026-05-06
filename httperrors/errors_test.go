@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/require"
 )
 
@@ -423,4 +424,43 @@ func TestMarshalJSON_ValueReceiver(t *testing.T) {
 	// Ensure internal fields are not exposed via default struct marshaling.
 	r.NotContains(arr[0], "HTTPCode")
 	r.NotContains(arr[0], "Err")
+}
+
+func TestMarshalJSON_MapstructureNewDecoderError(t *testing.T) {
+	r := require.New(t)
+
+	original := newMapstructureDecoder
+	t.Cleanup(func() {
+		newMapstructureDecoder = original
+	})
+	newMapstructureDecoder = func(*mapstructure.DecoderConfig) (*mapstructure.Decoder, error) {
+		return nil, errors.New("decoder setup failed")
+	}
+
+	err := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("validation failed"),
+		Meta: struct {
+			Field string `json:"field"`
+		}{Field: "value"},
+	}
+
+	_, e := json.Marshal(err)
+	r.ErrorContains(e, "decoder setup failed")
+}
+
+func TestMarshalJSON_MapstructureDecodeError(t *testing.T) {
+	r := require.New(t)
+
+	err := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("validation failed"),
+		Meta: struct {
+			//nolint:staticcheck // Intentionally exercises mapstructure's squash error path.
+			Invalid int `json:",squash"`
+		}{Invalid: 1},
+	}
+
+	_, e := json.Marshal(err)
+	r.ErrorContains(e, "cannot squash non-struct type")
 }

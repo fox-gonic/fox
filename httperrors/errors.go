@@ -14,6 +14,8 @@ import (
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
+var newMapstructureDecoder = mapstructure.NewDecoder
+
 // New returns a new http Error object
 func New(httpCode int, format string, a ...any) *Error {
 	if strings.TrimSpace(format) == "" {
@@ -153,11 +155,16 @@ func (e Error) MarshalJSON() ([]byte, error) {
 			}
 			switch value.Kind() {
 			case reflect.Struct:
-				decoder, _ := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+				decoder, err := newMapstructureDecoder(&mapstructure.DecoderConfig{
 					TagName: "json",
 					Result:  &jsonData,
 				})
-				_ = decoder.Decode(value.Interface())
+				if err != nil {
+					return nil, err
+				}
+				if err := decoder.Decode(value.Interface()); err != nil {
+					return nil, err
+				}
 			case reflect.Map:
 				for _, key := range value.MapKeys() {
 					jsonData[key.String()] = value.MapIndex(key).Interface()
