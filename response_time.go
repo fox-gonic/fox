@@ -18,7 +18,7 @@ type XResponseTimer struct {
 
 // WriteHeader implement http.ResponseWriter
 func (w *XResponseTimer) WriteHeader(statusCode int) {
-	buf := make([]byte, 0, 32)
+	buf := make([]byte, 0, 40)
 	buf = strconv.AppendInt(buf, w.start.UnixMilli(), 10)
 	buf = append(buf, ',', ' ')
 	buf = strconv.AppendInt(buf, time.Since(w.start).Nanoseconds(), 10)
