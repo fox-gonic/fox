@@ -24,6 +24,12 @@ type ErrorInfo struct {
 	IgnoreField    string   `json:"-"`
 }
 
+type arrayJSONMeta struct{}
+
+func (arrayJSONMeta) MarshalJSON() ([]byte, error) {
+	return []byte(`[]`), nil
+}
+
 func TestError(t *testing.T) {
 	r := require.New(t)
 	err := New(400, "invalid arguments")
@@ -488,4 +494,17 @@ func TestMarshalJSON_MetaJSONMarshalError(t *testing.T) {
 
 	_, e := json.Marshal(err)
 	r.ErrorContains(e, "unsupported type")
+}
+
+func TestMarshalJSON_MetaJSONUnmarshalError(t *testing.T) {
+	r := require.New(t)
+
+	err := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("validation failed"),
+		Meta:     arrayJSONMeta{},
+	}
+
+	_, e := json.Marshal(err)
+	r.ErrorContains(e, "expect { or n")
 }
