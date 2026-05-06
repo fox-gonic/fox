@@ -6,10 +6,11 @@ We release patches for security vulnerabilities. Currently, the following versio
 
 | Version | Supported          |
 | ------- | ------------------ |
+| 0.1.x             | :white_check_mark: |
 | 0.0.x (>= 0.0.10) | :white_check_mark: |
-| < 0.0.10 | :x:                |
+| < 0.0.10          | :x:                |
 
-**Note**: Fox is currently in beta. While we take security seriously, please be aware that the API may change and the framework is not yet recommended for production use.
+**Note**: Fox is on the `0.1.x` line. The public API is stabilizing but may still see documented breaking changes between minor versions — see [CHANGELOG.md](CHANGELOG.md). Security fixes are backported to the most recent `0.0.x` release as long as it remains in the supported table above.
 
 ## Reporting a Vulnerability
 
@@ -178,9 +179,9 @@ logger.WithFields(map[string]any{
 
 ## Known Security Limitations
 
-### Beta Status
+### Pre-1.0 Status
 
-Fox is currently in beta. While we follow security best practices, the framework has not yet undergone:
+Fox is on the `0.1.x` line. We follow security best practices, but the framework has not yet undergone:
 
 - Independent security audit
 - Extensive production testing
@@ -225,4 +226,4 @@ For security-sensitive questions or concerns, please email [miclle.zheng@gmail.c
 
 ---
 
-Last updated: 2025-12-06
+Last updated: 2026-05-06
