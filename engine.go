@@ -64,7 +64,7 @@ var MsgInvalidHandlerType = "invalid handler type: %s\n" +
 	"- T can be any type, T will be auto render to response body\n" +
 	"- error can be any type that implements error interface"
 
-// Deprecated: Use MsgInvalidHandlerType. This alias will be removed in v0.1.0.
+// Deprecated: Use MsgInvalidHandlerType. This alias will be removed in v0.2.0.
 var ErrInvalidHandlerType = MsgInvalidHandlerType
 
 // HandlerFunc is a function that can be registered to a route to handle HTTP requests.

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-05-06
+
+This release graduates the project from the `0.0.x` prototype track to the
+`0.1.x` line. It bundles the 2026-05 audit results: a sweep of correctness
+fixes, a small set of intentional breaking changes (each documented below
+with a migration note), test coverage backfill across `examples/` and
+`render/`, and Gin baseline benchmarks.
+
 ### Breaking Changes
 - `IsValidHandlerFunc` no longer accepts `interface` as the second parameter
   type — handlers using `func(ctx, args any)` will now panic at registration.
@@ -49,7 +57,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   covering value-receiver implementations on the addressable parameter.
 
 ### Deprecated
-- `ErrInvalidHandlerType`; use `MsgInvalidHandlerType`.
+- `ErrInvalidHandlerType`; use `MsgInvalidHandlerType`. The alias will be
+  removed in `v0.2.0`.
 
 ## [0.0.10] - 2026-04-30
 
@@ -72,7 +81,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.0-beta] - 2024-12-06
 
-> Note: This pre-release tag has been deprecated. Subsequent releases follow the `0.0.x` track (see `[0.0.10]` above) and will continue until the project graduates to `0.1.0` stable.
+> Note: This pre-release tag is superseded by `[0.1.0]`. The interim
+> `0.0.x` releases (see `[0.0.10]` above) carried incremental fixes; the
+> `[0.1.0]` entry above marks the project's graduation to the `0.1.x` line.
 
 ### Added
 - Smart handler signature support with automatic parameter binding and rendering
@@ -148,7 +159,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Notes
 
-**⚠️ Beta Status**: This project is currently in beta. APIs may change without notice. Not recommended for production use until v1.0.0 release.
+**⚠️ Pre-1.0 Status**: This project is on the `0.1.x` line. The public API
+is stabilizing but may still see breaking changes in subsequent minor
+releases. Each breaking change is documented in this CHANGELOG with a
+migration note. Production use is possible with the understanding that you
+may need to adapt to breaking changes between minor versions until `v1.0.0`.
 
 ### Known Issues
 - Content negotiation by `Accept` header is pending — tracked in [#65](https://github.com/fox-gonic/fox/issues/65).

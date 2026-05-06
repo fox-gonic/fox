@@ -36,7 +36,7 @@ Fox is a powerful extension of the [Gin](https://github.com/gin-gonic/gin) web f
 
 ## ⚠️ **Attention**
 
-Fox is currently in beta and under active development. While it offers exciting new features, please note that it may not be stable for production use. If you choose to use, be prepared for potential bugs and breaking changes. Always check the official documentation and release notes for updates and proceed with caution. Happy coding!
+Fox is on the `0.1.x` line and under active development. The public API is stabilizing but may still see documented breaking changes between minor releases — each one is called out in [CHANGELOG.md](../CHANGELOG.md) with a migration note. Production use is possible with that understanding; pin a minor version and review the changelog before upgrading.
 
 ## Installation
 
