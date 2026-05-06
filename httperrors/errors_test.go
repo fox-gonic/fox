@@ -455,6 +455,34 @@ func TestMarshalJSON_MetaPointerToStruct(t *testing.T) {
 	r.NotContains(obj, "meta")
 }
 
+func TestMarshalJSON_MetaPointerToPointerToStruct(t *testing.T) {
+	r := require.New(t)
+
+	type Details struct {
+		Field string `json:"field"`
+		Count int    `json:"count"`
+	}
+
+	details := &Details{Field: "value", Count: 3}
+
+	err := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("validation failed"),
+		Code:     "TEST_CODE",
+		Meta:     &details,
+	}
+
+	data, e := json.Marshal(err)
+	r.NoError(e)
+
+	var obj map[string]any
+	r.NoError(json.Unmarshal(data, &obj))
+
+	r.Equal("value", obj["field"])
+	r.InDelta(3, obj["count"].(float64), 0.001)
+	r.NotContains(obj, "meta")
+}
+
 // TestMarshalJSON_ValueReceiver ensures that MarshalJSON is invoked when
 // Error is used as a value (e.g. in slices), not only through a pointer.
 func TestMarshalJSON_ValueReceiver(t *testing.T) {

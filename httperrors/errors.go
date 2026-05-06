@@ -147,11 +147,10 @@ func (e Error) MarshalJSON() ([]byte, error) {
 			jsonData["meta"] = err.Error()
 		} else {
 			value := reflect.ValueOf(meta)
-			kind := value.Kind()
-			if kind == reflect.Ptr && !value.IsNil() {
-				kind = value.Elem().Kind()
+			for value.Kind() == reflect.Ptr && !value.IsNil() {
+				value = value.Elem()
 			}
-			switch kind {
+			switch value.Kind() {
 			case reflect.Struct, reflect.Map:
 				data, err := json.Marshal(meta)
 				if err != nil {
