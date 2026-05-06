@@ -183,7 +183,7 @@ func main() {
 $ curl -X POST http://localhost:8080/users/signup \
     -H 'content-type: application/json' \
     -d '{"username": "George", "email": "george@vandaley.com"}'
-{"code":"PASSWORD_TOO_SHORT","error":"(400): password too short"}
+{"code":"PASSWORD_TOO_SHORT","error":"(400): password too short","meta":"password too short"}
 ```
 
 ## Architecture

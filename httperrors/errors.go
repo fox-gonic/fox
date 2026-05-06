@@ -9,12 +9,9 @@ import (
 	"strings"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/mitchellh/mapstructure"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
-
-var newMapstructureDecoder = mapstructure.NewDecoder
 
 // New returns a new http Error object
 func New(httpCode int, format string, a ...any) *Error {
@@ -150,24 +147,18 @@ func (e Error) MarshalJSON() ([]byte, error) {
 			jsonData["meta"] = err.Error()
 		} else {
 			value := reflect.ValueOf(meta)
-			if value.Kind() == reflect.Ptr {
-				value = reflect.Indirect(value)
+			kind := value.Kind()
+			if kind == reflect.Ptr && !value.IsNil() {
+				kind = value.Elem().Kind()
 			}
-			switch value.Kind() {
-			case reflect.Struct:
-				decoder, err := newMapstructureDecoder(&mapstructure.DecoderConfig{
-					TagName: "json",
-					Result:  &jsonData,
-				})
+			switch kind {
+			case reflect.Struct, reflect.Map:
+				data, err := json.Marshal(meta)
 				if err != nil {
 					return nil, err
 				}
-				if err := decoder.Decode(value.Interface()); err != nil {
+				if err := json.Unmarshal(data, &jsonData); err != nil {
 					return nil, err
-				}
-			case reflect.Map:
-				for _, key := range value.MapKeys() {
-					jsonData[key.String()] = value.MapIndex(key).Interface()
 				}
 			default:
 				jsonData["meta"] = meta

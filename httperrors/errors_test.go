@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/require"
 )
 
@@ -81,8 +80,8 @@ func TestError(t *testing.T) {
 		}, obj["details"])
 		r.Equal("400", fmt.Sprintf("%v", obj["code"]))
 		r.Equal("invalid_arguments", obj["error_code"])
-		r.Empty(obj["omit_empty_field"])
-		r.Empty(obj["ignore_field"])
+		r.NotContains(obj, "omit_empty_field")
+		r.NotContains(obj, "ignore_field")
 		r.Equal("hvnmjnCVyvQ3aOIX", obj["x-request-id"])
 		r.Equal("1.799868", fmt.Sprintf("%v", obj["latency"]))
 		r.Equal("HANDLER", obj["ftype"])
@@ -338,6 +337,56 @@ func TestMarshalJSON_MetaWithMap(t *testing.T) {
 	r.Equal("TEST_CODE", obj["code"])
 }
 
+func TestMarshalJSON_MetaWithNonStringMapKeys(t *testing.T) {
+	r := require.New(t)
+
+	err := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("test error"),
+		Code:     "TEST_CODE",
+		Meta: map[int]string{
+			1: "one",
+			2: "two",
+		},
+	}
+
+	data, e := json.Marshal(err)
+	r.NoError(e)
+
+	var obj map[string]any
+	r.NoError(json.Unmarshal(data, &obj))
+	r.Equal("one", obj["1"])
+	r.Equal("two", obj["2"])
+	r.Equal("TEST_CODE", obj["code"])
+}
+
+func TestMarshalJSON_MetaStructHonorsJSONTags(t *testing.T) {
+	r := require.New(t)
+
+	err := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("test error"),
+		Meta: struct {
+			Visible string `json:"visible"`
+			Empty   string `json:"empty,omitempty"`
+			Ignored string `json:"-"`
+		}{
+			Visible: "yes",
+			Ignored: "no",
+		},
+	}
+
+	data, e := json.Marshal(err)
+	r.NoError(e)
+
+	var obj map[string]any
+	r.NoError(json.Unmarshal(data, &obj))
+	r.Equal("yes", obj["visible"])
+	r.NotContains(obj, "empty")
+	r.NotContains(obj, "Ignored")
+	r.NotContains(obj, "ignored")
+}
+
 // TestMarshalJSON_MetaWithPrimitiveType tests MarshalJSON with primitive type as Meta
 func TestMarshalJSON_MetaWithPrimitiveType(t *testing.T) {
 	r := require.New(t)
@@ -426,41 +475,17 @@ func TestMarshalJSON_ValueReceiver(t *testing.T) {
 	r.NotContains(arr[0], "Err")
 }
 
-func TestMarshalJSON_MapstructureNewDecoderError(t *testing.T) {
-	r := require.New(t)
-
-	original := newMapstructureDecoder
-	t.Cleanup(func() {
-		newMapstructureDecoder = original
-	})
-	newMapstructureDecoder = func(*mapstructure.DecoderConfig) (*mapstructure.Decoder, error) {
-		return nil, errors.New("decoder setup failed")
-	}
-
-	err := &Error{
-		HTTPCode: 400,
-		Err:      errors.New("validation failed"),
-		Meta: struct {
-			Field string `json:"field"`
-		}{Field: "value"},
-	}
-
-	_, e := json.Marshal(err)
-	r.ErrorContains(e, "decoder setup failed")
-}
-
-func TestMarshalJSON_MapstructureDecodeError(t *testing.T) {
+func TestMarshalJSON_MetaJSONMarshalError(t *testing.T) {
 	r := require.New(t)
 
 	err := &Error{
 		HTTPCode: 400,
 		Err:      errors.New("validation failed"),
 		Meta: struct {
-			//nolint:staticcheck // Intentionally exercises mapstructure's squash error path.
-			Invalid int `json:",squash"`
-		}{Invalid: 1},
+			Invalid func() `json:"invalid"`
+		}{Invalid: func() {}},
 	}
 
 	_, e := json.Marshal(err)
-	r.ErrorContains(e, "cannot squash non-struct type")
+	r.ErrorContains(e, "unsupported type")
 }
