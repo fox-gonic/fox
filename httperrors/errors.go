@@ -128,7 +128,11 @@ func (e *Error) Is(target error) bool {
 }
 
 // MarshalJSON implements the json.Marshaler interface.
-func (e *Error) MarshalJSON() ([]byte, error) {
+//
+// The receiver is a value so that MarshalJSON is invoked for both value and
+// pointer usages (for example `[]Error` slices or `map[string]Error`). Any
+// state mutation must go through local variables rather than the receiver.
+func (e Error) MarshalJSON() ([]byte, error) {
 	jsonData := map[string]any{}
 
 	meta := e.Meta
@@ -137,27 +141,33 @@ func (e *Error) MarshalJSON() ([]byte, error) {
 	}
 
 	if meta != nil {
-		value := reflect.ValueOf(meta)
-		switch value.Kind() {
-		case reflect.Struct:
-			decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-				TagName: "json",
-				Result:  &jsonData,
-			})
-			if err != nil {
-				return nil, err
+		// Handle error values (including pointer-to-errorString wrapped in the
+		// error interface) before the kind switch so that they are reported as
+		// a string instead of being reflectively decoded.
+		if err, ok := meta.(error); ok {
+			jsonData["meta"] = err.Error()
+		} else {
+			value := reflect.ValueOf(meta)
+			if value.Kind() == reflect.Ptr {
+				value = reflect.Indirect(value)
 			}
-			if err := decoder.Decode(meta); err != nil {
-				return nil, err
-			}
-		case reflect.Map:
-			for _, key := range value.MapKeys() {
-				jsonData[key.String()] = value.MapIndex(key).Interface()
-			}
-		default:
-			if err, ok := meta.(error); ok {
-				jsonData["meta"] = err.Error()
-			} else {
+			switch value.Kind() {
+			case reflect.Struct:
+				decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+					TagName: "json",
+					Result:  &jsonData,
+				})
+				if err != nil {
+					return nil, err
+				}
+				if err := decoder.Decode(value.Interface()); err != nil {
+					return nil, err
+				}
+			case reflect.Map:
+				for _, key := range value.MapKeys() {
+					jsonData[key.String()] = value.MapIndex(key).Interface()
+				}
+			default:
 				jsonData["meta"] = meta
 			}
 		}

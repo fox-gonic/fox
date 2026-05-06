@@ -370,3 +370,57 @@ func TestMarshalJSON_MetaWithPrimitiveType(t *testing.T) {
 	r.NoError(e)
 	r.InEpsilon(42, obj["meta"].(float64), 0.001)
 }
+
+// TestMarshalJSON_MetaPointerToStruct ensures that a pointer to a struct is
+// flattened like a value struct, instead of landing in the default branch.
+func TestMarshalJSON_MetaPointerToStruct(t *testing.T) {
+	r := require.New(t)
+
+	type Details struct {
+		Field string `json:"field"`
+		Count int    `json:"count"`
+	}
+
+	err := &Error{
+		HTTPCode: 400,
+		Err:      errors.New("validation failed"),
+		Code:     "TEST_CODE",
+		Meta:     &Details{Field: "value", Count: 3},
+	}
+
+	data, e := json.Marshal(err)
+	r.NoError(e)
+
+	var obj map[string]any
+	r.NoError(json.Unmarshal(data, &obj))
+
+	r.Equal("value", obj["field"])
+	r.InDelta(3, obj["count"].(float64), 0.001)
+	r.NotContains(obj, "meta")
+}
+
+// TestMarshalJSON_ValueReceiver ensures that MarshalJSON is invoked when
+// Error is used as a value (e.g. in slices), not only through a pointer.
+func TestMarshalJSON_ValueReceiver(t *testing.T) {
+	r := require.New(t)
+
+	errs := []Error{
+		{
+			HTTPCode: 400,
+			Err:      errors.New("first"),
+			Code:     "FIRST",
+		},
+	}
+
+	data, e := json.Marshal(errs)
+	r.NoError(e)
+
+	var arr []map[string]any
+	r.NoError(json.Unmarshal(data, &arr))
+	r.Len(arr, 1)
+	r.Equal("FIRST", arr[0]["code"])
+	r.Equal("(400): first", arr[0]["error"])
+	// Ensure internal fields are not exposed via default struct marshaling.
+	r.NotContains(arr[0], "HTTPCode")
+	r.NotContains(arr[0], "Err")
+}

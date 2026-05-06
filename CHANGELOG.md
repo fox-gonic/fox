@@ -7,22 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking Changes
+- `IsValidHandlerFunc` no longer accepts `interface` as the second parameter
+  type — handlers using `func(ctx, args any)` will now panic at registration.
+  Use a concrete `struct` or `map` type instead.
+- `logger.NewWithContext` no longer reads trace IDs from the
+  `logger.TraceID` string context key. Propagate trace IDs with
+  `logger.TraceIDKey` (the typed key) or via `logger.NewContext`.
+- `*httperrors.Error` returned from `IsValid()` is no longer wrapped as
+  `BIND_ERROR`. Consumers that matched on the `BIND_ERROR` response `code`
+  to detect binding failures should use the HTTP 400 status code or their
+  own specific codes instead.
+
 ### Added
 - `examples/*/main_test.go` smoke tests for all examples.
 - `render` package smoke test.
 - Gin baseline benchmarks for performance comparison.
 
 ### Changed
-- `httperrors.Error.MarshalJSON` now uses a pointer receiver.
-- `bind` skips body reads when `Content-Length` is 0 and no transfer encoding is present.
-- `DefaultValidator` now reuses the package-level `Validate` instance.
+- `httperrors.Error.MarshalJSON` no longer mutates its receiver and now
+  flattens `Meta` when it is either a struct or a pointer to a struct (via
+  `reflect.Indirect`). The method keeps a value receiver so that `Error` still
+  marshals correctly when used as a value (for example in `[]Error` slices
+  or `map[string]Error`).
+- `bind` skips body reads only when `Content-Length == 0` **and** no transfer
+  encoding is declared. Requests with unknown length (`Content-Length == -1`)
+  or chunked encoding continue to read the body as before.
+- `DefaultValidator` now reuses the package-level `Validate` instance, so
+  custom validations registered via `fox.Validate.RegisterValidation(...)`
+  are honored during binding.
 - Documentation now uses the actual `httperrors.Error` fields and JSON response keys.
 - Documentation now aligns Go version, security policy, performance reproduction notes, and release history.
 
 ### Fixed
 - Package-level `logger.Debug`, `Info`, `Warn`, `Error`, `Fatal`, and `Panic` now spread variadic arguments correctly.
-- `*httperrors.Error` returned from `IsValid()` is passed through without being wrapped as `BIND_ERROR`, preserving user-defined `Code` and `HTTPCode`.
-- `IsValid()` is now called for pointer handler parameters after binding.
+- `*httperrors.Error` returned from `IsValid()` (including values wrapped via
+  `fmt.Errorf("%w", ...)`) is passed through without being wrapped as
+  `BIND_ERROR`, preserving user-defined `Code` and `HTTPCode`. Detection uses
+  `errors.As` so any error chain containing a `*httperrors.Error` is unwrapped.
+- `IsValid()` is now called for pointer handler parameters after binding,
+  covering value-receiver implementations on the addressable parameter.
 
 ### Deprecated
 - `ErrInvalidHandlerType`; use `MsgInvalidHandlerType`.
@@ -131,7 +155,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **⚠️ Beta Status**: This project is currently in beta. APIs may change without notice. Not recommended for production use until v1.0.0 release.
 
 ### Known Issues
-- Content negotiation by `Accept` header is pending and should be tracked in a GitHub issue before release.
+- Content negotiation by `Accept` header is pending — tracked in [#65](https://github.com/fox-gonic/fox/issues/65).
 - lumberjack dependency uses +incompatible version
 
 ### Upcoming Features
