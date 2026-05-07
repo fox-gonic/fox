@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-05-07
+
+### Added
+- Route manifest export helpers for generating a stable JSON snapshot of
+  registered routes, including `RouteManifestFromEngine`, `WriteRouteManifest`,
+  and the `fox.route-manifest/v1` manifest format.
+- Manifest type metadata for closure handlers, covering input and result types
+  while preserving route method, path, and original handler name.
+
 ## [0.1.0] - 2026-05-06
 
 This release graduates the project from the `0.0.x` prototype track to the
@@ -188,6 +197,7 @@ See [LICENSE](LICENSE) file for details.
 
 For more information, visit the [GitHub repository](https://github.com/fox-gonic/fox).
 
-[Unreleased]: https://github.com/fox-gonic/fox/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/fox-gonic/fox/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/fox-gonic/fox/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/fox-gonic/fox/compare/v0.0.10...v0.1.0
 [0.0.10]: https://github.com/fox-gonic/fox/compare/v0.0.9...v0.0.10
