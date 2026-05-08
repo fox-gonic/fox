@@ -178,7 +178,7 @@ may need to adapt to breaking changes between minor versions until `v1.0.0`.
 - lumberjack dependency uses +incompatible version
 
 ### Upcoming Features
-- Built-in security middleware (rate limiting, CSRF, request-size limits)
+- Built-in security middleware (rate limiting, CSRF, request size limits)
 - Additional middleware for common use cases
 - Improved documentation and examples
 - Performance optimizations
