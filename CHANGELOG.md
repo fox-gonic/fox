@@ -175,15 +175,13 @@ migration note. Production use is possible with the understanding that you
 may need to adapt to breaking changes between minor versions until `v1.0.0`.
 
 ### Known Issues
-- Content negotiation by `Accept` header is pending — tracked in [#65](https://github.com/fox-gonic/fox/issues/65).
 - lumberjack dependency uses +incompatible version
 
 ### Upcoming Features
-- Enhanced content negotiation based on Accept headers
+- Built-in security middleware (rate limiting, CSRF, request size limits)
 - Additional middleware for common use cases
 - Improved documentation and examples
 - Performance optimizations
-- Security enhancements (rate limiting, request size limits)
 
 ## Contributing
 
