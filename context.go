@@ -2,6 +2,7 @@ package fox
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 	"time"
@@ -17,7 +18,15 @@ type Context struct {
 
 	engine *Engine
 	Logger logger.Logger
+	// baseCtx is an immutable snapshot of the request context taken when the
+	// fox.Context is created. It backs Done/Err/Deadline so that calls from
+	// asynchronous goroutines stay stable even after the underlying gin.Context
+	// is recycled by the sync.Pool (see PR #30).
+	baseCtx context.Context
 	// Request is the http request copy from gin.Context.
+	// It carries the latest value through the middleware chain: a replacement
+	// made by an inner middleware (e.g. c.Request.WithContext(...)) is visible
+	// to outer middleware after Next() returns.
 	Request *http.Request
 }
 
@@ -75,11 +84,11 @@ func (c *Context) TraceID() string {
 }
 
 func (c *Context) Done() <-chan struct{} {
-	return c.Request.Context().Done()
+	return c.base().Done()
 }
 
 func (c *Context) Err() error {
-	return c.Request.Context().Err()
+	return c.base().Err()
 }
 
 func (c *Context) Value(key any) any {
@@ -87,12 +96,25 @@ func (c *Context) Value(key any) any {
 }
 
 func (c *Context) Deadline() (deadline time.Time, ok bool) {
-	return c.Request.Context().Deadline()
+	return c.base().Deadline()
+}
+
+// base returns the immutable snapshot backing the context.Context lifecycle
+// methods. Callers that construct a Context directly (tests) fall back to the
+// live request context.
+func (c *Context) base() context.Context {
+	if c.baseCtx != nil {
+		return c.baseCtx
+	}
+	return c.Request.Context()
 }
 
 func (c *Context) Next() {
 	c.Context.Request = c.Request
 	c.Context.Next()
+	// Sync back the latest request so a replacement made by inner
+	// handlers/middleware is visible to outer middleware after Next() returns.
+	c.Request = c.Context.Request
 }
 
 func (c *Context) Copy() *Context {
@@ -102,6 +124,7 @@ func (c *Context) Copy() *Context {
 		Context: ginCtx,
 		engine:  c.engine,
 		Logger:  c.Logger,
+		baseCtx: c.Request.Context(),
 		Request: c.Request,
 	}
 }
