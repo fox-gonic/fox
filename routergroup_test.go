@@ -152,18 +152,18 @@ func TestRouterGroup_RequestVisibleToOuterMiddleware(t *testing.T) {
 	}
 }
 
-// TestRouterGroup_DoneConcurrentWithRequestReplacement verifies that an
-// asynchronous goroutine reading c.Done() does not race with a synchronous
-// c.Request replacement in the middleware chain (run with -race).
-func TestRouterGroup_DoneConcurrentWithRequestReplacement(t *testing.T) {
+// TestRouterGroup_ContextConcurrentWithRequestReplacement verifies that an
+// asynchronous goroutine reading the context.Context interface (Done/Value)
+// does not race with a synchronous c.Request replacement in the middleware
+// chain (run with -race). All context.Context methods must read the immutable
+// base snapshot, never the synchronously-mutated Request field.
+func TestRouterGroup_ContextConcurrentWithRequestReplacement(t *testing.T) {
 	router := fox.New()
 	type ctxKey struct{}
 
 	router.Use(func(c *fox.Context) {
 		stop := make(chan struct{})
 		var wg sync.WaitGroup
-		// Next() writes c.Request back from the gin context; Done() must not
-		// read that field, or the goroutine above would race with it.
 		wg.Go(func() {
 			for {
 				select {
@@ -172,6 +172,7 @@ func TestRouterGroup_DoneConcurrentWithRequestReplacement(t *testing.T) {
 				case <-stop:
 					return
 				default:
+					_ = c.Value(ctxKey{}) // reads the same immutable snapshot
 					time.Sleep(time.Millisecond)
 				}
 			}
