@@ -603,6 +603,25 @@ func TestContext_Copy_Independence(t *testing.T) {
 	assert.Equal(t, "value", val)
 }
 
+// TestContext_Copy_NilRequest guards against a regression where Copy()
+// panicked on a manually constructed Context with a nil Request.
+func TestContext_Copy_NilRequest(t *testing.T) {
+	engine := New()
+	w := httptest.NewRecorder()
+	ginCtx, _ := gin.CreateTestContext(w)
+
+	// ginCtx.Request is nil here; Copy() must not dereference it.
+	ctx := &Context{
+		Context: ginCtx,
+		engine:  engine,
+	}
+
+	assert.NotPanics(t, func() {
+		copied := ctx.Copy()
+		assert.Nil(t, copied.Request)
+	})
+}
+
 // Benchmark tests
 
 func BenchmarkContext_RequestBody_FirstRead(b *testing.B) {

@@ -19,9 +19,9 @@ type Context struct {
 	engine *Engine
 	Logger logger.Logger
 	// baseCtx is an immutable snapshot of the request context taken when the
-	// fox.Context is created. It backs Done/Err/Deadline so that calls from
-	// asynchronous goroutines stay stable even after the underlying gin.Context
-	// is recycled by the sync.Pool (see PR #30).
+	// fox.Context is created. It backs Done/Err/Value/Deadline so that calls
+	// from asynchronous goroutines stay stable even after the underlying
+	// gin.Context is recycled by the sync.Pool (see PR #30).
 	baseCtx context.Context
 	// Request is the http request copy from gin.Context.
 	// It carries the latest value through the middleware chain: a replacement
@@ -93,6 +93,12 @@ func (c *Context) Err() error {
 	return c.base().Err()
 }
 
+// Value returns the value associated with key from the request context
+// snapshot taken when this Context was created. It is safe to call from
+// asynchronous goroutines, but it does not observe values injected into the
+// request later in the middleware chain (e.g. c.Request.WithContext(...)).
+// To read live injected values within the synchronous chain, use
+// c.Request.Context().Value(key).
 func (c *Context) Value(key any) any {
 	return c.base().Value(key)
 }
@@ -121,11 +127,15 @@ func (c *Context) Next() {
 func (c *Context) Copy() *Context {
 	ginCtx := c.Context.Copy()
 	ginCtx.Request = c.Request
+	var baseCtx context.Context
+	if c.Request != nil {
+		baseCtx = c.Request.Context()
+	}
 	return &Context{
 		Context: ginCtx,
 		engine:  c.engine,
 		Logger:  c.Logger,
-		baseCtx: c.Request.Context(),
+		baseCtx: baseCtx,
 		Request: c.Request,
 	}
 }
