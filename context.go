@@ -26,7 +26,9 @@ type Context struct {
 	// Request is the http request copy from gin.Context.
 	// It carries the latest value through the middleware chain: a replacement
 	// made by an inner middleware (e.g. c.Request.WithContext(...)) is visible
-	// to outer middleware after Next() returns.
+	// to outer middleware after Next() returns. The context.Context interface
+	// methods (Done/Err/Value/Deadline) read baseCtx instead, so Request is
+	// only ever touched synchronously.
 	Request *http.Request
 }
 
@@ -92,7 +94,7 @@ func (c *Context) Err() error {
 }
 
 func (c *Context) Value(key any) any {
-	return c.Request.Context().Value(key)
+	return c.base().Value(key)
 }
 
 func (c *Context) Deadline() (deadline time.Time, ok bool) {
@@ -112,8 +114,7 @@ func (c *Context) base() context.Context {
 func (c *Context) Next() {
 	c.Context.Request = c.Request
 	c.Context.Next()
-	// Sync back the latest request so a replacement made by inner
-	// handlers/middleware is visible to outer middleware after Next() returns.
+	// Sync back the latest request (see the Request field doc).
 	c.Request = c.Context.Request
 }
 
