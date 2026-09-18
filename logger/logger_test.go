@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -485,6 +486,24 @@ func TestNewLogger_FileLogging(t *testing.T) {
 	// Verify file was created
 	_, err := os.Stat(tmpFile)
 	assert.NoError(t, err)
+}
+
+func TestNewWithConfig_FileLogging(t *testing.T) {
+	logFile := filepath.Join(t.TempDir(), "custom.log")
+	cfg := Config{
+		LogLevel:           InfoLevel,
+		FileLoggingEnabled: true,
+		EncodeLogsAsJSON:   true,
+		Filename:           logFile,
+	}
+
+	log := NewWithConfig(cfg, "custom-config")
+	log.Info("custom config message")
+
+	data, err := os.ReadFile(logFile)
+	require.NoError(t, err)
+	assert.Contains(t, string(data), "custom config message")
+	assert.True(t, json.Valid(data))
 }
 
 func TestNewLogger_MultiWriter(t *testing.T) {

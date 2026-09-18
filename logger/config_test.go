@@ -80,6 +80,12 @@ func TestSetConfig(t *testing.T) {
 		expectedPath := filepath.Join(os.TempDir(), expectedName)
 		assert.Equal(t, expectedPath, config.Filename)
 		assert.NotNil(t, config.rollingWrite)
+
+		defer os.Remove(config.Filename)
+		logger := New("default-file")
+		logger.Warn("default file path")
+		_, err := os.Stat(config.Filename)
+		assert.NoError(t, err)
 	})
 
 	t.Run("multiple SetConfig calls", func(t *testing.T) {

@@ -53,21 +53,26 @@ var config = Config{
 
 // SetConfig set logger config
 func SetConfig(cfg *Config) {
-	config = *cfg
+	config = normalizeConfig(*cfg)
 
-	DefaultLogLevel = cfg.LogLevel
+	DefaultLogLevel = config.LogLevel
+}
 
-	if config.FileLoggingEnabled {
-		if config.Filename == "" {
-			name := filepath.Base(os.Args[0]) + "-fox.log"
-			config.Filename = filepath.Join(os.TempDir(), name)
-		}
-
-		config.rollingWrite = &lumberjack.Logger{
-			Filename:   cfg.Filename,
-			MaxSize:    cfg.MaxSize,
-			MaxBackups: cfg.MaxBackups,
-			MaxAge:     cfg.MaxAge,
-		}
+func normalizeConfig(cfg Config) Config {
+	if !cfg.FileLoggingEnabled {
+		return cfg
 	}
+
+	if cfg.Filename == "" {
+		name := filepath.Base(os.Args[0]) + "-fox.log"
+		cfg.Filename = filepath.Join(os.TempDir(), name)
+	}
+
+	cfg.rollingWrite = &lumberjack.Logger{
+		Filename:   cfg.Filename,
+		MaxSize:    cfg.MaxSize,
+		MaxBackups: cfg.MaxBackups,
+		MaxAge:     cfg.MaxAge,
+	}
+	return cfg
 }
