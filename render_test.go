@@ -3,6 +3,7 @@ package fox
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -246,6 +247,26 @@ func TestRenderError_HTTPError(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "VALIDATION_ERROR", result["code"])
 	assert.Equal(t, "email", result["field"])
+}
+
+func TestRenderError_WrappedHTTPError(t *testing.T) {
+	engine := New()
+	w := httptest.NewRecorder()
+	ginCtx, _ := gin.CreateTestContext(w)
+	ctx := &Context{
+		Context: ginCtx,
+		engine:  engine,
+	}
+
+	err := fmt.Errorf("load user: %w",
+		httperrors.New(http.StatusNotFound, "user not found").SetCode("USER_NOT_FOUND"))
+	ctx.renderError(err)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.JSONEq(t,
+		`{"code":"USER_NOT_FOUND","error":"(404): user not found","meta":"user not found"}`,
+		w.Body.String(),
+	)
 }
 
 // Test render function
