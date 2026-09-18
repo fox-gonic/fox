@@ -2,12 +2,14 @@ package fox_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/fox-gonic/fox"
@@ -48,6 +50,9 @@ func TestRouterGroup(t *testing.T) {
 
 func TestRouterGroupHandleInvalidHandler(t *testing.T) {
 	router := fox.New()
+	assert.PanicsWithValue(t, fmt.Sprintf(fox.MsgInvalidHandlerType, "<nil>", "<nil>"), func() {
+		router.GET("nil", nil)
+	})
 
 	assert.Panics(t, func() {
 		router.GET("too-many-values", func(c *fox.Context) (res any, other any, err error) { return res, other, err })
@@ -60,6 +65,24 @@ func TestRouterGroupHandleInvalidHandler(t *testing.T) {
 	assert.Panics(t, func() {
 		router.Handle(http.MethodGet, "/invalid", func(i int) string { return "" })
 	})
+}
+
+func TestRouterGroupHandlesUnnamedGinHandler(t *testing.T) {
+	router := fox.New()
+	router.GET("/gin", func(c *gin.Context) {
+		c.Set("gin", true)
+		c.Next()
+	}, func(c *fox.Context) string {
+		value, _ := c.Get("gin")
+		return fmt.Sprint(value)
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/gin", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "true", w.Body.String())
 }
 
 func TestRouterGroup_Use(t *testing.T) {
