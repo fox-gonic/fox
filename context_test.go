@@ -301,6 +301,23 @@ func TestContext_TraceID_Consistency(t *testing.T) {
 	assert.Equal(t, id2, id3)
 }
 
+func TestContext_TraceID_IgnoresInvalidContextValue(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set(logger.TraceID, "header-trace-id")
+	w := httptest.NewRecorder()
+	ginCtx, _ := gin.CreateTestContext(w)
+	ginCtx.Request = req
+	ginCtx.Set(logger.TraceID, 123)
+
+	ctx := &Context{
+		Context: ginCtx,
+		engine:  New(),
+		Request: req,
+	}
+
+	assert.Equal(t, "header-trace-id", ctx.TraceID())
+}
+
 // Test context.Context interface methods
 
 func TestContext_Done(t *testing.T) {
