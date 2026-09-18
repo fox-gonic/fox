@@ -30,7 +30,7 @@ Fox implements multiple layers of security scanning to ensure code quality and p
 **How to run locally:**
 ```bash
 # Install govulncheck
-go install golang.org/x/vuln/cmd/govulncheck@latest
+go install golang.org/x/vuln/cmd/govulncheck@v1.7.0
 
 # Run vulnerability scan
 govulncheck ./...

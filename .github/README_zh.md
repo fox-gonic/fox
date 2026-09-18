@@ -638,7 +638,7 @@ Fox 非常重视安全性。我们实施了多层安全扫描：
 
 ```bash
 # 安装 govulncheck
-go install golang.org/x/vuln/cmd/govulncheck@latest
+go install golang.org/x/vuln/cmd/govulncheck@v1.7.0
 
 # 运行漏洞扫描
 govulncheck ./...

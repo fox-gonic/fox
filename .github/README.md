@@ -647,7 +647,7 @@ Fox takes security seriously. We implement multiple layers of security scanning:
 
 ```bash
 # Install govulncheck
-go install golang.org/x/vuln/cmd/govulncheck@latest
+go install golang.org/x/vuln/cmd/govulncheck@v1.7.0
 
 # Run vulnerability scan
 govulncheck ./...
