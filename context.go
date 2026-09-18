@@ -65,8 +65,10 @@ func (c *Context) RequestBody() (body []byte, err error) {
 // Note: This method has a side effect when no trace ID exists. If you only
 // want to read without generating, check c.GetHeader(logger.TraceID) directly.
 func (c *Context) TraceID() string {
-	if id, exists := c.Get(logger.TraceID); exists {
-		return id.(string)
+	if value, exists := c.Get(logger.TraceID); exists {
+		if id, ok := value.(string); ok && id != "" {
+			return id
+		}
 	}
 
 	if id := c.GetHeader(logger.TraceID); len(id) > 0 {
