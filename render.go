@@ -2,7 +2,6 @@ package fox
 
 import (
 	"encoding/json"
-	"net/http"
 
 	"github.com/fox-gonic/fox/render"
 )
@@ -49,17 +48,18 @@ func (c *Context) render(res any) {
 		return
 	}
 
+	status := c.Writer.Status()
 	switch r := res.(type) {
 	case error:
 		c.renderError(r)
 	case string:
-		c.String(http.StatusOK, r)
+		c.String(status, r)
 	case render.Redirect:
 		c.Redirect(r.Code, r.Location)
 	case render.Render:
-		c.Render(http.StatusOK, r)
+		c.Render(status, r)
 	default:
-		c.JSON(http.StatusOK, r)
+		c.JSON(status, r)
 	}
 
 	c.Abort()
