@@ -304,6 +304,48 @@ func TestRender_String(t *testing.T) {
 	assert.True(t, ctx.IsAborted())
 }
 
+func TestRender_PreservesExplicitStatus(t *testing.T) {
+	tests := []struct {
+		name   string
+		result any
+	}{
+		{
+			name:   "string",
+			result: "accepted",
+		},
+		{
+			name: "render",
+			result: render.String{
+				Format: "accepted",
+			},
+		},
+		{
+			name: "JSON",
+			result: map[string]string{
+				"status": "accepted",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			engine := New()
+			w := httptest.NewRecorder()
+			ginCtx, _ := gin.CreateTestContext(w)
+
+			ctx := &Context{
+				Context: ginCtx,
+				engine:  engine,
+			}
+			ctx.Status(http.StatusAccepted)
+
+			ctx.render(tt.result)
+
+			assert.Equal(t, http.StatusAccepted, w.Code)
+		})
+	}
+}
+
 func TestRender_Redirect(t *testing.T) {
 	engine := New()
 	w := httptest.NewRecorder()
