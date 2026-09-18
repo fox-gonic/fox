@@ -70,7 +70,8 @@ benchmark:
 security:
 	@echo "Running security scans..."
 	@echo "→ Running govulncheck..."
-	@govulncheck ./... || echo "govulncheck not installed. Run: go install golang.org/x/vuln/cmd/govulncheck@latest"
+	@command -v govulncheck >/dev/null || { echo "govulncheck not installed. Run: go install golang.org/x/vuln/cmd/govulncheck@v1.7.0"; exit 1; }
+	@govulncheck ./...
 	@echo "✓ Security scan completed"
 
 # Clean generated files
