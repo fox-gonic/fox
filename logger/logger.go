@@ -22,7 +22,7 @@ const (
 
 // NewWithConfig return logger with config
 func NewWithConfig(cfg Config, traceID ...string) Logger {
-	return newLogger(cfg, traceID...)
+	return newLogger(normalizeConfig(cfg), traceID...)
 }
 
 // NewContext return context with reqid
@@ -121,7 +121,7 @@ func newLogger(cfg Config, traceID ...string) Logger {
 	}
 
 	if cfg.FileLoggingEnabled {
-		if config.EncodeLogsAsJSON {
+		if cfg.EncodeLogsAsJSON {
 			writers = append(writers, cfg.rollingWrite)
 		} else {
 			writers = append(writers, zerolog.ConsoleWriter{Out: cfg.rollingWrite, TimeFormat: DefaultLogTimeFormat})
