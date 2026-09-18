@@ -2,6 +2,7 @@ package fox
 
 import (
 	"encoding/json"
+	"errors"
 
 	"github.com/fox-gonic/fox/render"
 )
@@ -23,20 +24,24 @@ func (c *Context) renderError(err error) {
 	}
 
 	var code int
-	if e, ok := err.(StatusCoder); ok {
+	var statusCoder StatusCoder
+	if errors.As(err, &statusCoder) {
+		e := statusCoder
 		code = e.StatusCode()
 	}
 	if code == 0 {
 		code = c.engine.DefaultRenderErrorStatusCode
 	}
 
-	if r, ok := err.(render.Render); ok {
+	var r render.Render
+	if errors.As(err, &r) {
 		c.Render(code, r)
 		return
 	}
 
-	if e, ok := err.(json.Marshaler); ok {
-		c.JSON(code, e)
+	var marshaler json.Marshaler
+	if errors.As(err, &marshaler) {
+		c.JSON(code, marshaler)
 	} else {
 		c.String(code, err.Error())
 	}
