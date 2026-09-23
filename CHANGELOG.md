@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-09-23
+
+### Fixed
+- Ignored invalid or empty trace ID context values and continued through the
+  request header, response header, and generated trace ID fallbacks instead
+  of panicking or returning an unusable value.
+- Preserved status codes and structured response bodies from wrapped HTTP
+  errors by resolving their status, renderer, and JSON marshaler through the
+  error chain.
+- Initialized file logging consistently for global and per-logger
+  configuration, including default file paths and JSON output settings.
+
+### Changed
+- Updated `github.com/go-playground/validator/v10` to v10.30.4 and
+  `github.com/stretchr/testify` to v1.12.1, with their indirect dependencies.
+- Updated GitHub CodeQL actions to v4.38.1.
+
 ## [0.1.3] - 2026-09-18
 
 ### Fixed
@@ -165,11 +182,11 @@ with a migration note), test coverage backfill across `examples/` and
 ### Core Dependencies
 - github.com/gin-gonic/gin v1.12.0
 - github.com/gin-contrib/cors v1.7.8
-- github.com/go-playground/validator/v10 v10.30.3
+- github.com/go-playground/validator/v10 v10.30.4
 - github.com/json-iterator/go v1.1.12
 - gopkg.in/natefinch/lumberjack.v2 v2.2.1
 - github.com/rs/zerolog v1.35.1
-- github.com/stretchr/testify v1.12.0
+- github.com/stretchr/testify v1.12.1
 
 ### Indirect Dependencies
 - golang.org/x/crypto v0.55.0
@@ -221,7 +238,8 @@ See [LICENSE](LICENSE) file for details.
 
 For more information, visit the [GitHub repository](https://github.com/fox-gonic/fox).
 
-[Unreleased]: https://github.com/fox-gonic/fox/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/fox-gonic/fox/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/fox-gonic/fox/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/fox-gonic/fox/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/fox-gonic/fox/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/fox-gonic/fox/compare/v0.1.0...v0.1.1
