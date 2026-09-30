@@ -1,12 +1,22 @@
 package fox
 
 import (
+	"context"
+	"crypto/tls"
+	"errors"
+	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/net/http2"
 )
 
 // Test NewDomainEngine
@@ -39,6 +49,205 @@ func TestNewDefaultDomainEngine(t *testing.T) {
 	require.NotNil(t, de)
 	require.NotNil(t, de.Engine)
 	require.NotNil(t, de.GetEngine)
+}
+
+func newDomainRoutingTestEngine() *DomainEngine {
+	de := NewDomainEngine()
+	de.Domain("api.example.com", func(subEngine *Engine) {
+		subEngine.GET("/", func() string {
+			return "api"
+		})
+	})
+	de.Domain("admin.example.com", func(subEngine *Engine) {
+		subEngine.GET("/", func() string {
+			return "admin"
+		})
+	})
+	de.GET("/", func() string {
+		return "default"
+	})
+	return de
+}
+
+func runDomainEngineListener(t *testing.T, engine *DomainEngine) string {
+	t.Helper()
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+
+	var wg sync.WaitGroup
+	wg.Go(func() {
+		_ = engine.RunListener(listener)
+	})
+	t.Cleanup(func() {
+		_ = listener.Close()
+		wg.Wait()
+	})
+
+	return listener.Addr().String()
+}
+
+func requestDomainRoute(t *testing.T, client *http.Client, address, host string) *http.Response {
+	t.Helper()
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://"+address+"/", nil)
+	require.NoError(t, err)
+	req.Host = host
+
+	response, err := client.Do(req)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = response.Body.Close()
+	})
+	return response
+}
+
+func TestDomainEngine_HandlerUsesDomainRouter(t *testing.T) {
+	de := newDomainRoutingTestEngine()
+	handler := de.Handler()
+	require.Same(t, de, handler)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Host = "api.example.com"
+	handler.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "api", w.Body.String())
+}
+
+func TestDomainEngine_RunListenerUsesDomainRouter(t *testing.T) {
+	de := newDomainRoutingTestEngine()
+	address := runDomainEngineListener(t, de)
+	client := &http.Client{Timeout: 5 * time.Second}
+
+	tests := []struct {
+		host string
+		want string
+	}{
+		{host: "api.example.com", want: "api"},
+		{host: "admin.example.com", want: "admin"},
+		{host: "www.example.com", want: "default"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.host, func(t *testing.T) {
+			response := requestDomainRoute(t, client, address, tt.host)
+			body, err := io.ReadAll(response.Body)
+			require.NoError(t, err)
+
+			assert.Equal(t, http.StatusOK, response.StatusCode)
+			assert.Equal(t, tt.want, string(body))
+		})
+	}
+}
+
+func TestDomainEngine_RunListenerSupportsH2C(t *testing.T) {
+	de := newDomainRoutingTestEngine()
+	de.UseH2C = true
+	address := runDomainEngineListener(t, de)
+	transport := &http2.Transport{
+		AllowHTTP: true,
+		DialTLSContext: func(ctx context.Context, network, address string, _ *tls.Config) (net.Conn, error) {
+			return (&net.Dialer{}).DialContext(ctx, network, address)
+		},
+	}
+	t.Cleanup(transport.CloseIdleConnections)
+	client := &http.Client{Transport: transport, Timeout: 5 * time.Second}
+
+	response := requestDomainRoute(t, client, address, "api.example.com")
+	body, err := io.ReadAll(response.Body)
+	require.NoError(t, err)
+
+	assert.Equal(t, 2, response.ProtoMajor)
+	assert.Equal(t, http.StatusOK, response.StatusCode)
+	assert.Equal(t, "api", string(body))
+}
+
+func TestDomainEngine_Run_InvalidAddress(t *testing.T) {
+	de := NewDomainEngine()
+
+	assert.Error(t, de.Run("invalid"))
+}
+
+func TestDomainEngine_RunTLS_InvalidAddress(t *testing.T) {
+	de := NewDomainEngine()
+
+	assert.Error(t, de.RunTLS("invalid", "cert.pem", "key.pem"))
+}
+
+func TestDomainEngine_RunUnix_InvalidPath(t *testing.T) {
+	de := NewDomainEngine()
+
+	assert.Error(t, de.RunUnix(filepath.Join(t.TempDir(), "missing", "fox.sock")))
+}
+
+func TestDomainEngine_RunUnix_DelegatesAndCleansUp(t *testing.T) {
+	de := NewDomainEngine()
+	socketFile, err := os.CreateTemp("", "fox-*.sock")
+	require.NoError(t, err)
+	socketPath := socketFile.Name()
+	require.NoError(t, socketFile.Close())
+	require.NoError(t, os.Remove(socketPath))
+	t.Cleanup(func() {
+		_ = os.Remove(socketPath)
+	})
+	serveErr := errors.New("stop serving")
+
+	err = de.runUnix(socketPath, func(listener net.Listener) error {
+		assert.Equal(t, "unix", listener.Addr().Network())
+		_, err := os.Stat(socketPath)
+		assert.NoError(t, err)
+		return serveErr
+	})
+
+	require.ErrorIs(t, err, serveErr)
+	_, err = os.Stat(socketPath)
+	assert.ErrorIs(t, err, os.ErrNotExist)
+}
+
+func TestDomainEngine_RunFd_InvalidDescriptor(t *testing.T) {
+	de := NewDomainEngine()
+
+	require.Error(t, de.RunFd(-1))
+	assert.Error(t, de.RunFd(1<<30))
+}
+
+func TestDomainEngine_RunFd_DelegatesToListener(t *testing.T) {
+	de := NewDomainEngine()
+	tcpListener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	file, err := tcpListener.(*net.TCPListener).File()
+	require.NoError(t, err)
+	require.NoError(t, tcpListener.Close())
+	t.Cleanup(func() {
+		_ = file.Close()
+	})
+	serveErr := errors.New("stop serving")
+
+	err = de.runFd(int(file.Fd()), func(listener net.Listener) error {
+		assert.Equal(t, "tcp", listener.Addr().Network())
+		return serveErr
+	})
+
+	assert.ErrorIs(t, err, serveErr)
+}
+
+func TestDomainEngine_RunQUIC_MissingCertificate(t *testing.T) {
+	de := NewDomainEngine()
+
+	assert.Error(t, de.RunQUIC("127.0.0.1:0", "missing-cert.pem", "missing-key.pem"))
+}
+
+func TestResolveDomainAddress(t *testing.T) {
+	t.Setenv("PORT", "")
+	assert.Equal(t, ":8080", resolveDomainAddress(nil))
+
+	t.Setenv("PORT", "9000")
+	assert.Equal(t, ":9000", resolveDomainAddress(nil))
+	assert.Equal(t, ":8081", resolveDomainAddress([]string{":8081"}))
+	assert.Panics(t, func() {
+		resolveDomainAddress([]string{":8081", ":8082"})
+	})
 }
 
 // Test Domain method
