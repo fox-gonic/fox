@@ -18,17 +18,32 @@ type XResponseTimer struct {
 
 // WriteHeader implement http.ResponseWriter
 func (w *XResponseTimer) WriteHeader(statusCode int) {
+	w.setHeader()
+	w.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (w *XResponseTimer) setHeader() {
 	buf := make([]byte, 0, 40)
 	buf = strconv.AppendInt(buf, w.start.UnixMilli(), 10)
 	buf = append(buf, ',', ' ')
 	buf = strconv.AppendInt(buf, time.Since(w.start).Nanoseconds(), 10)
 	w.Header().Set(w.key, string(buf))
-	w.ResponseWriter.WriteHeader(statusCode)
 }
 
 // Write implement http.ResponseWriter
 func (w *XResponseTimer) Write(b []byte) (int, error) {
+	if !w.Written() {
+		w.setHeader()
+	}
 	return w.ResponseWriter.Write(b)
+}
+
+// WriteString implement gin.ResponseWriter.
+func (w *XResponseTimer) WriteString(s string) (int, error) {
+	if !w.Written() {
+		w.setHeader()
+	}
+	return w.ResponseWriter.WriteString(s)
 }
 
 // NewXResponseTimer x-response-time middleware

@@ -127,6 +127,7 @@ func TestXResponseTimer_Write(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, len(data), n)
 	assert.Equal(t, "test response body", w.Body.String())
+	assert.NotEmpty(t, w.Header().Get(headerXResponseTime))
 }
 
 func TestXResponseTimer_Write_MultipleWrites(t *testing.T) {
@@ -146,6 +147,23 @@ func TestXResponseTimer_Write_MultipleWrites(t *testing.T) {
 	_, _ = timer.Write([]byte("World"))
 
 	assert.Equal(t, "Hello World", w.Body.String())
+}
+
+func TestXResponseTimer_WriteString(t *testing.T) {
+	w := httptest.NewRecorder()
+	ginCtx, _ := gin.CreateTestContext(w)
+	timer := &XResponseTimer{
+		ResponseWriter: ginCtx.Writer,
+		start:          time.Now(),
+		key:            headerXResponseTime,
+	}
+
+	n, err := timer.WriteString("test response body")
+
+	require.NoError(t, err)
+	assert.Equal(t, len("test response body"), n)
+	assert.Equal(t, "test response body", w.Body.String())
+	assert.NotEmpty(t, w.Header().Get(headerXResponseTime))
 }
 
 func TestXResponseTimer_Write_EmptyBody(t *testing.T) {
