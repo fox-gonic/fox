@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -151,6 +152,8 @@ type TestRequest struct {
 	Age  int
 }
 
+type Context struct{}
+
 // CustomError is a custom error type for testing
 type CustomError struct {
 	Code    int
@@ -185,6 +188,16 @@ func TestIsValidHandlerFunc(t *testing.T) {
 		{
 			name:     "Only Context parameter",
 			handler:  func(ctx *fox.Context) string { return "" },
+			expected: true,
+		},
+		{
+			name:     "Gin handler",
+			handler:  gin.HandlerFunc(func(ctx *gin.Context) {}),
+			expected: true,
+		},
+		{
+			name:     "Unnamed Gin handler",
+			handler:  func(ctx *gin.Context) {},
 			expected: true,
 		},
 		{
@@ -240,6 +253,16 @@ func TestIsValidHandlerFunc(t *testing.T) {
 		{
 			name:     "Not a function type",
 			handler:  "not a function",
+			expected: false,
+		},
+		{
+			name:     "Nil handler",
+			handler:  nil,
+			expected: false,
+		},
+		{
+			name:     "Different package Context type",
+			handler:  func(ctx *Context) string { return "" },
 			expected: false,
 		},
 		{

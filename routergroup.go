@@ -30,13 +30,24 @@ func (group *RouterGroup) handleWrapper(handlers ...HandlerFunc) gin.HandlersCha
 
 	for _, handler := range handlers {
 		if !IsValidHandlerFunc(handler) {
-			panic(fmt.Sprintf(MsgInvalidHandlerType, reflect.TypeOf(handler).String(), utils.NameOfFunction(handler)))
+			handlerType := reflect.TypeOf(handler)
+			if handlerType == nil {
+				panic(fmt.Sprintf(MsgInvalidHandlerType, "<nil>", "<nil>"))
+			}
+			handlerName := handlerType.String()
+			if handlerType.Kind() == reflect.Func {
+				handlerName = utils.NameOfFunction(handler)
+			}
+			panic(fmt.Sprintf(MsgInvalidHandlerType, handlerType.String(), handlerName))
 		}
 
 		f := func(h HandlerFunc) gin.HandlerFunc {
 			// support use gin middleware
 			if ginHandler, ok := h.(gin.HandlerFunc); ok {
 				return ginHandler
+			}
+			if ginHandler, ok := h.(func(*gin.Context)); ok {
+				return gin.HandlerFunc(ginHandler)
 			}
 
 			return func(c *gin.Context) {
