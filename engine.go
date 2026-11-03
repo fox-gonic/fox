@@ -26,6 +26,11 @@ const (
 
 var foxMode = DebugMode
 
+var (
+	handlerContextType = reflect.TypeFor[*Context]()
+	ginContextType     = reflect.TypeFor[*gin.Context]()
+)
+
 // SetMode sets gin mode according to input string.
 func SetMode(value string) {
 	gin.SetMode(value)
@@ -197,8 +202,8 @@ func (engine *Engine) Load(f RouterConfigFunc, fs ...embed.FS) {
 func IsValidHandlerFunc(handler HandlerFunc) bool {
 	handlerType := reflect.TypeOf(handler)
 
-	// Check if it's a function typ
-	if handlerType.Kind() != reflect.Func {
+	// Check if it's a function type.
+	if handlerType == nil || handlerType.Kind() != reflect.Func {
 		return false
 	}
 
@@ -217,7 +222,8 @@ func IsValidHandlerFunc(handler HandlerFunc) bool {
 	// Check if first parameter is *Context
 	if numIn > 0 {
 		firstParam := handlerType.In(0)
-		if firstParam.Kind() != reflect.Ptr || firstParam.Elem().Name() != "Context" {
+		isGinHandler := numIn == 1 && numOut == 0 && firstParam == ginContextType
+		if firstParam != handlerContextType && !isGinHandler {
 			return false
 		}
 	}
